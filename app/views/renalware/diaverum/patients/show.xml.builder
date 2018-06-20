@@ -8,6 +8,21 @@ xml.Patients do
     xml.ExternalPatientId patient.nhs_number
     xml.DateOfBirth patient.born_on&.strftime("%Y-%m-%d")
     xml.Sex patient.sex
+    xml.ModalityTypeId # not sending
+    xml.ModalityTypeDescription # not sending
+    xml.PrimaryRenalDiagnosisCodeId # not sending
+    xml.PrimaryRenalDiagnosisCodeDescription # not sending
+    xml.RaceId # not sending
+    xml.RaceDescription # not sending
     xml.Height patient.height_in_cm
+    xml.ResponsiblePhysicianID # not sending
+    xml.ResponsiblePhysicianLastName # not sending
+    xml.ResponsiblePhysicianFirstName # not sending
+    xml.FirstDialysis
+    xml.FirstRenalDialysis
+    xml.StreetAddress
+    xml.Postcode
+    xml.City
+    xml.PatientStatus
   end
 end
