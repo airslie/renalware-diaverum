@@ -1,11 +1,12 @@
 ruby "2.5.0"
 
 source "https://rubygems.org"
+source "https://rails-assets.org"
 
 gemspec
 
 gem "dotenv-rails", "2.4.0"
-gem "renalware-core", path: "../renalwarev2"
+# gem "renalware-core", path: "../renalwarev2"
 
 # devise_security_extension
 # Because we can't include git reference in the gemspec in renalware, for now include it here
