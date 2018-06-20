@@ -16,6 +16,7 @@ gem "devise_security_extension", git: "https://github.com/phatworx/devise_securi
 
 group :development, :test do
   gem "bootsnap"
+  gem "bundler-audit", require: false
   gem "byebug"
   gem "equivalent-xml"
   gem "factory_bot_rails", require: false
