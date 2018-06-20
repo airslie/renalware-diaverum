@@ -1,0 +1,1293 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Example per patient Diaverum file containing potentially 30 days of HD sessions (treatments)
+but in this case has 2 sessions
+  -->
+<Patients>
+  <Patient>
+    <PatientId>739414</PatientId>
+    <ExternalPatientId><%= patient.nhs_number %></ExternalPatientId>
+    <HospitalNumber><%= patient.local_patient_id %></HospitalNumber>
+    <FirstName><%= patient.given_name %></FirstName>
+    <LastName><%= patient.family_name %></LastName>
+    <DateOfBirth><%= I18n.l(patient.born_on) %></DateOfBirth>
+    <Sex>F</Sex>
+    <ModalityTypeId>HFLUX</ModalityTypeId>
+    <ModalityTypeDescription>High flux hemodialysis</ModalityTypeDescription>
+    <PrimaryRenalDiagnosisCodeId>00</PrimaryRenalDiagnosisCodeId>
+    <PrimaryRenalDiagnosisCodeDescription>Chronic renal failure; aetiology uncertain</PrimaryRenalDiagnosisCodeDescription>
+    <RaceId>1</RaceId>
+    <RaceDescription>White</RaceDescription>
+    <Height>175.0000</Height>
+    <ResponsiblePhysicianID>687363</ResponsiblePhysicianID>
+    <ResponsiblePhysicianLastName>Who</ResponsiblePhysicianLastName>
+    <ResponsiblePhysicianFirstName>Doctor</ResponsiblePhysicianFirstName>
+    <FirstDialysis>2017-04-29</FirstDialysis>
+    <FirstRenalDialysis />
+    <StreetAddress>Address1</StreetAddress>
+    <Postcode>DE56 1DT</Postcode>
+    <City>Derby</City>
+    <PatientStatus>ACTIVE</PatientStatus>
+    <Treatments>
+      <Treatment>
+        <TreatmentId>44183785</TreatmentId>
+        <Deleted>0</Deleted>
+        <Date>2018-05-10</Date>
+        <ClinicId>1808</ClinicId>
+        <ClinicName><%= hospital_unit.name %></ClinicName>
+        <StartTime>13:45</StartTime>
+        <EndTime>17:45</EndTime>
+        <Dialyzer>Elisio-21H-G</Dialyzer>
+        <DialyzerArea>2.1</DialyzerArea>
+        <DialyzerK0A>1976</DialyzerK0A>
+        <Dialysate><%= dialysate.name %></Dialysate>
+        <DialysateBicarb></DialysateBicarb>
+        <DialysateCalcium>1.25</DialysateCalcium>
+        <DialysateGlucose>1</DialysateGlucose>
+        <DialysatePotassium>2</DialysatePotassium>
+        <DialysateSodium>140</DialysateSodium>
+        <TypeId>HFLUX</TypeId>
+        <TypeDescription>High flux hemodialysis</TypeDescription>
+        <SystolicBloodPressurePre>147</SystolicBloodPressurePre>
+        <DiastolicBloodPressurePre>71</DiastolicBloodPressurePre>
+        <SystolicBloodPressurePost>158</SystolicBloodPressurePost>
+        <DiastolicBloodPressurePost>80</DiastolicBloodPressurePost>
+        <Bloodflow>265</Bloodflow>
+        <DialysateFlow>123</DialysateFlow>
+        <RemovedVolume>0.9</RemovedVolume>
+        <InfusionVolume>124</InfusionVolume>
+        <UltrafiltrationVolume>1.8</UltrafiltrationVolume>
+        <IsolatedUltrafiltrationVolume></IsolatedUltrafiltrationVolume>
+        <TreatedBloodVolume>59.8</TreatedBloodVolume>
+        <Bicarbonate>38</Bicarbonate>
+        <Sodium>138</Sodium>
+        <WeightPre>84.50</WeightPre>
+        <WeightPost>83.60</WeightPost>
+        <QIIndicator>Y</QIIndicator>
+        <TemperaturePre>35.60</TemperaturePre>
+        <TemperaturePost>35.40</TemperaturePost>
+        <PulsePre>80</PulsePre>
+        <PulsePost>89</PulsePost>
+        <VenousPressure>140</VenousPressure>
+        <ArterialPressure>152</ArterialPressure>
+        <Notes></Notes>
+        <MachineId>14201</MachineId>
+        <MachineModel>DBB 07</MachineModel>
+        <MachineIdentifier>15</MachineIdentifier>
+        <AccessLocationId>LEJ</AccessLocationId>
+        <AccessLocationDescription>Left external Jugular</AccessLocationDescription>
+        <AccessTypeId>7</AccessTypeId>
+        <AccessTypeDescription>Tunneled catheter</AccessTypeDescription>
+        <KTV></KTV>
+      </Treatment>
+      <Treatment>
+        <TreatmentId>44220967</TreatmentId>
+        <Deleted>0</Deleted>
+        <Date>2018-05-12</Date>
+        <ClinicId>1808</ClinicId>
+        <ClinicName>Darlington</ClinicName>
+        <StartTime>13:15</StartTime>
+        <EndTime>17:15</EndTime>
+        <Dialyzer>Elisio-21H-G</Dialyzer>
+        <DialyzerArea>2.1</DialyzerArea>
+        <DialyzerK0A>1976</DialyzerK0A>
+        <Dialysate>SoftPac C298 3.5L</Dialysate>
+        <DialysateBicarb></DialysateBicarb>
+        <DialysateCalcium>1.25</DialysateCalcium>
+        <DialysateGlucose>1</DialysateGlucose>
+        <DialysatePotassium>2</DialysatePotassium>
+        <DialysateSodium>140</DialysateSodium>
+        <TypeId>HFLUX</TypeId>
+        <TypeDescription>High flux hemodialysis</TypeDescription>
+        <SystolicBloodPressurePre>155</SystolicBloodPressurePre>
+        <DiastolicBloodPressurePre>78</DiastolicBloodPressurePre>
+        <SystolicBloodPressurePost>162</SystolicBloodPressurePost>
+        <DiastolicBloodPressurePost>74</DiastolicBloodPressurePost>
+        <Bloodflow>286</Bloodflow>
+        <DialysateFlow></DialysateFlow>
+        <RemovedVolume>0.4</RemovedVolume>
+        <InfusionVolume></InfusionVolume>
+        <UltrafiltrationVolume>0.2</UltrafiltrationVolume>
+        <IsolatedUltrafiltrationVolume></IsolatedUltrafiltrationVolume>
+        <TreatedBloodVolume>66.4</TreatedBloodVolume>
+        <Bicarbonate>38</Bicarbonate>
+        <Sodium>138</Sodium>
+        <WeightPre>83.60</WeightPre>
+        <WeightPost>83.20</WeightPost>
+        <QIIndicator>N</QIIndicator>
+        <TemperaturePre>36.10</TemperaturePre>
+        <TemperaturePost></TemperaturePost>
+        <PulsePre>86</PulsePre>
+        <PulsePost>80</PulsePost>
+        <VenousPressure>169</VenousPressure>
+        <ArterialPressure>181</ArterialPressure>
+        <Notes></Notes>
+        <MachineId>14201</MachineId>
+        <MachineModel>DBB 07</MachineModel>
+        <MachineIdentifier>15</MachineIdentifier>
+        <AccessLocationId>LEJ</AccessLocationId>
+        <AccessLocationDescription>Left external Jugular</AccessLocationDescription>
+        <AccessTypeId>7</AccessTypeId>
+        <AccessTypeDescription>Tunneled catheter</AccessTypeDescription>
+        <KTV></KTV>
+      </Treatment>
+    </Treatments>
+    <Tests>
+      <Test>
+        <Id>692668229</Id>
+        <Name>Urea Reduction Ratio</Name>
+        <Description>Urea Reduction Ratio</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>0.787735849056603773584905660377358490566</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667637</Id>
+        <Name>Urea-S Pre</Name>
+        <Description>Urea-S Pre</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>21.2</Value>
+        <UnitOfMeasure>mmol/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667652</Id>
+        <Name>Urea-S Post</Name>
+        <Description>Urea-S Post</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>4.5</Value>
+        <UnitOfMeasure>mmol/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667656</Id>
+        <Name>Alkaline Phosphatase-S</Name>
+        <Description>Alkaline Phosphatase-S</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>57</Value>
+        <UnitOfMeasure>µkat/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667660</Id>
+        <Name>Albumin-S</Name>
+        <Description>Albumin-S</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>37</Value>
+        <UnitOfMeasure>g/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667654</Id>
+        <Name>Calcium-S</Name>
+        <Description>Calcium-S</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>2.22</Value>
+        <UnitOfMeasure>mg/dL</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667664</Id>
+        <Name>Creatinine-S</Name>
+        <Description>Creatinine-S</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>485</Value>
+        <UnitOfMeasure>mg/dL</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667657</Id>
+        <Name>Random Glucose-S</Name>
+        <Description>Random Glucose-S</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>5.4</Value>
+        <UnitOfMeasure>mmol/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667658</Id>
+        <Name>Phosphorus-S, Inorganic</Name>
+        <Description>Phosphorus-S, Inorganic</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>1.14</Value>
+        <UnitOfMeasure>mg/dL</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668177</Id>
+        <Name>Calcium Phosphorus product-S</Name>
+        <Description>Calcium Phosphorus product-S</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>31.42338260256</Value>
+        <UnitOfMeasure>mg²/dL²</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667663</Id>
+        <Name>Sodium-S</Name>
+        <Description>Sodium-S</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>140</Value>
+        <UnitOfMeasure>mEq/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667662</Id>
+        <Name>Potassium-S</Name>
+        <Description>Potassium-S</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>5</Value>
+        <UnitOfMeasure>mEq/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667659</Id>
+        <Name>Protein, Total-S</Name>
+        <Description>Protein, Total-S</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>60</Value>
+        <UnitOfMeasure>g/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378449</Id>
+        <Name>Anticoagulation Type (patients with anticoagulation)</Name>
+        <Description>Anticoagulation Type (patients with anticoagulation)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>2</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378450</Id>
+        <Name>Anticoagulation Active Substance (patients with anticoagulation)</Name>
+        <Description>Anticoagulation Active Substance (patients with anticoagulation)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>8</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378451</Id>
+        <Name>Total anticoagulation dose, last 4 weeks</Name>
+        <Description>Total anticoagulation dose, last 4 weeks</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>24500</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378452</Id>
+        <Name>Number of anticoagulation treatments, last 4 weeks</Name>
+        <Description>Number of anticoagulation treatments, last 4 weeks</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>7</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378453</Id>
+        <Name>Anticoagulation Dose Unit</Name>
+        <Description>Anticoagulation Dose Unit</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>IU anti-Factor Xa</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667646</Id>
+        <Name>Hemoglobin-B</Name>
+        <Description>Hemoglobin-B</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>96</Value>
+        <UnitOfMeasure>g/dL</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667644</Id>
+        <Name>Hematocrit-B</Name>
+        <Description>Hematocrit-B</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>0.31</Value>
+        <UnitOfMeasure>%</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667643</Id>
+        <Name>Mean Cell Hemoglobin Volume-B</Name>
+        <Description>Mean Cell Hemoglobin Volume-B</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>112.6</Value>
+        <UnitOfMeasure>fL</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667645</Id>
+        <Name>Thrombocyte Platelet Count-B</Name>
+        <Description>Thrombocyte Platelet Count-B</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>192</Value>
+        <UnitOfMeasure>10E9/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667650</Id>
+        <Name>Sodium-S,Post</Name>
+        <Description>Sodium-S,Post</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>136</Value>
+        <UnitOfMeasure>mmol/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667649</Id>
+        <Name>Potassium-S,Post</Name>
+        <Description>Potassium-S,Post</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>3.4</Value>
+        <UnitOfMeasure>mmol/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667661</Id>
+        <Name>Bicarbonate-S</Name>
+        <Description>Bicarbonate-S</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>26</Value>
+        <UnitOfMeasure>mmol/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667648</Id>
+        <Name>Bicarbonate-S, Post</Name>
+        <Description>Bicarbonate-S, Post</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>30</Value>
+        <UnitOfMeasure>mmol/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667651</Id>
+        <Name>Creatinine-S,Post</Name>
+        <Description>Creatinine-S,Post</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>138</Value>
+        <UnitOfMeasure>mg/dL</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667653</Id>
+        <Name>Calcium, Albumin-corrected-S (From lab)</Name>
+        <Description>Calcium, Albumin-corrected-S (From lab)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>2.28</Value>
+        <UnitOfMeasure>mg/dL</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668178</Id>
+        <Name>Calcium, Albumin-corrected-S</Name>
+        <Description>Calcium, Albumin-corrected-S</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>9.13776</Value>
+        <UnitOfMeasure>mg/dL</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378454</Id>
+        <Name>UF Volume + Isolated UF Volume</Name>
+        <Description>UF Volume + Isolated UF Volume</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>1.8</Value>
+        <UnitOfMeasure>L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277172</Id>
+        <Name>UF-rate</Name>
+        <Description>UF-rate</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>2.69138755980861244019138755980861244019</Value>
+        <UnitOfMeasure>mL/h/kg</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378455</Id>
+        <Name>Primary Renal Diagnosis</Name>
+        <Description>Primary Renal Diagnosis</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>00</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378456</Id>
+        <Name>HD Treatment Modality</Name>
+        <Description>HD Treatment Modality</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>HFLUX</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378457</Id>
+        <Name>Dry weight</Name>
+        <Description>Dry weight</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>83.5</Value>
+        <UnitOfMeasure>Kg</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668230</Id>
+        <Name>Single pool Kt/V (Daugirdas)</Name>
+        <Description>Single pool Kt/V (Daugirdas)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>1.75664154293531704563430493686335804646</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668232</Id>
+        <Name>Equilibrated Kt/V</Name>
+        <Description>Equilibrated Kt/V</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>1.55742139011627665663920644568602117159</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668236</Id>
+        <Name>Standard Kt/V</Name>
+        <Description>Standard Kt/V</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>2.4544278227314790812656090806629421433</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695298466</Id>
+        <Name>Equilibrated Kt/V (From lab)</Name>
+        <Description>Equilibrated Kt/V (From lab)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>1.55742139011627665663920644568602117159</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667647</Id>
+        <Name>Urea Reduction Ratio (received from laboratory)</Name>
+        <Description>Urea Reduction Ratio (received from laboratory)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>78.8</Value>
+        <UnitOfMeasure>%</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668233</Id>
+        <Name>Normalized Protien Catabolic Rate</Name>
+        <Description>Normalized Protien Catabolic Rate</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>1.15854082204013055074888846333670364627</Value>
+        <UnitOfMeasure>g/kg/day</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378458</Id>
+        <Name>Blood Flow</Name>
+        <Description>Blood Flow</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>300</Value>
+        <UnitOfMeasure>mL/min</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378459</Id>
+        <Name>Diastolic BP</Name>
+        <Description>Diastolic BP</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>71</Value>
+        <UnitOfMeasure>mmHg</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378460</Id>
+        <Name>Systolic BP</Name>
+        <Description>Systolic BP</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>147</Value>
+        <UnitOfMeasure>mmHg</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277175</Id>
+        <Name>Weight Gain</Name>
+        <Description>Weight Gain</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>1.07655502392344497607655502392344497608</Value>
+        <UnitOfMeasure>%</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277166</Id>
+        <Name>Urea Distribution Volume/L</Name>
+        <Description>Urea Distribution Volume/L</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>37.22626</Value>
+        <UnitOfMeasure>L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378461</Id>
+        <Name>Dialysis Fluid Flow</Name>
+        <Description>Dialysis Fluid Flow</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>500</Value>
+        <UnitOfMeasure>mL/min</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277147</Id>
+        <Name>Body Mass Index</Name>
+        <Description>Body Mass Index</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>27.29795918367346938775510204081632653061</Value>
+        <UnitOfMeasure>kg/m²</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277160</Id>
+        <Name>Mean Arterial Pressure</Name>
+        <Description>Mean Arterial Pressure</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>96.33333333333333333333333333333333333333</Value>
+        <UnitOfMeasure>mmHg</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277153</Id>
+        <Name>Weekly Treatment Time</Name>
+        <Description>Weekly Treatment Time</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>720</Value>
+        <UnitOfMeasure>Minutes</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277150</Id>
+        <Name>Body Weight</Name>
+        <Description>Body Weight</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>83.6</Value>
+        <UnitOfMeasure>Kg</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277163</Id>
+        <Name>Time on Dialysis (months)</Name>
+        <Description>Time on Dialysis (months)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>12</Value>
+        <UnitOfMeasure>Months</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277149</Id>
+        <Name>Age</Name>
+        <Description>Age</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>77</Value>
+        <UnitOfMeasure>Years</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378462</Id>
+        <Name>Diagnosis</Name>
+        <Description>Diagnosis</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>4</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378463</Id>
+        <Name>Sex Distribution</Name>
+        <Description>Sex Distribution</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>1</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668234</Id>
+        <Name>Urea clearance</Name>
+        <Description>Urea clearance</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>272.471645017130314680060418745662296294</Value>
+        <UnitOfMeasure>mL/min</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695299044</Id>
+        <Name>Type of EPO</Name>
+        <Description>Type of EPO</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>3</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695299045</Id>
+        <Name>EPO Route</Name>
+        <Description>EPO Route</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>1</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695299046</Id>
+        <Name>EPO Frequency</Name>
+        <Description>EPO Frequency</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>1</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695299047</Id>
+        <Name>EPO Dose per Week</Name>
+        <Description>EPO Dose per Week</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>12000</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277146</Id>
+        <Name>Access type, patients on dialysis &gt;= 90 days</Name>
+        <Description>Access type, patients on dialysis &gt;= 90 days</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>6</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277173</Id>
+        <Name>Pulse pressure</Name>
+        <Description>Pulse pressure</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>76</Value>
+        <UnitOfMeasure>mmHg</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378468</Id>
+        <Name>Mean Blood Flow</Name>
+        <Description>Mean Blood Flow</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>265</Value>
+        <UnitOfMeasure>mL/min</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277148</Id>
+        <Name>Body Surface Area</Name>
+        <Description>Body Surface Area</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>1.99299668747767202448120857084437398643</Value>
+        <UnitOfMeasure>m²</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378469</Id>
+        <Name>Access type - HD</Name>
+        <Description>Access type - HD</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>6</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277164</Id>
+        <Name>Height</Name>
+        <Description>Height</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>175</Value>
+        <UnitOfMeasure>cm</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378470</Id>
+        <Name>Date of first Dialysis</Name>
+        <Description>Date of first Dialysis</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>{ts '2017-04-29 00:00:00'}</Value>
+        <UnitOfMeasure>Date</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277171</Id>
+        <Name>Body Weight, Pre</Name>
+        <Description>Body Weight, Pre</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>84.5</Value>
+        <UnitOfMeasure>Kg</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277170</Id>
+        <Name>Time on Dialysis (days)</Name>
+        <Description>Time on Dialysis (days)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>376</Value>
+        <UnitOfMeasure>Days</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378471</Id>
+        <Name>Responsible Physician</Name>
+        <Description>Responsible Physician</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>Moore, Iain</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378472</Id>
+        <Name>Date of Birth</Name>
+        <Description>Date of Birth</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>{ts '1940-10-18 00:00:00'}</Value>
+        <UnitOfMeasure>Date</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378473</Id>
+        <Name>Processed blood volume</Name>
+        <Description>Processed blood volume</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>59.8</Value>
+        <UnitOfMeasure>L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277151</Id>
+        <Name>Actual Treatment Time</Name>
+        <Description>Actual Treatment Time</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>240</Value>
+        <UnitOfMeasure>Minutes</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378474</Id>
+        <Name>Type of Therapy</Name>
+        <Description>Type of Therapy</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>HEMO</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378475</Id>
+        <Name>Treatment Time - On</Name>
+        <Description>Treatment Time - On</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>1345</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378476</Id>
+        <Name>Treatment Time - Off</Name>
+        <Description>Treatment Time - Off</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>1745</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378477</Id>
+        <Name>Machine Manufacturer</Name>
+        <Description>Machine Manufacturer</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>Nikkiso</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378478</Id>
+        <Name>Dialyzer Sub-category</Name>
+        <Description>Dialyzer Sub-category</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>RS-DIALYZER</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378479</Id>
+        <Name>Dialyzer Description</Name>
+        <Description>Dialyzer Description</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>Elisio-21H-G</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378480</Id>
+        <Name>Dialyzer Manufacturer</Name>
+        <Description>Dialyzer Manufacturer</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>Unknown</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378481</Id>
+        <Name>Machine Model</Name>
+        <Description>Machine Model</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>DBB 07</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668220</Id>
+        <Name>Calcium Phosphorus product, Albumin-corrected-S</Name>
+        <Description>Calcium Phosphorus product, Albumin-corrected-S</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>32.27096804256</Value>
+        <UnitOfMeasure>mg²/dL²</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668192</Id>
+        <Name>Calcium Phosphorus product, Albumin-corrected-S (From lab)</Name>
+        <Description>Calcium Phosphorus product, Albumin-corrected-S (From lab)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>32.27266321344</Value>
+        <UnitOfMeasure>mg²/dL²</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695298424</Id>
+        <Name>Calcium Phosphorus product-S (From lab)</Name>
+        <Description>Calcium Phosphorus product-S (From lab)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>31.42338260256</Value>
+        <UnitOfMeasure>mg²/dL²</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667655</Id>
+        <Name>Bilirubin,Total-S</Name>
+        <Description>Bilirubin,Total-S</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>4</Value>
+        <UnitOfMeasure>µmol/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667642</Id>
+        <Name>Neutrophils-B</Name>
+        <Description>Neutrophils-B</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>5</Value>
+        <UnitOfMeasure>10E9/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667641</Id>
+        <Name>Lymphocytes-B</Name>
+        <Description>Lymphocytes-B</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>0.7</Value>
+        <UnitOfMeasure>10E9/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667640</Id>
+        <Name>Monocytes-B</Name>
+        <Description>Monocytes-B</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>0.4</Value>
+        <UnitOfMeasure>10E9/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667639</Id>
+        <Name>Eosinophils-B</Name>
+        <Description>Eosinophils-B</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>0.2</Value>
+        <UnitOfMeasure>10E9/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692667638</Id>
+        <Name>Basophils-B</Name>
+        <Description>Basophils-B</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>0</Value>
+        <UnitOfMeasure>10E9/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378482</Id>
+        <Name>Iron Type</Name>
+        <Description>Iron Type</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>3</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277162</Id>
+        <Name>Iron Isomaltoside Dose/week</Name>
+        <Description>Iron Isomaltoside Dose/week</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>50</Value>
+        <UnitOfMeasure>mg/wk</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277152</Id>
+        <Name>Iron Isomaltoside Dose/kg/week</Name>
+        <Description>Iron Isomaltoside Dose/kg/week</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>0.5980861244019138755980861244019138755981</Value>
+        <UnitOfMeasure>mg/kg/wk</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378483</Id>
+        <Name>Iron Dose/week (patients with iron)</Name>
+        <Description>Iron Dose/week (patients with iron)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>50</Value>
+        <UnitOfMeasure>mg/wk</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277154</Id>
+        <Name>Iron Dose/week</Name>
+        <Description>Iron Dose/week</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>50</Value>
+        <UnitOfMeasure>mg/wk</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277165</Id>
+        <Name>Iron Dose/kg/week</Name>
+        <Description>Iron Dose/kg/week</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>0.5980861244019138755980861244019138755981</Value>
+        <UnitOfMeasure>mg/kg/wk</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277144</Id>
+        <Name>Tinzaparin Dose/kg/treatment (average, last 4 weeks)</Name>
+        <Description>Tinzaparin Dose/kg/treatment (average, last 4 weeks)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>41.86602870813397129186602870813397129186</Value>
+        <UnitOfMeasure>IU anti-Factor Xa/kg/tx</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277174</Id>
+        <Name>Tinzaparin Dose/treatment (average, last 4 weeks)</Name>
+        <Description>Tinzaparin Dose/treatment (average, last 4 weeks)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>3500</Value>
+        <UnitOfMeasure>IU anti-Factor Xa/tx</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668198</Id>
+        <Name>Urea Pre</Name>
+        <Description>Urea Pre</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>21.2</Value>
+        <UnitOfMeasure>mmol/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668199</Id>
+        <Name>Urea Post</Name>
+        <Description>Urea Post</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>4.5</Value>
+        <UnitOfMeasure>mmol/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668235</Id>
+        <Name>Single pool Kt/V (Daugirdas), only 3 tx per week patients</Name>
+        <Description>Single pool Kt/V (Daugirdas), only 3 tx per week patients</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>1.75664154293531704563430493686335804646</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668237</Id>
+        <Name>Equilibrated Kt/V, only 3 tx per week patients</Name>
+        <Description>Equilibrated Kt/V, only 3 tx per week patients</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>1.55742139011627665663920644568602117159</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277155</Id>
+        <Name>EPO Distribution</Name>
+        <Description>EPO Distribution</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>4</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277156</Id>
+        <Name>EPO dose per week</Name>
+        <Description>EPO dose per week</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>12000</Value>
+        <UnitOfMeasure>U</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277157</Id>
+        <Name>Darbepoetin alfa dose per week</Name>
+        <Description>Darbepoetin alfa dose per week</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>60</Value>
+        <UnitOfMeasure>µg</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277145</Id>
+        <Name>EPO dose per week, all patients (not Mircera)</Name>
+        <Description>EPO dose per week, all patients (not Mircera)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>12000</Value>
+        <UnitOfMeasure>U</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277159</Id>
+        <Name>EPO dose per week/body weight</Name>
+        <Description>EPO dose per week/body weight</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>143.540669856459330143540669856459330144</Value>
+        <UnitOfMeasure>U/kg</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277169</Id>
+        <Name>Darbepoetin alfa dose per week/body weight</Name>
+        <Description>Darbepoetin alfa dose per week/body weight</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>0.7177033492822966507177033492822966507177</Value>
+        <UnitOfMeasure>µg/kg</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277167</Id>
+        <Name>EPO dose per week/body weight, all patients (not Mircera)</Name>
+        <Description>EPO dose per week/body weight, all patients (not Mircera)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>143.540669856459330143540669856459330144</Value>
+        <UnitOfMeasure>U/kg</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668231</Id>
+        <Name>EPO resistance index</Name>
+        <Description>EPO resistance index</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>14.95215311004784688995215311004784689</Value>
+        <UnitOfMeasure>(U/Week/kg)/(g/dL)</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277161</Id>
+        <Name>Anticoagulation Type</Name>
+        <Description>Anticoagulation Type</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>2</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277158</Id>
+        <Name>Anticoagulation Active Substance</Name>
+        <Description>Anticoagulation Active Substance</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>8</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668206</Id>
+        <Name>Hemoglobin-B, EPO-patients only</Name>
+        <Description>Hemoglobin-B, EPO-patients only</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>9.6</Value>
+        <UnitOfMeasure>g/dL</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378484</Id>
+        <Name>Pre Weight</Name>
+        <Description>Pre Weight</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>84.5</Value>
+        <UnitOfMeasure>Kg</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378485</Id>
+        <Name>Post Weight</Name>
+        <Description>Post Weight</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>83.6</Value>
+        <UnitOfMeasure>Kg</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378486</Id>
+        <Name>Height</Name>
+        <Description>Height</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>175</Value>
+        <UnitOfMeasure>cm</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668225</Id>
+        <Name>Urea Division</Name>
+        <Description>Urea Division</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>0.212264150943396226415094339622641509434</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378487</Id>
+        <Name>Treatment Minutes</Name>
+        <Description>Treatment Minutes</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>240</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>691277168</Id>
+        <Name>KTV Check</Name>
+        <Description>KTV Check</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>0.032</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695378488</Id>
+        <Name>Treatments per Week</Name>
+        <Description>Treatments per Week</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>3</Value>
+        <UnitOfMeasure></UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668208</Id>
+        <Name>Albumin</Name>
+        <Description>Albumin</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>37</Value>
+        <UnitOfMeasure>g/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668209</Id>
+        <Name>Calcium</Name>
+        <Description>Calcium</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>8.89776</Value>
+        <UnitOfMeasure>mg/dL</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668210</Id>
+        <Name>Creatinine</Name>
+        <Description>Creatinine</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>5.4805</Value>
+        <UnitOfMeasure>mg/dL</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668211</Id>
+        <Name>Random Glucose</Name>
+        <Description>Random Glucose</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>5.4</Value>
+        <UnitOfMeasure>mmol/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668212</Id>
+        <Name>Phosphorus, Inorganic</Name>
+        <Description>Phosphorus, Inorganic</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>3.531606</Value>
+        <UnitOfMeasure>mg/dL</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668213</Id>
+        <Name>Sodium</Name>
+        <Description>Sodium</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>140</Value>
+        <UnitOfMeasure>mEq/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668214</Id>
+        <Name>Potassium</Name>
+        <Description>Potassium</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>5</Value>
+        <UnitOfMeasure>mEq/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668215</Id>
+        <Name>Bicarbonate</Name>
+        <Description>Bicarbonate</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>26</Value>
+        <UnitOfMeasure>mmol/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668216</Id>
+        <Name>Bicarbonate, Post</Name>
+        <Description>Bicarbonate, Post</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>30</Value>
+        <UnitOfMeasure>mmol/L</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668226</Id>
+        <Name>Calcium, Albumin-corrected</Name>
+        <Description>Calcium, Albumin-corrected</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>9.13776</Value>
+        <UnitOfMeasure>mg/dL</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668227</Id>
+        <Name>Calcium Phosphorus product</Name>
+        <Description>Calcium Phosphorus product</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>31.42338260256</Value>
+        <UnitOfMeasure>mg²/dL²</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>695298460</Id>
+        <Name>Calcium Phosphorus product (From lab)</Name>
+        <Description>Calcium Phosphorus product (From lab)</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>31.42338260256</Value>
+        <UnitOfMeasure>mg²/dL²</UnitOfMeasure>
+      </Test>
+      <Test>
+        <Id>692668228</Id>
+        <Name>Bicarbonate, incl. Standard</Name>
+        <Description>Bicarbonate, incl. Standard</Description>
+        <SampleDate>2018-05-10</SampleDate>
+        <Value>26</Value>
+        <UnitOfMeasure>mmol/L</UnitOfMeasure>
+      </Test>
+    </Tests>
+    <DialysisPrescriptions>
+      <DialysisPrescription>
+        <StartDate>2018-04-24</StartDate>
+        <EndDate>2018-05-11</EndDate>
+        <OrderingMD>Iain Moore</OrderingMD>
+        <Dialyzer>Elisio-21H-G</Dialyzer>
+        <DialyzerArea>2.1</DialyzerArea>
+        <DialyzerK0A>1976</DialyzerK0A>
+        <Dialysate>SoftPac C298 3.5L</Dialysate>
+        <DialysateBicarb></DialysateBicarb>
+        <DialysateCalcium>1.25</DialysateCalcium>
+        <DialysateGlucose>1</DialysateGlucose>
+        <DialysatePotassium>2</DialysatePotassium>
+        <DialysateSodium>140</DialysateSodium>
+        <AccessLocationId>LEJ</AccessLocationId>
+        <AccessLocationDescription>Left external Jugular</AccessLocationDescription>
+        <AccessTypeId>7</AccessTypeId>
+        <AccessTypeDescription>Tunneled catheter</AccessTypeDescription>
+        <ArtNeedle></ArtNeedle>
+        <VenNeedle></VenNeedle>
+        <TreatmentsPerWeek>3</TreatmentsPerWeek>
+        <TreatmentTimes>M1 W1 F1</TreatmentTimes>
+        <Duration>240</Duration>
+        <DialysateFlow>500</DialysateFlow>
+        <DialysateTemp>36.5</DialysateTemp>
+        <BloodFlow>300</BloodFlow>
+        <Conductivity></Conductivity>
+        <Bicarbonate>38</Bicarbonate>
+        <Sodium>138</Sodium>
+        <GlucoseIndicator>N</GlucoseIndicator>
+        <PrescribedKTV>1.4</PrescribedKTV>
+        <DryWeight>83.5</DryWeight>
+      </DialysisPrescription>
+      <DialysisPrescription>
+        <StartDate>2018-05-12</StartDate>
+        <EndDate>2018-05-22</EndDate>
+        <OrderingMD>Iain Moore</OrderingMD>
+        <Dialyzer>Elisio-21H-G</Dialyzer>
+        <DialyzerArea>2.1</DialyzerArea>
+        <DialyzerK0A>1976</DialyzerK0A>
+        <Dialysate>SoftPac C298 3.5L</Dialysate>
+        <DialysateBicarb></DialysateBicarb>
+        <DialysateCalcium>1.25</DialysateCalcium>
+        <DialysateGlucose>1</DialysateGlucose>
+        <DialysatePotassium>2</DialysatePotassium>
+        <DialysateSodium>140</DialysateSodium>
+        <AccessLocationId>LEJ</AccessLocationId>
+        <AccessLocationDescription>Left external Jugular</AccessLocationDescription>
+        <AccessTypeId>7</AccessTypeId>
+        <AccessTypeDescription>Tunneled catheter</AccessTypeDescription>
+        <ArtNeedle></ArtNeedle>
+        <VenNeedle></VenNeedle>
+        <TreatmentsPerWeek>3</TreatmentsPerWeek>
+        <TreatmentTimes>M1 W1 F1</TreatmentTimes>
+        <Duration>240</Duration>
+        <DialysateFlow>500</DialysateFlow>
+        <DialysateTemp>36.5</DialysateTemp>
+        <BloodFlow>300</BloodFlow>
+        <Conductivity></Conductivity>
+        <Bicarbonate>38</Bicarbonate>
+        <Sodium>138</Sodium>
+        <GlucoseIndicator>N</GlucoseIndicator>
+        <PrescribedKTV>1.4</PrescribedKTV>
+        <DryWeight>83</DryWeight>
+      </DialysisPrescription>
+      <DialysisPrescription>
+        <StartDate>2018-05-23</StartDate>
+        <EndDate>2999-12-31</EndDate>
+        <OrderingMD>Iain Moore</OrderingMD>
+        <Dialyzer>Elisio-21H-G</Dialyzer>
+        <DialyzerArea>2.1</DialyzerArea>
+        <DialyzerK0A>1976</DialyzerK0A>
+        <Dialysate>SoftPac C298 3.5L</Dialysate>
+        <DialysateBicarb></DialysateBicarb>
+        <DialysateCalcium>1.25</DialysateCalcium>
+        <DialysateGlucose>1</DialysateGlucose>
+        <DialysatePotassium>2</DialysatePotassium>
+        <DialysateSodium>140</DialysateSodium>
+        <AccessLocationId>LEJ</AccessLocationId>
+        <AccessLocationDescription>Left external Jugular</AccessLocationDescription>
+        <AccessTypeId>7</AccessTypeId>
+        <AccessTypeDescription>Tunneled catheter</AccessTypeDescription>
+        <ArtNeedle></ArtNeedle>
+        <VenNeedle></VenNeedle>
+        <TreatmentsPerWeek>3</TreatmentsPerWeek>
+        <TreatmentTimes>M1 W1 F1</TreatmentTimes>
+        <Duration>240</Duration>
+        <DialysateFlow>500</DialysateFlow>
+        <DialysateTemp>35.5</DialysateTemp>
+        <BloodFlow>300</BloodFlow>
+        <Conductivity></Conductivity>
+        <Bicarbonate>38</Bicarbonate>
+        <Sodium>138</Sodium>
+        <GlucoseIndicator>N</GlucoseIndicator>
+        <PrescribedKTV>1.4</PrescribedKTV>
+        <DryWeight>83</DryWeight>
+      </DialysisPrescription>
+    </DialysisPrescriptions>
+    <JournalEntries />
+  </Patient>
+</Patients>

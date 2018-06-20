@@ -11,12 +11,12 @@ module Renalware
 
         # Delegate methods names in CamelCase to the decorated XML Treatment node
         # so we can use e.g. session_xml_doc.TreatmentId
-        def method_missing(method, *args, _block)
+        def method_missing(method, *args, &block)
           first_char = method.to_s[0]
           if first_char.upcase == first_char
             node.xpath(method.to_s)&.text
           else
-            super
+            super(method, *args, block)
           end
         end
       end

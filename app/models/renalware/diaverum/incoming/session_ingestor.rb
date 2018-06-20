@@ -5,7 +5,7 @@ require "attr_extras"
 module Renalware
   module Diaverum
     module Incoming
-      class Ingestor
+      class SessionIngestor
         pattr_initialize [:paths!, :logger!]
 
         def call

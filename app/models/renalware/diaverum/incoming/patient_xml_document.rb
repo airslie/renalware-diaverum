@@ -5,6 +5,8 @@ require "attr_extras"
 module Renalware
   module Diaverum
     module Incoming
+      class DiaverumXMLParsingError < StandardError; end
+
       # Wraps an incoming Patient XML node
       class PatientXmlDocument
         attr_reader :node
@@ -36,7 +38,7 @@ module Renalware
 
         def each_session
           patient_node.xpath("Treatments/Treatment").each do |node|
-            yield Diaverum::SessionXmlDocument.new(node) if block_given?
+            yield SessionXmlDocument.new(node) if block_given?
           end
         end
 
