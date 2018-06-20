@@ -209,6 +209,8 @@ GEM
     enumerize (2.2.2)
       activesupport (>= 3.2)
     equalizer (0.0.11)
+    equivalent-xml (0.6.0)
+      nokogiri (>= 1.4.3)
     errbase (0.1.0)
     erubi (1.7.1)
     execjs (2.7.0)
@@ -455,8 +457,8 @@ DEPENDENCIES
   bootsnap
   byebug
   devise_security_extension!
-  diff-lcs
   dotenv-rails (= 2.4.0)
+  equivalent-xml
   factory_bot_rails
   faker
   fuubar

@@ -16,12 +16,12 @@ gem "devise_security_extension", git: "https://github.com/phatworx/devise_securi
 group :development, :test do
   gem "bootsnap"
   gem "byebug"
-  gem "diff-lcs"
   gem "factory_bot_rails", require: false
   gem "faker"
   gem "fuubar"
   gem "rspec-rails"
   gem "rspec-rails"
   gem "shoulda-matchers"
-  gem "webmock"
+  gem "webmock", require: false
+  gem "equivalent-xml"
 end

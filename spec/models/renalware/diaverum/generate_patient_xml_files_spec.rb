@@ -21,23 +21,29 @@ module Renalware
       end
     end
 
-    it "when no HD patients are dialysing at the unit" do
-      hospital_unit
-      allow(File).to receive(:write)
+    describe "#call" do
+      context "when no HD patients are dialysing at the unit" do
+        it "does not write any files" do
+          hospital_unit
+          allow(File).to receive(:write)
 
-      subject.call
+          subject.call
 
-      expect(File).to have_received(:write).exactly(0).times
-    end
+          expect(File).to have_received(:write).exactly(0).times
+        end
+      end
 
-    it "when there is an HD patient dialysing at the unit" do
-      create(:hd_profile, hospital_unit: hospital_unit, patient: hd_patient)
+      context "when there is an HD patient dialysing at the unit" do
+        before { create(:hd_profile, hospital_unit: hospital_unit, patient: hd_patient) }
 
-      allow(File).to receive(:write)
+        it "writes 1 patient XML file" do
+          allow(File).to receive(:write)
 
-      subject.call
+          subject.call
 
-      expect(File).to have_received(:write).exactly(1).times
+          expect(File).to have_received(:write).exactly(1).times
+        end
+      end
     end
   end
 end

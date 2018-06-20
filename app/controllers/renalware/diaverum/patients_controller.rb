@@ -21,7 +21,7 @@ module Renalware
           format.xml do
             patient = unit_patients.find_by(secure_id: params[:id])
             authorize patient
-            render locals: { patient: patient }
+            render locals: { patient: PatientPresenter.new(patient) }
           end
         end
       end

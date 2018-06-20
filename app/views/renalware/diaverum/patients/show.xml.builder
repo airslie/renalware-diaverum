@@ -6,5 +6,8 @@ xml.Patients do
     xml.FirstName patient.given_name
     xml.HospitalNumber patient.local_patient_id
     xml.ExternalPatientId patient.nhs_number
+    xml.DateOfBirth patient.born_on&.strftime("%Y-%m-%d")
+    xml.Sex patient.sex
+    xml.Height patient.height_in_cm
   end
 end
