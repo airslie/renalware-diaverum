@@ -23,6 +23,7 @@ group :development, :test do
   gem "faker"
   gem "fuubar"
   gem "rspec-rails"
+  gem "rspec_junit_formatter", "~> 0.3.0"
   gem "shoulda-matchers"
   gem "webmock", require: false
 end
