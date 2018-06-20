@@ -1,0 +1,16 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV["DB_POOL"] || ENV['RAILS_MAX_THREADS'] || 5 %>
+
+development:
+  <<: *default
+  database: renalware_diaverum_development
+
+test:
+  <<: *default
+  database: renalware_diaverum_test
+
+production:
+  <<: *default
+  url: renalware_diaverum_production

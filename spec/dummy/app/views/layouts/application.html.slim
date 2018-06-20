@@ -1,0 +1,45 @@
+doctype html
+html lang="en"
+  head
+    meta charset="utf-8"
+    meta name="viewport" content="width=device-width, initial-scale=1.0"
+
+    - if defined?(page_title)
+      title= page_title
+
+    = stylesheet_link_tag "application", media: :all
+    = stylesheet_link_tag "renalware/application", media: :all
+    = yield :css
+
+    = javascript_include_tag "renalware/modernizr"
+    = csrf_meta_tag
+    link(rel="apple-touch-icon" sizes="180x180" href="#{image_path('renalware/favicon/apple-touch-icon.png')}")
+    link(rel="icon" type="image/png" sizes="32x32" href="#{image_path('renalware/favicon/favicon-32x32.png')}")
+    link(rel="icon" type="image/png" sizes="16x16" href="#{image_path('renalware/favicon/favicon-16x16.png')}")
+    link(rel="manifest" href="#{image_path('renalware/favicon/manifest.json')}")
+    link(rel="mask-icon" href="#{image_path('renalware/favicon/safari-pinned-tab.svg')}" color="#5bbad5")
+    meta(name="theme-color" content="#ffffff")
+
+  body(class="#{ content_for?(:body_class) ? yield(:body_class) : 'page--' + controller_name }")
+    #modals-wrapper
+    header
+      - if Renalware.config.display_feedback_banner
+        = render "renalware/system/user_feedback/banner"
+      - if content_for?(:top_navigation)
+        = yield :top_navigation
+      - else
+        = render "renalware/navigation/main"
+      = yield(:header)
+
+    - if defined?(flash_messages)
+      = render "renalware/shared/flash_messages"
+
+    main
+      = yield
+
+    - unless user_signed_in?
+      = render "renalware/navigation/footer"
+    /- load_js_asynchonously = (Rails.env.staging? || Rails.env.production?)
+    - load_js_asynchonously = false
+    = javascript_include_tag "renalware/application", async: load_js_asynchonously
+    = yield(:javascript)
