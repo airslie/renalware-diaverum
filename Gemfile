@@ -1,16 +1,16 @@
 ruby "2.5.0"
 
-source 'https://rubygems.org'
+source "https://rubygems.org"
 
 gemspec
 
-gem "renalware-core", path: "../renalwarev2"
 gem "byebug"
-gem "fuubar"
+gem "dotenv-rails", "2.4.0"
 gem "faker"
+gem "fuubar"
+gem "renalware-core", path: "../renalwarev2"
 gem "rspec-rails"
 gem "shoulda-matchers"
-gem "dotenv-rails", "2.4.0"
 
 # devise_security_extension
 # Because we can't include git reference in the gemspec in renalware, for now include it here

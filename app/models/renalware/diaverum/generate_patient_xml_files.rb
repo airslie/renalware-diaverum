@@ -36,7 +36,7 @@ module Renalware
       end
 
       def filename_for(patient)
-        destination_path.join("#{file_datestamp.strftime("%Y%m%d")}-#{patient.secure_id}.xml")
+        destination_path.join("#{file_datestamp.strftime('%Y%m%d')}-#{patient.secure_id}.xml")
       end
     end
   end

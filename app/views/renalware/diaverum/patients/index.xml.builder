@@ -12,7 +12,6 @@ xml.Patients do
   end
 end
 
-
 # render "sending_facility", builder: xml, patient: patient
 # render "patient", builder: xml, patient: patient
 # render "lab_orders", builder: xml, patient: patient

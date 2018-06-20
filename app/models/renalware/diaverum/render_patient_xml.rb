@@ -6,7 +6,7 @@ module Renalware
       pattr_initialize :patient
 
       def call
-        Diaverum::PatientsController.render(:show, locals: { patient: patient } )
+        Diaverum::PatientsController.render(:show, locals: { patient: patient })
       end
     end
   end

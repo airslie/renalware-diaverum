@@ -13,7 +13,6 @@ module Renalware
         hospital_unit # ??
         respond_to do |format|
           format.xml do
-            BuildXml
             patient = unit_patients.find_by(secure_id: params[:id])
             authorize patient
             render locals: { patient: patient }
@@ -23,7 +22,6 @@ module Renalware
 
       def index
         hospital_unit # ??
-        byebug # patient_clinical_summary_path
 
         respond_to do |format|
           format.xml do
