@@ -2,6 +2,8 @@
 
 module Renalware
   module Diaverum
+    # Given a hospital unit code and path to save fies to, generate and save XML files for each
+    # HD patient dialysig at that unit. These will be SFTPed to Diaverum.
     class GeneratePatientXmlFiles
       attr_reader :file_datestamp, :hospital_unit_code, :destination_path
 
@@ -16,10 +18,10 @@ module Renalware
         @hospital_unit_code = hospital_unit_code
         @destination_path = Pathname(destination_path)
         @file_datestamp = Time.zone.today
-        FileUtils.mkdir_p(@destination_path) unless Rails.env.production?
       end
 
       def call
+        ensure_desination_path_exists
         patients = PatientsQuery.new(hospital_unit).call
         patients.each { |patient| render_patient_to_xml_file(patient) }
       end
@@ -39,6 +41,10 @@ module Renalware
 
       def filename_for(patient)
         destination_path.join("#{file_datestamp.strftime('%Y%m%d')}-#{patient.secure_id}.xml")
+      end
+
+      def ensure_desination_path_exists
+        FileUtils.mkdir_p(@destination_path) unless Rails.env.production?
       end
     end
   end
