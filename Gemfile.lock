@@ -1,18 +1,7 @@
 GIT
   remote: https://github.com/airslie/renalware-core.git
-  revision: fa017d149ca42f02794cc58f897215240a7c3e47
-  specs:
-
-GIT
-  remote: https://github.com/phatworx/devise_security_extension.git
-  revision: b2ee978af7d49f0fb0e7271c6ac074dfb4d39353
-  specs:
-    devise_security_extension (0.10.0)
-      devise (>= 3.0.0, < 5.0)
-      railties (>= 3.2.6, < 6.0)
-
-PATH
-  remote: ../renalwarev2
+  revision: bd11812a1a6966565bf2b538aefce423d1029da7
+  branch: chore/hd/diaverum_support
   specs:
     renalware-core (2.0.35)
       active_type (~> 0.7.1)
@@ -78,6 +67,14 @@ PATH
       wisper (~> 2.0.0)
       wkhtmltopdf-binary (= 0.12.3.1)
       yard (~> 0.9.12)
+
+GIT
+  remote: https://github.com/phatworx/devise_security_extension.git
+  revision: b2ee978af7d49f0fb0e7271c6ac074dfb4d39353
+  specs:
+    devise_security_extension (0.10.0)
+      devise (>= 3.0.0, < 5.0)
+      railties (>= 3.2.6, < 6.0)
 
 PATH
   remote: .

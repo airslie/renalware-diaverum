@@ -31,7 +31,9 @@ module Renalware
         def nhs_number
           @nhs_number ||= begin
             num = patient_node.xpath("ExternalPatientId")&.text
-            raise(DiaverumXMLParsingError, "ExternalPatientId (NHS Number) not present") if num.blank?
+            if num.blank?
+              raise(DiaverumXMLParsingError, "ExternalPatientId (NHS Number) not present")
+            end
             num
           end
         end

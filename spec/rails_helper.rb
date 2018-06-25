@@ -13,7 +13,7 @@ require "factory_bot_rails"
 
 # Add additional requires below this line. Rails is not loaded until this point!
 Dir[Renalware::Engine.root.join("spec/factories/**/*.rb")].each { |f| load f }
-
+Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each { |f| require f }
 Dir[Renalware::Engine.root.join("spec/support/**/*.rb")].each { |f| require f }
 
 # Requires supporting ruby files with custom matchers and macros, etc, in

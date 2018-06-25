@@ -25,7 +25,9 @@ module Renalware
 
         # Raises an exception if the patient is not found
         def patient
-          @patient ||= Renalware::HD::Patient.find_by!(local_patient_id: patient_node.local_patient_id)
+          @patient ||= begin
+            Renalware::HD::Patient.find_by!(local_patient_id: patient_node.local_patient_id)
+          end
         end
       end
     end
