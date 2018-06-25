@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Configure the settings for the Renalware::Core engine.
 
 require_dependency "renalware"
