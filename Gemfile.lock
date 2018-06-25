@@ -1,15 +1,9 @@
 GIT
-  remote: https://github.com/phatworx/devise_security_extension.git
-  revision: b2ee978af7d49f0fb0e7271c6ac074dfb4d39353
+  remote: https://github.com/airslie/renalware-core.git
+  revision: b3d3711fadb8e2e3ee2ae79739b798fac6d03c14
+  branch: chore/hd/diaverum_support
   specs:
-    devise_security_extension (0.10.0)
-      devise (>= 3.0.0, < 5.0)
-      railties (>= 3.2.6, < 6.0)
-
-PATH
-  remote: ../renalwarev2
-  specs:
-    renalware-core (2.0.33)
+    renalware-core (2.0.35)
       active_type (~> 0.7.1)
       activerecord-import (~> 0.22.0)
       ahoy_matey (~> 2.0.1)
@@ -73,6 +67,14 @@ PATH
       wisper (~> 2.0.0)
       wkhtmltopdf-binary (= 0.12.3.1)
       yard (~> 0.9.12)
+
+GIT
+  remote: https://github.com/phatworx/devise_security_extension.git
+  revision: b2ee978af7d49f0fb0e7271c6ac074dfb4d39353
+  specs:
+    devise_security_extension (0.10.0)
+      devise (>= 3.0.0, < 5.0)
+      railties (>= 3.2.6, < 6.0)
 
 PATH
   remote: .
@@ -428,7 +430,7 @@ GEM
       rails (> 4.1, < 5.2)
     tzinfo (1.2.5)
       thread_safe (~> 0.1)
-    uglifier (4.1.11)
+    uglifier (4.1.12)
       execjs (>= 0.3.0, < 3)
     underscore-rails (1.8.3)
     unicode (0.4.4.4)

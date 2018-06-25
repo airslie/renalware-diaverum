@@ -6,7 +6,11 @@ source "https://rails-assets.org"
 gemspec
 
 gem "dotenv-rails", "2.4.0"
-gem "renalware-core", path: "../renalwarev2"
+# gem "renalware-core", path: "../renalwarev2"
+gem "renalware-core",
+    git: "https://github.com/airslie/renalware-core.git",
+    branch: "chore/hd/diaverum_support"
+   # tag: "v2.0.35",
 
 # devise_security_extension
 # Because we can't include git reference in the gemspec in renalware, for now include it here
