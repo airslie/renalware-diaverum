@@ -25,24 +25,25 @@ module Renalware
           ENV["DIAVERUM_FOLDER"] = path.to_s
         end
 
-        context "when Diaverum @ St Albans has SFTPed multiple patient XML files, each containing up to "\
-                "30 calendar days of HD Session (aka Treament) history, "\
-                "and a rake task has iterated over the files and passed us a single file to import" do
+        context "when Diaverum @ St Albans has SFTPed multiple patient XML files, each containing "\
+                "up to 30 calendar days of HD Session (aka Treament) history, and a rake task "\
+                "has iterated over the files and passed us a single file to import" do
 
-          context "when we can identifiy the patient, and the all the sessions in the file are new ones "\
-                  "e.g. because this is a new patient, or the rake task is running for the first time "\
-                  "and needs to catchup on the (up to 30 days of) backlog" do
+          context "when we can identifiy the patient, and the all the sessions in the file are "\
+                  "new ones e.g. because this is a new patient, or the rake task is running for "\
+                  "the first time and needs to catchup on the (up to 30 days of) backlog" do
 
             let(:xml_filepath) { file_fixture("diaverum_example.xml.erb") }
             let(:doc) do
               # Set up an erb template based on the XML fixture so we can insert patient identifiers
-              # into the XML.By magic, the patient variable is in binding so can be resolved in the ERB
-              # template
+              # into the XML.By magic, the patient variable is in binding so can be resolved in
+              # the ERB template
               xml = ERB.new(xml_filepath.read).result(binding)
               Nokogiri::XML(xml)
             end
 
-            it "meta test: fixture rendered via ERB contains patient data bound via 'patient' variable" do
+            it "meta test: fixture rendered via ERB contains patient data bound via "\
+               "'patient' variable" do
               payload = PatientXmlDocument.new(doc)
 
               expect(payload.local_patient_id).to eq(patient.local_patient_id)
