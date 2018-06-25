@@ -8,7 +8,6 @@ module Renalware
       # Forward an HL7 pathology message to
 
       class ForwardHl7MessageJob < ::ApplicationJob
-
         # Message is a Feeds::Message instance.
         def perform(feed_message)
           # 1. Get the patient using message.patient_identifier and assume its

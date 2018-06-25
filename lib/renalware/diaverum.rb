@@ -5,6 +5,5 @@ require "renalware/diaverum/configuration"
 
 module Renalware
   module Diaverum
-
   end
 end

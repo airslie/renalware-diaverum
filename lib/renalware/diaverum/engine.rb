@@ -10,7 +10,6 @@ module Renalware
 
     class Engine < ::Rails::Engine
       isolate_namespace Renalware::Diaverum
-
     end
   end
 end
