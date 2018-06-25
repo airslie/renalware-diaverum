@@ -15,6 +15,13 @@ CREATE SCHEMA renalware;
 
 
 --
+-- Name: renalware_diaverum; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA renalware_diaverum;
+
+
+--
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -2012,7 +2019,8 @@ CREATE TABLE feed_messages (
     body text NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    body_hash text
+    body_hash text,
+    patient_identifer character varying
 );
 
 
@@ -7058,6 +7066,41 @@ CREATE SEQUENCE virology_versions_id_seq
 ALTER SEQUENCE virology_versions_id_seq OWNED BY virology_versions.id;
 
 
+SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: dialysis_units; Type: TABLE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE TABLE dialysis_units (
+    id bigint NOT NULL,
+    hospital_unit_id bigint NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: dialysis_units_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE SEQUENCE dialysis_units_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: dialysis_units_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER SEQUENCE dialysis_units_id_seq OWNED BY dialysis_units.id;
+
+
+SET search_path = renalware, pg_catalog;
+
 --
 -- Name: access_assessments id; Type: DEFAULT; Schema: renalware; Owner: -
 --
@@ -8148,6 +8191,15 @@ ALTER TABLE ONLY virology_profiles ALTER COLUMN id SET DEFAULT nextval('virology
 --
 
 ALTER TABLE ONLY virology_versions ALTER COLUMN id SET DEFAULT nextval('virology_versions_id_seq'::regclass);
+
+
+SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: dialysis_units id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY dialysis_units ALTER COLUMN id SET DEFAULT nextval('dialysis_units_id_seq'::regclass);
 
 
 SET search_path = public, pg_catalog;
@@ -9425,6 +9477,18 @@ ALTER TABLE ONLY virology_profiles
 ALTER TABLE ONLY virology_versions
     ADD CONSTRAINT virology_versions_pkey PRIMARY KEY (id);
 
+
+SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: dialysis_units dialysis_units_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY dialysis_units
+    ADD CONSTRAINT dialysis_units_pkey PRIMARY KEY (id);
+
+
+SET search_path = renalware, pg_catalog;
 
 --
 -- Name: access_plan_uniqueness; Type: INDEX; Schema: renalware; Owner: -
@@ -12513,6 +12577,17 @@ CREATE INDEX tx_versions_type_id ON transplant_versions USING btree (item_type, 
 CREATE UNIQUE INDEX unique_study_participants ON research_study_participants USING btree (participant_id, study_id) WHERE (deleted_at IS NULL);
 
 
+SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: index_renalware_diaverum.dialysis_units_on_hospital_unit_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE INDEX "index_renalware_diaverum.dialysis_units_on_hospital_unit_id" ON dialysis_units USING btree (hospital_unit_id);
+
+
+SET search_path = renalware, pg_catalog;
+
 --
 -- Name: delayed_jobs feed_messages_preprocessing_trigger; Type: TRIGGER; Schema: renalware; Owner: -
 --
@@ -14670,11 +14745,21 @@ ALTER TABLE ONLY transplant_registration_statuses
     ADD CONSTRAINT transplant_registration_statuses_updated_by_id_fk FOREIGN KEY (updated_by_id) REFERENCES users(id);
 
 
+SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: dialysis_units fk_rails_de221a9ca1; Type: FK CONSTRAINT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY dialysis_units
+    ADD CONSTRAINT fk_rails_de221a9ca1 FOREIGN KEY (hospital_unit_id) REFERENCES renalware.hospital_units(id);
+
+
 --
 -- PostgreSQL database dump complete
 --
 
-SET search_path TO renalware_kch, renalware, public;
+SET search_path TO renalware, public;
 
 INSERT INTO "schema_migrations" (version) VALUES
 ('20141004150240'),
@@ -15060,6 +15145,8 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20180605114332'),
 ('20180605141806'),
 ('20180605175211'),
-('20180611152505');
+('20180622130552'),
+('20180625124431'),
+('20180625150755');
 
 
