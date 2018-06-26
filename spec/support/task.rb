@@ -1,6 +1,8 @@
+# frozen_string_literal: true
+
 # File: spec/support/tasks.rb
 require "rake"
-p 'ljllkjlkjlkjlkj'
+
 # Task names should be used in the top-level describe, with an optional
 # "rake "-prefix for better documentation. Both of these will work:
 #
