@@ -10,3 +10,5 @@ bundle exec rake db:migrate
 bundle exec rake app:db:seed
 
 ```
+
+![diagram](./diagram.png "Diag")
