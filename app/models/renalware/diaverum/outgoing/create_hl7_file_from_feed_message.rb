@@ -5,6 +5,10 @@ require "attr_extras"
 module Renalware
   module Diaverum
     module Outgoing
+      # At this point we assume the following:
+      # - we have been passed a Feeds::Message and the patient associated with the message
+      # - the patient dialyses at a Diaverum site.
+      # See PathologyListener for that logic
       class CreateHl7FileFromFeedMessage
         include Diaverum::Logging
         pattr_initialize [:message!, :patient!]
@@ -23,13 +27,13 @@ module Renalware
         end
 
         def save_hl7_file(filename)
-          filepath = diaverum_outgoing_path.join(filename)
-          archive_filepath = diaverum_outgoing_archive_path.join(filename)
+          create_hl7_file_at(Paths.outgoing.join(filename), :out)
+          create_hl7_file_at(Paths.outgoing_archive.join(filename), :arc)
+        end
+
+        def create_hl7_file_at(filepath, type)
           File.write(filepath, message.body)
-          log_file_sent(filepath, :out)
-          File.write(archive_filepath, message.body)
-          log_file_sent(archive_filepath, :arc)
-          true
+          log_file_sent(filepath, type)
         end
 
         def diaverum_outgoing_path
