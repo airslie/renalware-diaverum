@@ -21,6 +21,16 @@ For each HD patient dialysing at a Diaverum unit, Diaverum will SFTP us an XML f
 
 We import these sessions, mapping across various fields into for example Renal Registry codes.
 
+Session data is imported with
+
+```
+bundle exec rake diaverum:ingest
+or, if running in development
+bundle exec rake app:diaverum:ingest
+```
+
+
+
 ## Outgoing
 
 ### HL7
@@ -35,6 +45,10 @@ so we can move the files again if there is a communications issue.
 
 We also log result, payload, patient and hospital unit in the `diaverum.transmissions` table,
 so that is the first port of call when debugging issues.
+
+Note that although we drop the HL7 files in real-time into the SFTP folder, ready to send,
+this does not mean they are received in real-time at Diaverum. A cron job would normally
+schedule the SFTP sync.
 
 ### Other data
 

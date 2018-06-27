@@ -6,14 +6,15 @@ module Renalware
   module Diaverum
     module Incoming
       class SavePatientSession
+        include Diaverum::Logging
         pattr_initialize :patient, :session_node
 
         def call
-          session = find_existing_session(session_node.TreatmentId)
+          session = existing_session(session_node.TreatmentId)
 
           session = Renalware::HD::Session::Closed.new(
             patient: patient,
-            hospital_unit: find_hospital_unit,
+            hospital_unit: hospital_unit,
             performed_on: session_node.Date,
             start_time: session_node.StartTime,
             end_time: session_node.EndTime,
@@ -24,16 +25,16 @@ module Renalware
             signed_off_by: user,
             signed_off_at: Time.zone.parse("#{session_node.Date} #{session_node.EndTime}"),
             dry_weight: most_recent_dry_weight,
-            dialysate: find_dialysate
+            dialysate: dialysate
           )
 
           info = session.document.info
           info.hd_type = :hd
           info.access_confirmed = true
-          info.access_type = find_access_type
+          info.access_type = access_type
           info.access_type_abbreviation = "AVG"
           info.access_side = :left
-          # info.is_access_first_use
+          info.is_access_first_use = false
           # info.fistula_plus_line
           # info.single_needle
           # info.lines_reversed
@@ -80,19 +81,23 @@ module Renalware
         private
 
         # Returns an existing session or a new one if not found
-        def find_existing_session(external_id)
+        def existing_session(external_id)
           patient.hd_sessions.closed.find_by(external_id: external_id)
         end
 
-        def find_hospital_unit
-          Renalware::Hospitals::Unit.find_by!(name: session_node.ClinicName)
+        def hospital_unit
+          dialysis_unit.hospital_unit
         end
 
-        def find_dialysate
+        def dialysis_unit
+          DialysisUnit.find_by!(diaverum_clinic_id: session_node.ClinicId)
+        end
+
+        def dialysate
           Renalware::HD::Dialysate.find_by!(name: session_node.Dialysate)
         end
 
-        def find_access_type
+        def access_type
           Renalware::Accesses::Type.find_by!(name: session_node.AccessTypeDescription)
         end
 

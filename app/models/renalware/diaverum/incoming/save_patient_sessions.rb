@@ -7,12 +7,14 @@ module Renalware
     module Incoming
       # Save all Sessions
       class SavePatientSessions
-        pattr_initialize :patient_node
+        pattr_initialize :patient_node, :transmission
 
         # helperer for new(...).call()
-        def self.call(path_to_xml)
+        def self.call(path_to_xml, transmission)
+          @transmission = transmission
+          transmission.update!(payload: File.read(path_to_xml))
           doc = Nokogiri::XML(Pathname(path_to_xml))
-          new(Diaverum::PatientXmlDocument.new(doc)).call
+          new(Incoming::PatientXmlDocument.new(doc), transmission).call
         end
 
         def call

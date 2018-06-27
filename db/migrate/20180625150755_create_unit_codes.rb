@@ -12,6 +12,7 @@ class CreateUnitCodes < ActiveRecord::Migration[5.1]
         index: true,
         null: false
       )
+      t.integer :diaverum_clinic_id
       t.timestamps null: false
     end
   end

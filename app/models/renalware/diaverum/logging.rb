@@ -8,7 +8,9 @@ module Renalware
     extend ActiveSupport::Concern
 
     def logger
-      @logger ||= Logger.new(Rails.root.join("log", "diaverum.log"))
+      @logger ||= Logger.new(
+        Rails.env.test? ? STDOUT : Rails.root.join("log", "diaverum.log")
+      )
     end
 
     def logger=(logger)

@@ -19,6 +19,10 @@ module Renalware
         def incoming_archive
           Pathname(Renalware::Diaverum.config.diaverum_incoming_archive_path)
         end
+
+        def incoming_error
+          Pathname(Renalware::Diaverum.config.diaverum_incoming_error_path)
+        end
       end
     end
   end

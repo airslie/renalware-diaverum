@@ -8,7 +8,7 @@ class CreateDiaverumTransmissions < ActiveRecord::Migration[5.1]
         foreign_key: { to_table: :"renalware_diaverum.dialysis_units" },
         index: true
       )
-      t.references :patient, foreign_key: true, index: true, null: false
+      t.references :patient, foreign_key: true, index: true
       t.text :payload
       t.text :error
       t.string :filepath

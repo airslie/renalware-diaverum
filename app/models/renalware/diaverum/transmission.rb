@@ -8,7 +8,6 @@ module Renalware
     class Transmission < ApplicationRecord
       belongs_to :dialysis_unit, class_name: "Diaverum::DialysisUnit"
       belongs_to :patient
-      validates :patient, presence: true
       validates :format, presence: true # :xml :hl7
       validates :direction, presence: true # :in :out
     end
