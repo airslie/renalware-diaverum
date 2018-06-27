@@ -6,7 +6,7 @@ module Renalware
   module Diaverum
     module Outgoing
       class Hl7Filename
-        pattr_initialize [:patient!, :message!]
+        pattr_initialize [:patient!]
 
         def to_s
           timestamp = Time.zone.now.strftime("%Y%m%d%H%M%S")

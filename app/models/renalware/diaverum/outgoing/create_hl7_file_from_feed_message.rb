@@ -11,7 +11,7 @@ module Renalware
       # See PathologyListener for that logic
       class CreateHl7FileFromFeedMessage
         include Diaverum::Logging
-        pattr_initialize [:message!, :patient!]
+        pattr_initialize [:message!, :patient!, :transmission_log!]
 
         def call
           save_hl7_file(filename)
@@ -23,7 +23,7 @@ module Renalware
         private
 
         def filename
-          Hl7Filename.new(patient: patient, message: message).to_s
+          Hl7Filename.new(patient: patient).to_s
         end
 
         def save_hl7_file(filename)
@@ -46,10 +46,16 @@ module Renalware
 
         def log_file_sent(filepath, type)
           logger.info("#{type} hl7 #{patient.secure_id} #{patient.local_patient_id} #{filepath}")
+          transmission_log.update(
+            transmitted_at: Time.zone.now,
+            filepath: filepath,
+            payload: message.body
+          )
         end
 
         def log_error(err)
           logger.info("err hl7 #{patient.secure_id} #{patient.local_patient_id} #{err&.message}")
+          transmission_log.update(error: err.message)
         end
       end
     end

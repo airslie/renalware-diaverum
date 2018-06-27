@@ -7,7 +7,7 @@ module Renalware
     module Outgoing
       # Find HD Patients dialysing at a particular hospital unit.
       class PatientQuery
-        pattr_initialize :local_patient_id
+        pattr_initialize [:local_patient_id!]
 
         def self.call(*args)
           new(*args).call

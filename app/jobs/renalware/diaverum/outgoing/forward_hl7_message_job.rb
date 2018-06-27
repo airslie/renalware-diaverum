@@ -9,8 +9,12 @@ module Renalware
       class ForwardHl7MessageJob < ::ApplicationJob
         # feed_message is a Renalware::Feeds::Message instance.
         # patient is an Renalware::Patient
-        def perform(feed_message:, patient:)
-          CreateHl7FileFromFeedMessage.new(message: feed_message, patient: patient).call
+        def perform(feed_message:, patient:, transmission_log:)
+          CreateHl7FileFromFeedMessage.new(
+            message: feed_message,
+            patient: patient,
+            transmission_log: transmission_log
+          ).call
         end
       end
     end
