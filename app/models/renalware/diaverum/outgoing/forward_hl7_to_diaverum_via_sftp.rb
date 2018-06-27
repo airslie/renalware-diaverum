@@ -7,7 +7,7 @@ module Renalware
     module Outgoing
       class ForwardHl7ToDiaverumViaSftp
         include Diaverum::Logging
-        pattr_initialize [:transmission!]
+        pattr_initialize :transmission
 
         def call
           save_hl7_file(filename)
@@ -50,7 +50,8 @@ module Renalware
           logger.info("#{type} hl7 #{patient.secure_id} #{patient.local_patient_id} #{filepath}")
           transmission.update(
             transmitted_at: Time.zone.now,
-            filepath: filepath
+            filepath: filepath,
+            error: nil
           )
         end
 

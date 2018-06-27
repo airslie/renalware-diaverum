@@ -8,7 +8,9 @@ module Renalware
       # Forward an HL7 pathology message to Diaverum
       class ForwardHl7Job < ::ApplicationJob
         def perform(transmission:)
-          ForwardHl7ToDiaverumViaSftp.new(transmission: transmission).call
+          # Could use another forwarding method eg Mirth in the future
+          # but for now its just SFTP
+          ForwardHl7ToDiaverumViaSftp.new(transmission).call
         end
       end
     end
