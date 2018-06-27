@@ -18,8 +18,8 @@ module Renalware
           return if local_patient_id.blank?
           patient = find_diaverum_patient(local_patient_id)
           return if patient.blank?
-          # TODO: perform_later
 
+          # TODO
           ForwardHl7Job.perform_now(
             transmission: transmission_for(patient, feed_message)
           )

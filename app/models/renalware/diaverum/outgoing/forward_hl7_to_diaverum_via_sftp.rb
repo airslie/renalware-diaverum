@@ -9,6 +9,10 @@ module Renalware
         include Diaverum::Logging
         pattr_initialize :transmission
 
+        def self.call(transmission)
+          new(transmission).call
+        end
+
         def call
           save_hl7_file(filename)
         rescue StandardError => error
@@ -23,12 +27,17 @@ module Renalware
         end
 
         def patient
-          Renalware::HD::Patient.find(transmission.patient_id)
+          @patient ||= Renalware::HD::Patient.find(transmission.patient_id)
         end
 
         def save_hl7_file(filename)
           create_hl7_file_at(Paths.outgoing.join(filename), :out)
           create_hl7_file_at(Paths.outgoing_archive.join(filename), :arc)
+          transmission.update!(
+            transmitted_at: Time.zone.now,
+            filepath: Paths.outgoing.join(filename),
+            error: nil
+          )
         end
 
         # Write out the HL7 file to a mount from where it will be SFTPed
@@ -38,21 +47,8 @@ module Renalware
           log_file_sent(filepath, type)
         end
 
-        def diaverum_outgoing_path
-          Pathname(Renalware::Diaverum.config.diaverum_outgoing_path)
-        end
-
-        def diaverum_outgoing_archive_path
-          Pathname(Renalware::Diaverum.config.diaverum_outgoing_archive_path)
-        end
-
         def log_file_sent(filepath, type)
           logger.info("#{type} hl7 #{patient.secure_id} #{patient.local_patient_id} #{filepath}")
-          transmission.update(
-            transmitted_at: Time.zone.now,
-            filepath: filepath,
-            error: nil
-          )
         end
 
         def log_error(err)

@@ -8,11 +8,11 @@ module Renalware
       let(:patient) do
         Patient.new(born_on: "01-12-2000", nhs_number: "0123456789", local_patient_id: "kch1")
       end
-      let(:message) { Feeds::Message.new }
+
       let(:time) { Time.zone.parse("11-12-2000 01:02:03") }
 
       describe ".to_s" do
-        subject { described_class.new(patient: patient, message: message).to_s }
+        subject { described_class.new(patient: patient).to_s }
 
         it {
           travel_to(time) do
