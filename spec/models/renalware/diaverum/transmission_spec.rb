@@ -4,12 +4,10 @@ require "rails_helper"
 
 module Renalware
   module Diaverum
-    RSpec.describe TransmissionLog do
+    RSpec.describe Transmission do
       it { is_expected.to belong_to(:dialysis_unit) }
       it { is_expected.to belong_to(:patient) }
-      it { is_expected.to validate_presence_of(:dialysis_unit) }
       it { is_expected.to validate_presence_of(:patient) }
-      it { is_expected.to validate_presence_of(:transmitted_at) }
       it { is_expected.to validate_presence_of(:direction) }
       it { is_expected.to validate_presence_of(:format) }
       it { is_expected.to have_db_index(:patient_id) }

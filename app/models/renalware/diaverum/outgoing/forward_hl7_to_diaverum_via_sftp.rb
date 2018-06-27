@@ -5,13 +5,9 @@ require "attr_extras"
 module Renalware
   module Diaverum
     module Outgoing
-      # At this point we assume the following:
-      # - we have been passed a Feeds::Message and the patient associated with the message
-      # - the patient dialyses at a Diaverum site.
-      # See PathologyListener for that logic
-      class CreateHl7FileFromFeedMessage
+      class ForwardHl7ToDiaverumViaSftp
         include Diaverum::Logging
-        pattr_initialize [:message!, :patient!, :transmission_log!]
+        pattr_initialize [:transmission!]
 
         def call
           save_hl7_file(filename)
@@ -26,13 +22,19 @@ module Renalware
           Hl7Filename.new(patient: patient).to_s
         end
 
+        def patient
+          Renalware::HD::Patient.find(transmission.patient_id)
+        end
+
         def save_hl7_file(filename)
           create_hl7_file_at(Paths.outgoing.join(filename), :out)
           create_hl7_file_at(Paths.outgoing_archive.join(filename), :arc)
         end
 
+        # Write out the HL7 file to a mount from where it will be SFTPed
+        # to Diaverum in Sweden
         def create_hl7_file_at(filepath, type)
-          File.write(filepath, message.body)
+          File.write(filepath, transmission.payload)
           log_file_sent(filepath, type)
         end
 
@@ -46,16 +48,15 @@ module Renalware
 
         def log_file_sent(filepath, type)
           logger.info("#{type} hl7 #{patient.secure_id} #{patient.local_patient_id} #{filepath}")
-          transmission_log.update(
+          transmission.update(
             transmitted_at: Time.zone.now,
-            filepath: filepath,
-            payload: message.body
+            filepath: filepath
           )
         end
 
         def log_error(err)
           logger.info("err hl7 #{patient.secure_id} #{patient.local_patient_id} #{err&.message}")
-          transmission_log.update(error: err.message)
+          transmission.update(error: err.message)
         end
       end
     end

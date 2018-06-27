@@ -20,10 +20,8 @@ module Renalware
           return if patient.blank?
           # TODO: perform_later
 
-          ForwardHl7MessageJob.perform_now(
-            feed_message: feed_message,
-            patient: patient,
-            transmission_log: transmission_log(patient)
+          ForwardHl7Job.perform_now(
+            transmission: transmission_for(patient, feed_message)
           )
         end
 
@@ -33,11 +31,13 @@ module Renalware
           PatientQuery.new(local_patient_id: local_patient_id).call
         end
 
-        def transmission_log(patient)
-          TransmissionLog.create!(
+        def transmission_for(patient, feed_message)
+          Transmission.create!(
             patient: patient,
+            dialysis_unit: nil, # TODO: lookup
             direction: :out,
-            format: :hl7
+            format: :hl7,
+            payload: feed_message.body
           )
         end
       end

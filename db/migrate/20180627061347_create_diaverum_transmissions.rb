@@ -1,6 +1,6 @@
-class CreateDiaverumTransmissionLogs < ActiveRecord::Migration[5.1]
+class CreateDiaverumTransmissions < ActiveRecord::Migration[5.1]
   def change
-    create_table :"renalware_diaverum.transmission_logs" do |t|
+    create_table :"renalware_diaverum.transmissions" do |t|
       t.string :direction, null: false, index: true
       t.string :format, null: false, index: true
       t.references(

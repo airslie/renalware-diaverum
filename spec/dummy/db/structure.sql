@@ -5581,7 +5581,7 @@ CREATE VIEW reporting_anaemia_audit AS
           WHERE (e2.hgb >= (13)::numeric)) e6 ON (true))
      LEFT JOIN LATERAL ( SELECT e3.fer AS fer_gt_eq_150
           WHERE (e3.fer >= (150)::numeric)) e7 ON (true))
-  WHERE ((e1.modality_desc)::text = ANY (ARRAY[('HD'::character varying)::text, ('PD'::character varying)::text, ('Transplant'::character varying)::text, ('Low Clearance'::character varying)::text, ('Nephrology'::character varying)::text]))
+  WHERE ((e1.modality_desc)::text = ANY ((ARRAY['HD'::character varying, 'PD'::character varying, 'Transplant'::character varying, 'Low Clearance'::character varying, 'Nephrology'::character varying])::text[]))
   GROUP BY e1.modality_desc;
 
 
@@ -5660,7 +5660,7 @@ CREATE VIEW reporting_bone_audit AS
           WHERE (e2.pth > (300)::numeric)) e7 ON (true))
      LEFT JOIN LATERAL ( SELECT e4.cca AS cca_2_1_to_2_4
           WHERE ((e4.cca >= 2.1) AND (e4.cca <= 2.4))) e8 ON (true))
-  WHERE ((e1.modality_desc)::text = ANY (ARRAY[('HD'::character varying)::text, ('PD'::character varying)::text, ('Transplant'::character varying)::text, ('Low Clearance'::character varying)::text]))
+  WHERE ((e1.modality_desc)::text = ANY ((ARRAY['HD'::character varying, 'PD'::character varying, 'Transplant'::character varying, 'Low Clearance'::character varying])::text[]))
   GROUP BY e1.modality_desc;
 
 
@@ -7100,10 +7100,10 @@ ALTER SEQUENCE dialysis_units_id_seq OWNED BY dialysis_units.id;
 
 
 --
--- Name: transmission_logs; Type: TABLE; Schema: renalware_diaverum; Owner: -
+-- Name: transmissions; Type: TABLE; Schema: renalware_diaverum; Owner: -
 --
 
-CREATE TABLE transmission_logs (
+CREATE TABLE transmissions (
     id bigint NOT NULL,
     direction character varying NOT NULL,
     format character varying NOT NULL,
@@ -7119,10 +7119,10 @@ CREATE TABLE transmission_logs (
 
 
 --
--- Name: transmission_logs_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
+-- Name: transmissions_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
 --
 
-CREATE SEQUENCE transmission_logs_id_seq
+CREATE SEQUENCE transmissions_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -7131,10 +7131,10 @@ CREATE SEQUENCE transmission_logs_id_seq
 
 
 --
--- Name: transmission_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
+-- Name: transmissions_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
 --
 
-ALTER SEQUENCE transmission_logs_id_seq OWNED BY transmission_logs.id;
+ALTER SEQUENCE transmissions_id_seq OWNED BY transmissions.id;
 
 
 SET search_path = renalware, pg_catalog;
@@ -8241,10 +8241,10 @@ ALTER TABLE ONLY dialysis_units ALTER COLUMN id SET DEFAULT nextval('dialysis_un
 
 
 --
--- Name: transmission_logs id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
+-- Name: transmissions id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
 --
 
-ALTER TABLE ONLY transmission_logs ALTER COLUMN id SET DEFAULT nextval('transmission_logs_id_seq'::regclass);
+ALTER TABLE ONLY transmissions ALTER COLUMN id SET DEFAULT nextval('transmissions_id_seq'::regclass);
 
 
 SET search_path = public, pg_catalog;
@@ -9534,11 +9534,11 @@ ALTER TABLE ONLY dialysis_units
 
 
 --
--- Name: transmission_logs transmission_logs_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
+-- Name: transmissions transmissions_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
 --
 
-ALTER TABLE ONLY transmission_logs
-    ADD CONSTRAINT transmission_logs_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY transmissions
+    ADD CONSTRAINT transmissions_pkey PRIMARY KEY (id);
 
 
 SET search_path = renalware, pg_catalog;
@@ -12640,38 +12640,38 @@ CREATE INDEX "index_renalware_diaverum.dialysis_units_on_hospital_unit_id" ON di
 
 
 --
--- Name: index_renalware_diaverum.transmission_logs_on_dialysis_unit_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
+-- Name: index_renalware_diaverum.transmissions_on_dialysis_unit_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
 --
 
-CREATE INDEX "index_renalware_diaverum.transmission_logs_on_dialysis_unit_id" ON transmission_logs USING btree (dialysis_unit_id);
-
-
---
--- Name: index_renalware_diaverum.transmission_logs_on_direction; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX "index_renalware_diaverum.transmission_logs_on_direction" ON transmission_logs USING btree (direction);
+CREATE INDEX "index_renalware_diaverum.transmissions_on_dialysis_unit_id" ON transmissions USING btree (dialysis_unit_id);
 
 
 --
--- Name: index_renalware_diaverum.transmission_logs_on_format; Type: INDEX; Schema: renalware_diaverum; Owner: -
+-- Name: index_renalware_diaverum.transmissions_on_direction; Type: INDEX; Schema: renalware_diaverum; Owner: -
 --
 
-CREATE INDEX "index_renalware_diaverum.transmission_logs_on_format" ON transmission_logs USING btree (format);
-
-
---
--- Name: index_renalware_diaverum.transmission_logs_on_patient_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX "index_renalware_diaverum.transmission_logs_on_patient_id" ON transmission_logs USING btree (patient_id);
+CREATE INDEX "index_renalware_diaverum.transmissions_on_direction" ON transmissions USING btree (direction);
 
 
 --
--- Name: index_renalware_diaverum.transmission_logs_on_transmitted_at; Type: INDEX; Schema: renalware_diaverum; Owner: -
+-- Name: index_renalware_diaverum.transmissions_on_format; Type: INDEX; Schema: renalware_diaverum; Owner: -
 --
 
-CREATE INDEX "index_renalware_diaverum.transmission_logs_on_transmitted_at" ON transmission_logs USING btree (transmitted_at);
+CREATE INDEX "index_renalware_diaverum.transmissions_on_format" ON transmissions USING btree (format);
+
+
+--
+-- Name: index_renalware_diaverum.transmissions_on_patient_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE INDEX "index_renalware_diaverum.transmissions_on_patient_id" ON transmissions USING btree (patient_id);
+
+
+--
+-- Name: index_renalware_diaverum.transmissions_on_transmitted_at; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE INDEX "index_renalware_diaverum.transmissions_on_transmitted_at" ON transmissions USING btree (transmitted_at);
 
 
 SET search_path = renalware, pg_catalog;
@@ -14836,19 +14836,19 @@ ALTER TABLE ONLY transplant_registration_statuses
 SET search_path = renalware_diaverum, pg_catalog;
 
 --
--- Name: transmission_logs fk_rails_13d11be530; Type: FK CONSTRAINT; Schema: renalware_diaverum; Owner: -
+-- Name: transmissions fk_rails_0aaea2bbc7; Type: FK CONSTRAINT; Schema: renalware_diaverum; Owner: -
 --
 
-ALTER TABLE ONLY transmission_logs
-    ADD CONSTRAINT fk_rails_13d11be530 FOREIGN KEY (dialysis_unit_id) REFERENCES dialysis_units(id);
+ALTER TABLE ONLY transmissions
+    ADD CONSTRAINT fk_rails_0aaea2bbc7 FOREIGN KEY (dialysis_unit_id) REFERENCES dialysis_units(id);
 
 
 --
--- Name: transmission_logs fk_rails_76b124d0c5; Type: FK CONSTRAINT; Schema: renalware_diaverum; Owner: -
+-- Name: transmissions fk_rails_7ca8b821fb; Type: FK CONSTRAINT; Schema: renalware_diaverum; Owner: -
 --
 
-ALTER TABLE ONLY transmission_logs
-    ADD CONSTRAINT fk_rails_76b124d0c5 FOREIGN KEY (patient_id) REFERENCES renalware.patients(id);
+ALTER TABLE ONLY transmissions
+    ADD CONSTRAINT fk_rails_7ca8b821fb FOREIGN KEY (patient_id) REFERENCES renalware.patients(id);
 
 
 --
