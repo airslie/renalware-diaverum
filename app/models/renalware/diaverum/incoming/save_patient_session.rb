@@ -49,7 +49,7 @@ module Renalware
           pre.blood_pressure.diastolic = session_node.DiastolicBloodPressurePre
           pre.weight_measured = :yes
           pre.weight = session_node.WeightPre
-          pre.temperature_measured = :yes
+          pre.temperature_measured = session_node.TemperaturePre.present? ? :yes : :no
           pre.temperature = session_node.TemperaturePre
 
           post = session.document.observations_after
@@ -58,14 +58,14 @@ module Renalware
           post.blood_pressure.diastolic = session_node.DiastolicBloodPressurePost
           post.weight_measured = :yes
           post.weight = session_node.WeightPost
-          post.temperature_measured = :yes
+          post.temperature_measured = session_node.TemperaturePost..present? ? :yes : :no
           post.temperature = session_node.TemperaturePost
 
           unless session.valid?
-            p session.document.observations_before.errors
-            p session.document.observations_after.errors
-            p session.document.dialysis.errors
-            p session.document.info.errors
+            p [
+              session.errors.full_messages,
+              session.document.error_messages,
+            ].flatten.compact
           end
 
           session.save!
@@ -98,7 +98,13 @@ module Renalware
         end
 
         def access_type
-          Renalware::Accesses::Type.find_by!(name: session_node.AccessTypeDescription)
+          args = {
+            diaverum_location: session_node.AccessLocationId,
+            diaverum_type: session_node.AccessTypeId
+          }
+          AccessMap.for(args).access_type
+          rescue ActiveRecord::RecordNotFound => e
+            raise AccesMapError, args
         end
 
         def user

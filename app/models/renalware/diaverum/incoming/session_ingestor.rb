@@ -31,9 +31,9 @@ module Renalware
               FileUtils.mv filepath, Paths.archive.join(filename)
               log_msg += "OK"
             rescue StandardError => ex
-              transmission.update!(error: ex.message)
-              handle_ingest_error(filepath, ex)
+              handle_ingest_error(filepath, ex, transmission)
               log_msg += "FAIL"
+              raise ex
 
               # Engine.exception_notifier.notify(exception)
               next
@@ -54,9 +54,11 @@ module Renalware
         end
 
         def handle_ingest_error(filepath, exception, transmission)
-          move_failed_xml_to_error_folder(filepath)
-          create_error_file_in_error_folder(filepath, exception)
-          transmission
+          if filepath.present?
+            move_failed_xml_to_error_folder(filepath)
+            create_error_file_in_error_folder(filepath, exception)
+          end
+          transmission.update!(error: "#{exception.cause} #{exception.message}")
         end
 
         def move_failed_xml_to_error_folder(filepath)
@@ -66,7 +68,7 @@ module Renalware
         def create_error_file_in_error_folder(filepath, exception)
           filename = File.basename(filepath)
           msg = "#{exception.class}: #{exception.message}:\n\t#{exception.backtrace.join("\n\t")}"
-          File.write(Paths.error.join("#{filename}.log"), msg)
+          File.write(Paths.incoming_error.join("#{filename}.log"), msg)
         end
       end
     end

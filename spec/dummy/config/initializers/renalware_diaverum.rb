@@ -9,9 +9,11 @@ Renalware::Diaverum.configure do |config|
   config.diaverum_outgoing_archive_path = Rails.root.join("tmp", "diaverum", "out_archive")
   config.diaverum_incoming_path = Rails.root.join("tmp", "diaverum", "in")
   config.diaverum_incoming_archive_path = Rails.root.join("tmp", "diaverum", "in_archive")
+  config.diaverum_incoming_error_path = Rails.root.join("tmp", "diaverum", "in_error")
 
   FileUtils.mkdir_p config.diaverum_outgoing_path
   FileUtils.mkdir_p config.diaverum_outgoing_archive_path
   FileUtils.mkdir_p config.diaverum_incoming_path
   FileUtils.mkdir_p config.diaverum_incoming_archive_path
+  FileUtils.mkdir_p config.diaverum_incoming_error_path
 end

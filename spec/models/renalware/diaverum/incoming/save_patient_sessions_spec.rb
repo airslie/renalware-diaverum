@@ -10,6 +10,12 @@ module Renalware
         let(:patient) { create(:hd_patient, local_patient_id: "KCH123", nhs_number: "0123456789") }
         let(:hospital_unit) { create(:hospital_unit) }
         let(:dialysate) { create(:hd_dialysate) }
+        let(:dialysis_unit) do
+          DialysisUnit.create!(
+            hospital_unit: hospital_unit,
+            diaverum_clinic_id: "123"
+          )
+        end
 
         def create_xml_file_from_fixture(fixture_name)
           fixture = file_fixture("diaverum_#{fixture_name}.xml.erb")
@@ -52,12 +58,19 @@ module Renalware
 
             it "creates a new HD session for each session in the file" do
               system_user
-              p dialysate.id
               payload = PatientXmlDocument.new(doc)
               create_xml_file_from_fixture(:example)
+              transmission = nil
+
+              # Make sure we can map the access location and type in the XML to a RW access type
+              AccessMap.create!(
+                diaverum_location_id: "LEJ",
+                diaverum_type_id: 7,
+                access_type: create(:access_type)
+              )
 
               expect{
-                SavePatientSessions.new(payload).call
+                SavePatientSessions.new(payload, transmission).call
               }.to change(patient.hd_sessions.open, :count).by(2)
             end
           end

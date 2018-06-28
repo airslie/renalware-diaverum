@@ -33,7 +33,7 @@ but in this case has 2 sessions
         <TreatmentId>44183785</TreatmentId>
         <Deleted>0</Deleted>
         <Date>2018-05-10</Date>
-        <ClinicId>1808</ClinicId>
+        <ClinicId><%= dialysis_unit.diaverum_clinic_id %></ClinicId>
         <ClinicName><%= hospital_unit.name %></ClinicName>
         <StartTime>13:45</StartTime>
         <EndTime>17:45</EndTime>
@@ -84,14 +84,14 @@ but in this case has 2 sessions
         <TreatmentId>44220967</TreatmentId>
         <Deleted>0</Deleted>
         <Date>2018-05-12</Date>
-        <ClinicId>1808</ClinicId>
+        <ClinicId><%= dialysis_unit.diaverum_clinic_id %></ClinicId>
         <ClinicName>Darlington</ClinicName>
         <StartTime>13:15</StartTime>
         <EndTime>17:15</EndTime>
         <Dialyzer>Elisio-21H-G</Dialyzer>
         <DialyzerArea>2.1</DialyzerArea>
         <DialyzerK0A>1976</DialyzerK0A>
-        <Dialysate>SoftPac C298 3.5L</Dialysate>
+        <Dialysate><%= dialysate.name %></Dialysate>
         <DialysateBicarb></DialysateBicarb>
         <DialysateCalcium>1.25</DialysateCalcium>
         <DialysateGlucose>1</DialysateGlucose>
@@ -104,9 +104,9 @@ but in this case has 2 sessions
         <SystolicBloodPressurePost>162</SystolicBloodPressurePost>
         <DiastolicBloodPressurePost>74</DiastolicBloodPressurePost>
         <Bloodflow>286</Bloodflow>
-        <DialysateFlow></DialysateFlow>
+        <DialysateFlow>123</DialysateFlow>
         <RemovedVolume>0.4</RemovedVolume>
-        <InfusionVolume></InfusionVolume>
+        <InfusionVolume>123</InfusionVolume>
         <UltrafiltrationVolume>0.2</UltrafiltrationVolume>
         <IsolatedUltrafiltrationVolume></IsolatedUltrafiltrationVolume>
         <TreatedBloodVolume>66.4</TreatedBloodVolume>
