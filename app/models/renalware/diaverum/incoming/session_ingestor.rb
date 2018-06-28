@@ -39,7 +39,6 @@ module Renalware
               next
             ensure
               puts log_msg
-
             end
           end
         rescue StandardError => exception

@@ -30,15 +30,8 @@ module Renalware
 
           info = session.document.info
           info.hd_type = :hd
-          info.access_confirmed = true
-          info.access_type = access_type
-          info.access_type_abbreviation = "AVG"
-          info.access_side = :left
-          info.is_access_first_use = false
-          # info.fistula_plus_line
-          # info.single_needle
-          # info.lines_reversed
           info.machine_no = session_node.MachineIdentifier
+          build_access(info)
 
           dialysis = session.document.dialysis
           dialysis.arterial_pressure = session_node.ArterialPressure
@@ -79,6 +72,13 @@ module Renalware
         end
 
         private
+
+        def build_access(info)
+          info.access_confirmed = true
+          info.access_type = access_type
+          info.access_type_abbreviation = "AVG"
+          info.access_side = :left
+        end
 
         # Returns an existing session or a new one if not found
         def existing_session(external_id)

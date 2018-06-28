@@ -5581,7 +5581,7 @@ CREATE VIEW reporting_anaemia_audit AS
           WHERE (e2.hgb >= (13)::numeric)) e6 ON (true))
      LEFT JOIN LATERAL ( SELECT e3.fer AS fer_gt_eq_150
           WHERE (e3.fer >= (150)::numeric)) e7 ON (true))
-  WHERE ((e1.modality_desc)::text = ANY (ARRAY[('HD'::character varying)::text, ('PD'::character varying)::text, ('Transplant'::character varying)::text, ('Low Clearance'::character varying)::text, ('Nephrology'::character varying)::text]))
+  WHERE ((e1.modality_desc)::text = ANY ((ARRAY['HD'::character varying, 'PD'::character varying, 'Transplant'::character varying, 'Low Clearance'::character varying, 'Nephrology'::character varying])::text[]))
   GROUP BY e1.modality_desc;
 
 
@@ -5660,7 +5660,7 @@ CREATE VIEW reporting_bone_audit AS
           WHERE (e2.pth > (300)::numeric)) e7 ON (true))
      LEFT JOIN LATERAL ( SELECT e4.cca AS cca_2_1_to_2_4
           WHERE ((e4.cca >= 2.1) AND (e4.cca <= 2.4))) e8 ON (true))
-  WHERE ((e1.modality_desc)::text = ANY (ARRAY[('HD'::character varying)::text, ('PD'::character varying)::text, ('Transplant'::character varying)::text, ('Low Clearance'::character varying)::text]))
+  WHERE ((e1.modality_desc)::text = ANY ((ARRAY['HD'::character varying, 'PD'::character varying, 'Transplant'::character varying, 'Low Clearance'::character varying])::text[]))
   GROUP BY e1.modality_desc;
 
 
@@ -7069,6 +7069,38 @@ ALTER SEQUENCE virology_versions_id_seq OWNED BY virology_versions.id;
 SET search_path = renalware_diaverum, pg_catalog;
 
 --
+-- Name: access_maps; Type: TABLE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE TABLE access_maps (
+    id bigint NOT NULL,
+    diaverum_location_id character varying NOT NULL,
+    diaverum_type_id character varying NOT NULL,
+    side character varying,
+    access_type_id integer NOT NULL
+);
+
+
+--
+-- Name: access_maps_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE SEQUENCE access_maps_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: access_maps_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER SEQUENCE access_maps_id_seq OWNED BY access_maps.id;
+
+
+--
 -- Name: dialysis_units; Type: TABLE; Schema: renalware_diaverum; Owner: -
 --
 
@@ -8233,6 +8265,13 @@ ALTER TABLE ONLY virology_versions ALTER COLUMN id SET DEFAULT nextval('virology
 
 
 SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: access_maps id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY access_maps ALTER COLUMN id SET DEFAULT nextval('access_maps_id_seq'::regclass);
+
 
 --
 -- Name: dialysis_units id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
@@ -9525,6 +9564,14 @@ ALTER TABLE ONLY virology_versions
 
 
 SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: access_maps access_maps_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY access_maps
+    ADD CONSTRAINT access_maps_pkey PRIMARY KEY (id);
+
 
 --
 -- Name: dialysis_units dialysis_units_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
@@ -12675,6 +12722,13 @@ CREATE INDEX "index_renalware_diaverum.transmissions_on_patient_id" ON transmiss
 CREATE INDEX "index_renalware_diaverum.transmissions_on_transmitted_at" ON transmissions USING btree (transmitted_at);
 
 
+--
+-- Name: renalware_diaverum_access_maps_idx; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE UNIQUE INDEX renalware_diaverum_access_maps_idx ON access_maps USING btree (diaverum_location_id, diaverum_type_id);
+
+
 SET search_path = renalware, pg_catalog;
 
 --
@@ -15253,6 +15307,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20180622130552'),
 ('20180625124431'),
 ('20180625150755'),
-('20180627061347');
+('20180627061347'),
+('20180627155720');
 
 
