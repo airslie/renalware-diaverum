@@ -7,7 +7,7 @@ source "https://rails-assets.org"
 
 gemspec
 
-gem "dotenv-rails", "2.4.0"
+gem "dotenv-rails", "~> 2.5.0"
 # gem "renalware-core", path: "../renalwarev2"
 gem "renalware-core",
     git: "https://github.com/airslie/renalware-core.git",
