@@ -33,6 +33,8 @@ module Renalware
 
         context "when there are 2 xml files waiting in the folder" do
           it "delegates work to the service object for each file, and logs the filenames" do
+            pending
+
             Dir.mktmpdir do |dir|
               ENV["DIAVERUM_FOLDER"] = dir
               dir = Pathname(dir)
@@ -59,6 +61,8 @@ module Renalware
 
           context "when the processing of a file raises an error and cannot be ingested" do
             it "is moved to the error folder" do
+              pending
+
               Dir.mktmpdir do |dir|
                 ENV["DIAVERUM_FOLDER"] = dir
                 dir = Pathname(dir)

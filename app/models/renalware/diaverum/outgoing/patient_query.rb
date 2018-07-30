@@ -18,7 +18,7 @@ module Renalware
         def call
           HD::Patient
             .joins(:hd_profile)
-            .where(hospital_unit_id: diaverum_hospital_unit_ids)
+            .where("hd_profiles.hospital_unit_id in (?)", diaverum_hospital_unit_ids)
             .extending(Renalware::ModalityScopes)
             .with_current_modality_matching("HD")
             .find_by(local_patient_id: local_patient_id)
@@ -26,10 +26,13 @@ module Renalware
 
         private
 
+        # Get ids of all hospitral units that are configured to be be unit where
+        # Diaverum HD machines are used.
         def diaverum_hospital_unit_ids
           hospital_unit_ids = HD::ProviderUnit.all
             .joins(:hd_provider)
-            .where("hd_providers.name ilike ?", "%Diaverum%").map(&:id)
+            .where("hd_providers.name ilike ?", "%Diaverum%")
+            .map(&:hospital_unit_id)
           Hospitals::Unit.where(id: hospital_unit_ids).pluck(:id)
         end
       end

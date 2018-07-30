@@ -65,7 +65,10 @@ module Renalware
                 create(:hd_profile, patient: patient, hospital_unit: hospital_unit)
 
                 # Associate the hosp unit with the Diavarum provider via ProviderUnit
-                HD::ProviderUnit.create!(hospital_unit: hospital_unit, hd_provider: provider)
+                HD::ProviderUnit.create!(
+                  hospital_unit: hospital_unit,
+                  hd_provider: provider
+                )
               end
 
               it { is_expected.to eq(patient) }
