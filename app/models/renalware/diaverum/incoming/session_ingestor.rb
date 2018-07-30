@@ -29,7 +29,7 @@ module Renalware
               )
               Diaverum::Incoming::SavePatientSessions.call(filepath, transmission_log)
               FileUtils.mv filepath, Paths.incoming_archive.join(filename)
-              log_msg += "OK"
+              log_msg += "DONE"
             rescue StandardError => ex
               handle_ingest_error(filepath, ex, transmission_log)
               log_msg += "FAIL"

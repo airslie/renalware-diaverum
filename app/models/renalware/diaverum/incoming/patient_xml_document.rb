@@ -23,7 +23,7 @@ module Renalware
         end
 
         def patient_node
-          @patient_node ||= node.root.xpath("Patient").first
+          @patient_node ||= node.root.xpath("/Patients/Patient").first
         end
 
         def nhs_number
@@ -37,7 +37,7 @@ module Renalware
         end
 
         def each_session
-          patient_node.xpath("Treatments/Treatment").each do |node|
+          patient_node.xpath("/Patients/Patient/Treatments/Treatment").each do |node|
             yield SessionXmlDocument.new(node) if block_given?
           end
         end
