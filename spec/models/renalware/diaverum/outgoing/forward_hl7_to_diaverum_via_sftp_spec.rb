@@ -17,11 +17,11 @@ module Renalware
         )
       end
       let(:transmission) do
-        Transmission.create!(
+        HD::TransmissionLog.create!(
           direction: :out,
           format: :hl7,
           payload: "MSH..",
-          patient: patient
+          patient_id: patient.id
         )
       end
 

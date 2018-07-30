@@ -17,7 +17,7 @@ module Renalware
         def local_patient_id
           @local_patient_id ||= begin
             id = patient_node.xpath("HospitalNumber")&.text
-            raise(DiaverumXMLParsingError, "HospitalNumber not present") if id.blank?
+            raise(Errors::DiaverumXMLParsingError, "HospitalNumber not present") if id.blank?
             id
           end
         end
@@ -30,7 +30,7 @@ module Renalware
           @nhs_number ||= begin
             num = patient_node.xpath("ExternalPatientId")&.text
             if num.blank?
-              raise(DiaverumXMLParsingError, "ExternalPatientId (NHS Number) not present")
+              raise(Errors::DiaverumXMLParsingError, "ExternalPatientId (NHS Number) not present")
             end
             num
           end
@@ -46,10 +46,10 @@ module Renalware
 
         def validate
           if node.root.name != "Patients"
-            raise(DiaverumXMLParsingError, "Unexpected root element #{node.root.name}")
+            raise(Errors::DiaverumXMLParsingError, "Unexpected root element #{node.root.name}")
           end
           if node.xpath("Patients/Patient").length != 1
-            raise(DiaverumXMLParsingError, "File does not contain exactly one Patient element!")
+            raise(Errors::DiaverumXMLParsingError, "File does not contain exactly one Patient element!")
           end
         end
       end

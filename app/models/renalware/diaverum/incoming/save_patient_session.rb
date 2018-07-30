@@ -7,10 +7,10 @@ module Renalware
     module Incoming
       class SavePatientSession
         include Diaverum::Logging
-        pattr_initialize :patient, :session_node
+        pattr_initialize :patient, :session_node, :transmission_log
 
         def call
-          session = existing_session(session_node.TreatmentId)
+          transmission_log.update!(payload: session_node.to_xml)
 
           session = Renalware::HD::Session::Closed.new(
             patient: patient,
@@ -58,17 +58,21 @@ module Renalware
           post.blood_pressure.diastolic = session_node.DiastolicBloodPressurePost
           post.weight_measured = :yes
           post.weight = session_node.WeightPost
-          post.temperature_measured = session_node.TemperaturePost..present? ? :yes : :no
+          post.temperature_measured = session_node.TemperaturePost.present? ? :yes : :no
           post.temperature = session_node.TemperaturePost
 
-          unless session.valid?
-            p [
-              session.errors.full_messages,
-              session.document.error_messages,
+          begin
+            session.save!
+          rescue ActiveRecord::RecordInvalid => e
+            error_messages = [
+              session.errors&.full_messages,
+              session.document.error_messages
             ].flatten.compact
-          end
 
-          session.save!
+            transmission_log.update!(error_messages: error_messages)
+
+            raise Errors::SessionInvalidError, error_messages
+          end
         end
 
         private
@@ -90,7 +94,7 @@ module Renalware
         end
 
         def dialysis_unit
-          DialysisUnit.find_by!(diaverum_clinic_id: session_node.ClinicId)
+          HD::ProviderUnit.find_by!(providers_reference: session_node.ClinicId)
         end
 
         def dialysate

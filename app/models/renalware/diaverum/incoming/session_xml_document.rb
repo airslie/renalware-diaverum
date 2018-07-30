@@ -19,6 +19,10 @@ module Renalware
             super(method, *args, block)
           end
         end
+
+        def to_xml
+          node.to_xml(indent: 2)
+        end
       end
     end
   end

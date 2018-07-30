@@ -5,6 +5,7 @@ class CreateAccessMapping < ActiveRecord::Migration[5.1]
       t.string :diaverum_type_id, null: false
       t.string :side
       t.integer :access_type_id, null: false
+      t.timestamps null: false
     end
 
     add_index(

@@ -13,7 +13,7 @@ module Renalware
           it "raises an error" do
             expect{
               AccessMap.for(diaverum_location: nil, diaverum_type: nil)
-            }.to raise_error(ActiveRecord::RecordNotFound)
+            }.to raise_error(Errors::AccessMapError)
           end
         end
 

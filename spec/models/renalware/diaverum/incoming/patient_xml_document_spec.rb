@@ -12,20 +12,20 @@ module Renalware
           context "when the root element is not 'Patients'" do
             let(:xml) { Nokogiri::XML("<Fish></Fish>") }
 
-            it { expect{ subject }.to raise_error(DiaverumXMLParsingError) }
+            it { expect{ subject }.to raise_error(Errors::DiaverumXMLParsingError) }
           end
         end
 
         context "when there are no Patient elements" do
           let(:xml) { Nokogiri::XML("<Patients></Patients>") }
 
-          it { expect{ subject }.to raise_error(DiaverumXMLParsingError) }
+          it { expect{ subject }.to raise_error(Errors::DiaverumXMLParsingError) }
         end
 
         context "when there are > 1 Patient elements" do
           let(:xml) { Nokogiri::XML("<Patients><Patient/><Patient/></Patients>") }
 
-          it { expect{ subject }.to raise_error(DiaverumXMLParsingError) }
+          it { expect{ subject }.to raise_error(Errors::DiaverumXMLParsingError) }
         end
 
         context "when there is 1 Patient element" do

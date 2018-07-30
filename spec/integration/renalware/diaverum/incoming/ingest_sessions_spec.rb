@@ -5,7 +5,6 @@ require "rails_helper"
 module Renalware
   module Diaverum
     module Incoming
-      # RSpec.describe "Ingest HD Sessions from Diaverum using a rake task ", type: :feature do
       describe "rake diaverum:ingest", type: :task do
         let(:logger) { SessionIngestor.new.logger }
         before do

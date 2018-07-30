@@ -36,7 +36,7 @@ module Renalware
           transmission.update!(
             transmitted_at: Time.zone.now,
             filepath: Paths.outgoing.join(filename),
-            error: nil
+            error_messages: []
           )
         end
 
@@ -53,7 +53,7 @@ module Renalware
 
         def log_error(err)
           logger.info("err hl7 #{patient.secure_id} #{patient.local_patient_id} #{err&.message}")
-          transmission.update(error: "#{ex.cause.to_s} #{ex.message}")
+          transmission.update(error_messages: ["#{err.cause.to_s} #{err.message}"])
         end
       end
     end
