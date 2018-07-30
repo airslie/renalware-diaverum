@@ -2678,7 +2678,8 @@ CREATE TABLE hd_transmission_logs (
     error_messages text[] DEFAULT '{}'::text[],
     transmitted_at timestamp without time zone,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    external_session_id character varying
 );
 
 
@@ -15446,6 +15447,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20180702091237'),
 ('20180702091352'),
 ('20180712143314'),
-('20180718172750');
+('20180718172750'),
+('20180730154454');
 
 

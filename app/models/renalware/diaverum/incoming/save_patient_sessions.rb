@@ -19,11 +19,13 @@ module Renalware
 
         def call
           patient_node.each_session do |session_node|
+            patient = find_patient
+            transmission_log.patient = patient
+            child_log = create_child_transmission_log
             begin
-              child_log = create_child_transmission_log
               SavePatientSession.new(patient, session_node, child_log).call
             rescue Errors::SessionInvalidError => e
-              # Do nothung as already logged in SavePatientSession in child_log.
+              # Do nothing as already logged in SavePatientSession in child_log.
               # Move onto try importing the next session
             end
           end
@@ -33,17 +35,15 @@ module Renalware
 
         def create_child_transmission_log
           HD::TransmissionLog.create!(
-            direction: :incoming,
+            direction: :in,
             format: :xml,
             parent_id: transmission_log.id
           )
         end
 
         # Raises an exception if the patient is not found
-        def patient
-          @patient ||= begin
-            Renalware::HD::Patient.find_by!(local_patient_id: patient_node.local_patient_id)
-          end
+        def find_patient
+          Renalware::HD::Patient.find_by!(local_patient_id: patient_node.local_patient_id)
         end
       end
     end

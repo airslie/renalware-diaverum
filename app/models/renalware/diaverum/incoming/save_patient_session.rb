@@ -10,66 +10,78 @@ module Renalware
         pattr_initialize :patient, :session_node, :transmission_log
 
         def call
-          transmission_log.update!(payload: session_node.to_xml)
-
-          session = Renalware::HD::Session::Closed.new(
-            patient: patient,
-            hospital_unit: hospital_unit,
-            performed_on: session_node.Date,
-            start_time: session_node.StartTime,
-            end_time: session_node.EndTime,
-            notes: session_node.Notes,
-            created_by: user,
-            updated_by: user,
-            signed_on_by: user,
-            signed_off_by: user,
-            signed_off_at: Time.zone.parse("#{session_node.Date} #{session_node.EndTime}"),
-            dry_weight: most_recent_dry_weight,
-            dialysate: dialysate
+          transmission_log.update!(
+            payload: session_node.to_xml,
+            external_session_id: session_node.TreatmentId
           )
 
-          info = session.document.info
-          info.hd_type = :hd
-          info.machine_no = session_node.MachineIdentifier
-          build_access(info)
+          begin
+            session = Renalware::HD::Session::Closed.new(
+              patient: patient,
+              hospital_unit: hospital_unit,
+              performed_on: session_node.Date,
+              start_time: session_node.StartTime,
+              end_time: session_node.EndTime,
+              notes: session_node.Notes,
+              created_by: user,
+              updated_by: user,
+              signed_on_by: user,
+              signed_off_by: user,
+              signed_off_at: Time.zone.parse("#{session_node.Date} #{session_node.EndTime}"),
+              dry_weight: most_recent_dry_weight,
+              dialysate: dialysate
+            )
 
-          dialysis = session.document.dialysis
-          dialysis.arterial_pressure = session_node.ArterialPressure
-          dialysis.venous_pressure = session_node.VenousPressure
-          dialysis.fluid_removed = session_node.RemovedVolume
-          dialysis.blood_flow = session_node.Bloodflow
-          dialysis.flow_rate = session_node.DialysateFlow
-          dialysis.machine_urr = nil
-          dialysis.machine_ktv = session_node.KTV
-          dialysis.litres_processed = session_node.InfusionVolume
+            info = session.document.info
+            info.hd_type = :hd
+            info.machine_no = session_node.MachineIdentifier
+            build_access(info)
 
-          pre = session.document.observations_before
-          pre.pulse = session_node.PulsePre
-          pre.blood_pressure.systolic = session_node.SystolicBloodPressurePre
-          pre.blood_pressure.diastolic = session_node.DiastolicBloodPressurePre
-          pre.weight_measured = :yes
-          pre.weight = session_node.WeightPre
-          pre.temperature_measured = session_node.TemperaturePre.present? ? :yes : :no
-          pre.temperature = session_node.TemperaturePre
+            dialysis = session.document.dialysis
+            dialysis.arterial_pressure = session_node.ArterialPressure
+            dialysis.venous_pressure = session_node.VenousPressure
+            dialysis.fluid_removed = session_node.RemovedVolume
+            dialysis.blood_flow = session_node.Bloodflow
+            dialysis.flow_rate = session_node.DialysateFlow
+            dialysis.machine_urr = nil
+            dialysis.machine_ktv = session_node.KTV
+            dialysis.litres_processed = session_node.InfusionVolume
 
-          post = session.document.observations_after
-          post.pulse = session_node.PulsePost
-          post.blood_pressure.systolic = session_node.SystolicBloodPressurePost
-          post.blood_pressure.diastolic = session_node.DiastolicBloodPressurePost
-          post.weight_measured = :yes
-          post.weight = session_node.WeightPost
-          post.temperature_measured = session_node.TemperaturePost.present? ? :yes : :no
-          post.temperature = session_node.TemperaturePost
+            pre = session.document.observations_before
+            pre.pulse = session_node.PulsePre
+            pre.blood_pressure.systolic = session_node.SystolicBloodPressurePre
+            pre.blood_pressure.diastolic = session_node.DiastolicBloodPressurePre
+            pre.weight_measured = :yes
+            pre.weight = session_node.WeightPre
+            pre.temperature_measured = session_node.TemperaturePre.present? ? :yes : :no
+            pre.temperature = session_node.TemperaturePre
+
+            post = session.document.observations_after
+            post.pulse = session_node.PulsePost
+            post.blood_pressure.systolic = session_node.SystolicBloodPressurePost
+            post.blood_pressure.diastolic = session_node.DiastolicBloodPressurePost
+            post.weight_measured = :yes
+            post.weight = session_node.WeightPost
+            post.temperature_measured = session_node.TemperaturePost.present? ? :yes : :no
+            post.temperature = session_node.TemperaturePost
+          rescue StandardError => exception
+            transmission_log.update!(
+              error_messages: ["#{exception.cause} #{exception.message}"],
+              result: "error"
+            )
+            return
+          end
 
           begin
             session.save!
+            transmission_log.update!(result: "ok")
           rescue ActiveRecord::RecordInvalid => e
             error_messages = [
               session.errors&.full_messages,
               session.document.error_messages
             ].flatten.compact
 
-            transmission_log.update!(error_messages: error_messages)
+            transmission_log.update!(error_messages: error_messages, result: "error")
 
             raise Errors::SessionInvalidError, error_messages
           end
@@ -98,7 +110,10 @@ module Renalware
         end
 
         def dialysate
+          raise Errors::DialysateMissingError if session_node.Dialysate.blank?
           Renalware::HD::Dialysate.find_by!(name: session_node.Dialysate)
+        rescue ActiveRecord::RecordNotFound => e
+          raise Errors::DialysateNotFoundError, session_node.Dialysate
         end
 
         def access_type

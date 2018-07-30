@@ -9,7 +9,7 @@ module Renalware
 
     def logger
       @logger ||= Logger.new(
-        Rails.env.test? ? STDOUT : Rails.root.join("log", "diaverum.log")
+        (Rails.env.test? || Rails.env.development?) ? STDOUT : Rails.root.join("log", "diaverum.log")
       )
     end
 

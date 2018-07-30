@@ -15,25 +15,25 @@ module Renalware
         def call
           filename = nil
           filepath = nil
-          transmission = nil
-          logger.info "Ingesting Diaverum HD Sessions"
+          transmission_log = nil
+          logger.info "Ingesting Diaverum HD Sessions using pattern #{pattern}"
           Dir.glob(pattern).sort.each do |filepath|
             filename = File.basename(filepath)
 
             log_msg = "#{filename}..."
             begin
-              transmission = Transmission.create!(
+              transmission_log = HD::TransmissionLog.create!(
                 direction: :in,
                 format: :xml,
                 filepath: filepath
               )
-              Diaverum::Incoming::SavePatientSessions.call(filepath, transmission)
-              FileUtils.mv filepath, Paths.archive.join(filename)
+              Diaverum::Incoming::SavePatientSessions.call(filepath, transmission_log)
+              FileUtils.mv filepath, Paths.incoming_archive.join(filename)
               log_msg += "OK"
             rescue StandardError => ex
-              handle_ingest_error(filepath, ex, transmission)
+              handle_ingest_error(filepath, ex, transmission_log)
               log_msg += "FAIL"
-              raise ex
+              #raise ex
 
               # Engine.exception_notifier.notify(exception)
               next
@@ -42,7 +42,7 @@ module Renalware
             end
           end
         rescue StandardError => exception
-          handle_ingest_error(filepath, exception, transmission)
+          handle_ingest_error(filepath, exception, transmission_log)
           raise exception
           # Engine.exception_notifier.notify(exception)
         end
@@ -53,12 +53,12 @@ module Renalware
           Paths.incoming.join("*.xml")
         end
 
-        def handle_ingest_error(filepath, exception, transmission)
+        def handle_ingest_error(filepath, exception, transmission_log)
           if filepath.present?
             move_failed_xml_to_error_folder(filepath)
             create_error_file_in_error_folder(filepath, exception)
           end
-          transmission.update!(error: "#{exception.cause} #{exception.message}")
+          transmission_log.update!(error_messages: ["#{exception.cause} #{exception.message}"])
         end
 
         def move_failed_xml_to_error_folder(filepath)

@@ -20,7 +20,7 @@ module Renalware
         end
         let(:transmission_log) do
           HD::TransmissionLog.create!(
-            direction: :incoming,
+            direction: :in,
             format: :xml
           )
         end
