@@ -51,7 +51,7 @@ module Renalware
             pre.pulse = session_node.PulsePre
             pre.blood_pressure.systolic = session_node.SystolicBloodPressurePre
             pre.blood_pressure.diastolic = session_node.DiastolicBloodPressurePre
-            pre.weight_measured = :yes
+            pre.weight_measured = session_node.WeightPre.present? ? :yes : :no
             pre.weight = session_node.WeightPre
             pre.temperature_measured = session_node.TemperaturePre.present? ? :yes : :no
             pre.temperature = session_node.TemperaturePre
@@ -60,10 +60,11 @@ module Renalware
             post.pulse = session_node.PulsePost
             post.blood_pressure.systolic = session_node.SystolicBloodPressurePost
             post.blood_pressure.diastolic = session_node.DiastolicBloodPressurePost
-            post.weight_measured = :yes
+            post.weight_measured = session_node.WeightPost.present? ? :yes : :no
             post.weight = session_node.WeightPost
             post.temperature_measured = session_node.TemperaturePost.present? ? :yes : :no
             post.temperature = session_node.TemperaturePost
+
           rescue StandardError => exception
             transmission_log.update!(
               error_messages: ["#{exception.cause} #{exception.message}"],
@@ -80,7 +81,6 @@ module Renalware
               session.errors&.full_messages,
               session.document.error_messages
             ].flatten.compact.reject{ |msg| msg == "is invalid" }
-            #error_messages.reject!{ |msg| msg == "is invalid" }
 
             transmission_log.update!(error_messages: error_messages, result: "error")
 
