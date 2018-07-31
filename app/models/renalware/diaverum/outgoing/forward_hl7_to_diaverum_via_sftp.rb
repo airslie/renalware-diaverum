@@ -53,7 +53,7 @@ module Renalware
 
         def log_error(err)
           logger.info("err hl7 #{patient.secure_id} #{patient.local_patient_id} #{err&.message}")
-          transmission.update(error_messages: ["#{err.cause.to_s} #{err.message}"])
+          transmission.update(error_messages: ["#{err.cause} #{err.message}"])
         end
       end
     end

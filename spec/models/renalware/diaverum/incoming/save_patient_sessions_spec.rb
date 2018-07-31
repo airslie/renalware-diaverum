@@ -6,7 +6,7 @@ module Renalware
   module Diaverum
     module Incoming
       RSpec.describe SavePatientSessions do
-        let!(:system_user)   { create(:user, username: SystemUser.username) }
+        let!(:system_user) { create(:user, username: SystemUser.username) }
         let(:patient) { create(:hd_patient, local_patient_id: "KCH123", nhs_number: "0123456789") }
         let(:hospital_unit) { create(:hospital_unit) }
         let(:dialysate)     { create(:hd_dialysate) }

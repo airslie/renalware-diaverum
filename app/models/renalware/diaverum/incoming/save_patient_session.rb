@@ -64,7 +64,6 @@ module Renalware
             post.weight = session_node.WeightPost
             post.temperature_measured = session_node.TemperaturePost.present? ? :yes : :no
             post.temperature = session_node.TemperaturePost
-
           rescue StandardError => exception
             transmission_log.update!(
               error_messages: ["#{exception.cause} #{exception.message}"],

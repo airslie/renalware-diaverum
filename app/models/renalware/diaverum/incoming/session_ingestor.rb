@@ -33,7 +33,7 @@ module Renalware
             rescue StandardError => ex
               handle_ingest_error(filepath, ex, transmission_log)
               log_msg += "FAIL"
-              #raise ex
+              # raise ex
 
               # Engine.exception_notifier.notify(exception)
               next
