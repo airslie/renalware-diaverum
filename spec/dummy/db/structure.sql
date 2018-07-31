@@ -2679,7 +2679,8 @@ CREATE TABLE hd_transmission_logs (
     transmitted_at timestamp without time zone,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    external_session_id character varying
+    external_session_id character varying,
+    session_id bigint
 );
 
 
@@ -10858,6 +10859,13 @@ CREATE INDEX index_hd_stations_on_position ON hd_stations USING btree ("position
 --
 
 CREATE INDEX index_hd_stations_on_updated_by_id ON hd_stations USING btree (updated_by_id);
+
+
+--
+-- Name: index_hd_transmission_logs_on_session_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_hd_transmission_logs_on_session_id ON hd_transmission_logs USING btree (session_id);
 
 
 --

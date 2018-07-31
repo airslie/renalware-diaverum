@@ -74,12 +74,13 @@ module Renalware
 
           begin
             session.save!
-            transmission_log.update!(result: "ok")
+            transmission_log.update!(result: "ok", session: session)
           rescue ActiveRecord::RecordInvalid => e
             error_messages = [
               session.errors&.full_messages,
               session.document.error_messages
-            ].flatten.compact
+            ].flatten.compact.reject{ |msg| msg == "is invalid" }
+            #error_messages.reject!{ |msg| msg == "is invalid" }
 
             transmission_log.update!(error_messages: error_messages, result: "error")
 
@@ -91,9 +92,9 @@ module Renalware
 
         def build_access(info)
           info.access_confirmed = true
-          info.access_type = access_type
-          info.access_type_abbreviation = "AVG"
-          info.access_side = :left
+          info.access_type = access_type.access_type&.name
+          info.access_type_abbreviation = access_type.access_type&.abbreviation
+          info.access_side = access_type.side
         end
 
         # Returns an existing session or a new one if not found
@@ -117,13 +118,15 @@ module Renalware
         end
 
         def access_type
-          args = {
-            diaverum_location: session_node.AccessLocationId,
-            diaverum_type: session_node.AccessTypeId
-          }
-          AccessMap.for(args).access_type
-          rescue ActiveRecord::RecordNotFound => e
-            raise AccesMapError, args
+          @access_type ||= begin
+            args = {
+              diaverum_location: session_node.AccessLocationId,
+              diaverum_type: session_node.AccessTypeId
+            }
+            AccessMap.for(args)
+          end
+        rescue ActiveRecord::RecordNotFound
+          raise AccesMapError, args
         end
 
         def user

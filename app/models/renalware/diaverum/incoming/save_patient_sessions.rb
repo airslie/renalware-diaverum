@@ -39,7 +39,8 @@ module Renalware
           HD::TransmissionLog.create!(
             direction: :in,
             format: :xml,
-            parent_id: transmission_log.id
+            parent_id: transmission_log.id,
+            patient_id: transmission_log.patient_id
           )
         end
 
