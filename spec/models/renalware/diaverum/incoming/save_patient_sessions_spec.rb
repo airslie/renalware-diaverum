@@ -72,7 +72,8 @@ module Renalware
               AccessMap.create!(
                 diaverum_location_id: "LEJ",
                 diaverum_type_id: 7,
-                access_type: create(:access_type)
+                access_type: create(:access_type),
+                side: :left
               )
             end
 

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ClassLength
 require "attr_extras"
 
 module Renalware
@@ -9,6 +10,7 @@ module Renalware
         include Diaverum::Logging
         pattr_initialize :patient, :session_node, :transmission_log
 
+        # rubocop:disable Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/AbcSize
         def call
           transmission_log.update!(
             payload: session_node.to_xml,
@@ -75,7 +77,7 @@ module Renalware
           begin
             session.save!
             transmission_log.update!(result: "ok", session: session)
-          rescue ActiveRecord::RecordInvalid => e
+          rescue ActiveRecord::RecordInvalid
             error_messages = [
               session.errors&.full_messages,
               session.document.error_messages
@@ -86,6 +88,7 @@ module Renalware
             raise Errors::SessionInvalidError, error_messages
           end
         end
+        # rubocop:enable Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/AbcSize
 
         private
 
@@ -112,7 +115,7 @@ module Renalware
         def dialysate
           raise Errors::DialysateMissingError if session_node.Dialysate.blank?
           Renalware::HD::Dialysate.find_by!(name: session_node.Dialysate)
-        rescue ActiveRecord::RecordNotFound => e
+        rescue ActiveRecord::RecordNotFound
           raise Errors::DialysateNotFoundError, session_node.Dialysate
         end
 
@@ -142,3 +145,4 @@ module Renalware
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

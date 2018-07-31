@@ -15,7 +15,7 @@ module Renalware
           diaverum_type_id: diaverum_type
         }
         find_by!(args)
-      rescue ActiveRecord::RecordNotFound => e
+      rescue ActiveRecord::RecordNotFound
         raise Errors::AccessMapError, args
       end
     end

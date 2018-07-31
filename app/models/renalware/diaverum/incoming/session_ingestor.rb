@@ -38,7 +38,7 @@ module Renalware
               # Engine.exception_notifier.notify(exception)
               next
             ensure
-              puts log_msg
+              logger.info log_msg
             end
           end
         rescue StandardError => exception

@@ -26,7 +26,7 @@ module Renalware
             child_log = create_child_transmission_log
             begin
               SavePatientSession.new(patient, session_node, child_log).call
-            rescue Errors::SessionInvalidError => e
+            rescue Errors::SessionInvalidError
               # Do nothing as already logged in SavePatientSession in child_log.
               # Move onto try importing the next session
             end
