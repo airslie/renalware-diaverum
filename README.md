@@ -1,4 +1,6 @@
 
+A Rails engine providing integration with Diaverum dialysers.
+
 ## Development
 
 ### Running
@@ -28,8 +30,6 @@ bundle exec rake diaverum:ingest
 or, if running in development
 bundle exec rake app:diaverum:ingest
 ```
-
-
 
 ## Outgoing
 
