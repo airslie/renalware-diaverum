@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 namespace :db do
   namespace :demo do
     desc "Loads demo seed data from the renalware-core gem"

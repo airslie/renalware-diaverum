@@ -33,7 +33,5 @@ module Dummy
     initializer :add_locales do
       config.i18n.load_path += Dir[Rails.root.join("config", "locales", "**", "*.{rb,yml}")]
     end
-
-    # config.action_mailer.default_url_options = { host: ENV.fetch("HOST". nil) }
   end
 end

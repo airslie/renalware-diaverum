@@ -1,99 +1,134 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ClassLength
 require "attr_extras"
 
 module Renalware
   module Diaverum
     module Incoming
       class SavePatientSession
-        pattr_initialize :patient, :session_node
+        include Diaverum::Logging
+        pattr_initialize :patient, :session_node, :transmission_log
 
+        # rubocop:disable Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/AbcSize
         def call
-          session = find_existing_session(session_node.TreatmentId)
-
-          session = Renalware::HD::Session::Closed.new(
-            patient: patient,
-            hospital_unit: find_hospital_unit,
-            performed_on: session_node.Date,
-            start_time: session_node.StartTime,
-            end_time: session_node.EndTime,
-            notes: session_node.Notes,
-            created_by: user,
-            updated_by: user,
-            signed_on_by: user,
-            signed_off_by: user,
-            signed_off_at: Time.zone.parse("#{session_node.Date} #{session_node.EndTime}"),
-            dry_weight: most_recent_dry_weight,
-            dialysate: find_dialysate
+          transmission_log.update!(
+            payload: session_node.to_xml,
+            external_session_id: session_node.TreatmentId
           )
 
-          info = session.document.info
-          info.hd_type = :hd
-          info.access_confirmed = true
-          info.access_type = find_access_type
-          info.access_type_abbreviation = "AVG"
-          info.access_side = :left
-          # info.is_access_first_use
-          # info.fistula_plus_line
-          # info.single_needle
-          # info.lines_reversed
-          info.machine_no = session_node.MachineIdentifier
+          begin
+            session = Renalware::HD::Session::Closed.new(
+              patient: patient,
+              hospital_unit: hospital_unit,
+              performed_on: session_node.Date,
+              start_time: session_node.StartTime,
+              end_time: session_node.EndTime,
+              notes: session_node.Notes,
+              created_by: user,
+              updated_by: user,
+              signed_on_by: user,
+              signed_off_by: user,
+              signed_off_at: Time.zone.parse("#{session_node.Date} #{session_node.EndTime}"),
+              dry_weight: most_recent_dry_weight,
+              dialysate: dialysate
+            )
 
-          dialysis = session.document.dialysis
-          dialysis.arterial_pressure = session_node.ArterialPressure
-          dialysis.venous_pressure = session_node.VenousPressure
-          dialysis.fluid_removed = session_node.RemovedVolume
-          dialysis.blood_flow = session_node.Bloodflow
-          dialysis.flow_rate = session_node.DialysateFlow
-          dialysis.machine_urr = nil
-          dialysis.machine_ktv = session_node.KTV
-          dialysis.litres_processed = session_node.InfusionVolume
+            info = session.document.info
+            info.hd_type = :hd
+            info.machine_no = session_node.MachineIdentifier
+            build_access(info)
 
-          pre = session.document.observations_before
-          pre.pulse = session_node.PulsePre
-          pre.blood_pressure.systolic = session_node.SystolicBloodPressurePre
-          pre.blood_pressure.diastolic = session_node.DiastolicBloodPressurePre
-          pre.weight_measured = :yes
-          pre.weight = session_node.WeightPre
-          pre.temperature_measured = :yes
-          pre.temperature = session_node.TemperaturePre
+            dialysis = session.document.dialysis
+            dialysis.arterial_pressure = session_node.ArterialPressure
+            dialysis.venous_pressure = session_node.VenousPressure
+            dialysis.fluid_removed = session_node.RemovedVolume
+            dialysis.blood_flow = session_node.Bloodflow
+            dialysis.flow_rate = session_node.DialysateFlow
+            dialysis.machine_urr = nil
+            dialysis.machine_ktv = session_node.KTV
+            dialysis.litres_processed = session_node.InfusionVolume
 
-          post = session.document.observations_after
-          post.pulse = session_node.PulsePost
-          post.blood_pressure.systolic = session_node.SystolicBloodPressurePost
-          post.blood_pressure.diastolic = session_node.DiastolicBloodPressurePost
-          post.weight_measured = :yes
-          post.weight = session_node.WeightPost
-          post.temperature_measured = :yes
-          post.temperature = session_node.TemperaturePost
+            pre = session.document.observations_before
+            pre.pulse = session_node.PulsePre
+            pre.blood_pressure.systolic = session_node.SystolicBloodPressurePre
+            pre.blood_pressure.diastolic = session_node.DiastolicBloodPressurePre
+            pre.weight_measured = session_node.WeightPre.present? ? :yes : :no
+            pre.weight = session_node.WeightPre
+            pre.temperature_measured = session_node.TemperaturePre.present? ? :yes : :no
+            pre.temperature = session_node.TemperaturePre
 
-          unless session.valid?
-            p session.document.observations_before.errors
-            p session.document.observations_after.errors
-            p session.document.dialysis.errors
-            p session.document.info.errors
+            post = session.document.observations_after
+            post.pulse = session_node.PulsePost
+            post.blood_pressure.systolic = session_node.SystolicBloodPressurePost
+            post.blood_pressure.diastolic = session_node.DiastolicBloodPressurePost
+            post.weight_measured = session_node.WeightPost.present? ? :yes : :no
+            post.weight = session_node.WeightPost
+            post.temperature_measured = session_node.TemperaturePost.present? ? :yes : :no
+            post.temperature = session_node.TemperaturePost
+          rescue StandardError => exception
+            transmission_log.update!(
+              error_messages: ["#{exception.cause} #{exception.message}"],
+              result: "error"
+            )
+            return
           end
 
-          session.save!
+          begin
+            session.save!
+            transmission_log.update!(result: "ok", session: session)
+          rescue ActiveRecord::RecordInvalid
+            error_messages = [
+              session.errors&.full_messages,
+              session.document.error_messages
+            ].flatten.compact.reject{ |msg| msg == "is invalid" }
+
+            transmission_log.update!(error_messages: error_messages, result: "error")
+
+            raise Errors::SessionInvalidError, error_messages
+          end
         end
+        # rubocop:enable Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/AbcSize
 
         private
 
+        def build_access(info)
+          info.access_confirmed = true
+          info.access_type = access_type.access_type&.name
+          info.access_type_abbreviation = access_type.access_type&.abbreviation
+          info.access_side = access_type.side
+        end
+
         # Returns an existing session or a new one if not found
-        def find_existing_session(external_id)
+        def existing_session(external_id)
           patient.hd_sessions.closed.find_by(external_id: external_id)
         end
 
-        def find_hospital_unit
-          Renalware::Hospitals::Unit.find_by!(name: session_node.ClinicName)
+        def hospital_unit
+          dialysis_unit.hospital_unit
         end
 
-        def find_dialysate
+        def dialysis_unit
+          HD::ProviderUnit.find_by!(providers_reference: session_node.ClinicId)
+        end
+
+        def dialysate
+          raise Errors::DialysateMissingError if session_node.Dialysate.blank?
           Renalware::HD::Dialysate.find_by!(name: session_node.Dialysate)
+        rescue ActiveRecord::RecordNotFound
+          raise Errors::DialysateNotFoundError, session_node.Dialysate
         end
 
-        def find_access_type
-          Renalware::Accesses::Type.find_by!(name: session_node.AccessTypeDescription)
+        def access_type
+          @access_type ||= begin
+            args = {
+              diaverum_location: session_node.AccessLocationId,
+              diaverum_type: session_node.AccessTypeId
+            }
+            AccessMap.for(args)
+          end
+        rescue ActiveRecord::RecordNotFound
+          raise AccesMapError, args
         end
 
         def user
@@ -110,3 +145,4 @@ module Renalware
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

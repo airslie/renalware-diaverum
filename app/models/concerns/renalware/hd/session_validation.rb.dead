@@ -1,0 +1,13 @@
+# frozen_string_literal: true
+
+module Renalware
+  module HD
+    module SessionValidation
+      def self.extended base
+        base.singleton_class.instance_eval do
+          validates_associated :document
+        end
+      end
+    end
+  end
+end

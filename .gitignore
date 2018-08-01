@@ -39,3 +39,7 @@ key.gpg
 /spec/dummy/coverage
 /coverage/
 /spec/tmp
+/.env.development
+/spec/dummy/bla2.xml
+/spec/dummy/bla1.xml
+/bla.xml

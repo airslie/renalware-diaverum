@@ -15,6 +15,13 @@ CREATE SCHEMA renalware;
 
 
 --
+-- Name: renalware_diaverum; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA renalware_diaverum;
+
+
+--
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -2012,7 +2019,8 @@ CREATE TABLE feed_messages (
     body text NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    body_hash text
+    body_hash text,
+    patient_identifier character varying
 );
 
 
@@ -2438,6 +2446,70 @@ ALTER SEQUENCE hd_profiles_id_seq OWNED BY hd_profiles.id;
 
 
 --
+-- Name: hd_provider_units; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE hd_provider_units (
+    id bigint NOT NULL,
+    hospital_unit_id bigint NOT NULL,
+    hd_provider_id bigint NOT NULL,
+    providers_reference character varying,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: hd_provider_units_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE hd_provider_units_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: hd_provider_units_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE hd_provider_units_id_seq OWNED BY hd_provider_units.id;
+
+
+--
+-- Name: hd_providers; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE hd_providers (
+    id bigint NOT NULL,
+    name character varying,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: hd_providers_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE hd_providers_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: hd_providers_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE hd_providers_id_seq OWNED BY hd_providers.id;
+
+
+--
 -- Name: hd_schedule_definitions; Type: TABLE; Schema: renalware; Owner: -
 --
 
@@ -2586,6 +2658,49 @@ CREATE SEQUENCE hd_stations_id_seq
 --
 
 ALTER SEQUENCE hd_stations_id_seq OWNED BY hd_stations.id;
+
+
+--
+-- Name: hd_transmission_logs; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE hd_transmission_logs (
+    id bigint NOT NULL,
+    parent_id bigint,
+    direction character varying NOT NULL,
+    format character varying NOT NULL,
+    status character varying,
+    hd_provider_unit_id bigint,
+    patient_id bigint,
+    filepath character varying,
+    payload text,
+    result jsonb DEFAULT '{}'::jsonb,
+    error_messages text[] DEFAULT '{}'::text[],
+    transmitted_at timestamp without time zone,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    external_session_id character varying,
+    session_id bigint
+);
+
+
+--
+-- Name: hd_transmission_logs_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE hd_transmission_logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: hd_transmission_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE hd_transmission_logs_id_seq OWNED BY hd_transmission_logs.id;
 
 
 --
@@ -3404,7 +3519,8 @@ CREATE TABLE modality_descriptions (
     type character varying,
     deleted_at timestamp without time zone,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    hidden boolean DEFAULT false NOT NULL
 );
 
 
@@ -5573,7 +5689,7 @@ CREATE VIEW reporting_anaemia_audit AS
           WHERE (e2.hgb >= (13)::numeric)) e6 ON (true))
      LEFT JOIN LATERAL ( SELECT e3.fer AS fer_gt_eq_150
           WHERE (e3.fer >= (150)::numeric)) e7 ON (true))
-  WHERE ((e1.modality_desc)::text = ANY ((ARRAY['HD'::character varying, 'PD'::character varying, 'Transplant'::character varying, 'Low Clearance'::character varying, 'Nephrology'::character varying])::text[]))
+  WHERE ((e1.modality_desc)::text = ANY (ARRAY[('HD'::character varying)::text, ('PD'::character varying)::text, ('Transplant'::character varying)::text, ('Low Clearance'::character varying)::text, ('Nephrology'::character varying)::text]))
   GROUP BY e1.modality_desc;
 
 
@@ -5652,7 +5768,7 @@ CREATE VIEW reporting_bone_audit AS
           WHERE (e2.pth > (300)::numeric)) e7 ON (true))
      LEFT JOIN LATERAL ( SELECT e4.cca AS cca_2_1_to_2_4
           WHERE ((e4.cca >= 2.1) AND (e4.cca <= 2.4))) e8 ON (true))
-  WHERE ((e1.modality_desc)::text = ANY ((ARRAY['HD'::character varying, 'PD'::character varying, 'Transplant'::character varying, 'Low Clearance'::character varying])::text[]))
+  WHERE ((e1.modality_desc)::text = ANY (ARRAY[('HD'::character varying)::text, ('PD'::character varying)::text, ('Transplant'::character varying)::text, ('Low Clearance'::character varying)::text]))
   GROUP BY e1.modality_desc;
 
 
@@ -5782,16 +5898,14 @@ CREATE MATERIALIZED VIEW reporting_main_authors_audit AS
              JOIN clinic_visits visits ON ((visits.id = letters.event_id)))
           WHERE (archive.created_at > (CURRENT_DATE - '3 mons'::interval))
         ), archived_clinic_letters_stats AS (
-         SELECT archived_clinic_letters.year,
-            archived_clinic_letters.month,
-            archived_clinic_letters.author_id,
+         SELECT archived_clinic_letters.author_id,
             count(*) AS total_letters,
             round(avg(archived_clinic_letters.days_to_archive)) AS avg_days_to_archive,
             (( SELECT count(*) AS count
                    FROM archived_clinic_letters acl
                   WHERE ((acl.days_to_archive <= (7)::double precision) AND (acl.author_id = archived_clinic_letters.author_id))))::numeric AS archived_within_7_days
            FROM archived_clinic_letters
-          GROUP BY archived_clinic_letters.year, archived_clinic_letters.month, archived_clinic_letters.author_id
+          GROUP BY archived_clinic_letters.author_id
         )
  SELECT (((users.family_name)::text || ', '::text) || (users.given_name)::text) AS name,
     stats.total_letters,
@@ -5800,8 +5914,7 @@ CREATE MATERIALIZED VIEW reporting_main_authors_audit AS
     users.id AS user_id
    FROM (archived_clinic_letters_stats stats
      JOIN users ON ((stats.author_id = users.id)))
-  GROUP BY (((users.family_name)::text || ', '::text) || (users.given_name)::text), users.id, stats.total_letters, stats.avg_days_to_archive, stats.archived_within_7_days
-  ORDER BY stats.total_letters
+  ORDER BY stats.total_letters DESC
   WITH NO DATA;
 
 
@@ -7058,6 +7171,44 @@ CREATE SEQUENCE virology_versions_id_seq
 ALTER SEQUENCE virology_versions_id_seq OWNED BY virology_versions.id;
 
 
+SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: access_maps; Type: TABLE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE TABLE access_maps (
+    id bigint NOT NULL,
+    diaverum_location_id character varying NOT NULL,
+    diaverum_type_id character varying NOT NULL,
+    side character varying,
+    access_type_id integer NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: access_maps_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE SEQUENCE access_maps_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: access_maps_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER SEQUENCE access_maps_id_seq OWNED BY access_maps.id;
+
+
+SET search_path = renalware, pg_catalog;
+
 --
 -- Name: access_assessments id; Type: DEFAULT; Schema: renalware; Owner: -
 --
@@ -7367,6 +7518,20 @@ ALTER TABLE ONLY hd_profiles ALTER COLUMN id SET DEFAULT nextval('hd_profiles_id
 
 
 --
+-- Name: hd_provider_units id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_provider_units ALTER COLUMN id SET DEFAULT nextval('hd_provider_units_id_seq'::regclass);
+
+
+--
+-- Name: hd_providers id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_providers ALTER COLUMN id SET DEFAULT nextval('hd_providers_id_seq'::regclass);
+
+
+--
 -- Name: hd_schedule_definitions id; Type: DEFAULT; Schema: renalware; Owner: -
 --
 
@@ -7392,6 +7557,13 @@ ALTER TABLE ONLY hd_station_locations ALTER COLUMN id SET DEFAULT nextval('hd_st
 --
 
 ALTER TABLE ONLY hd_stations ALTER COLUMN id SET DEFAULT nextval('hd_stations_id_seq'::regclass);
+
+
+--
+-- Name: hd_transmission_logs id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_transmission_logs ALTER COLUMN id SET DEFAULT nextval('hd_transmission_logs_id_seq'::regclass);
 
 
 --
@@ -8150,6 +8322,15 @@ ALTER TABLE ONLY virology_profiles ALTER COLUMN id SET DEFAULT nextval('virology
 ALTER TABLE ONLY virology_versions ALTER COLUMN id SET DEFAULT nextval('virology_versions_id_seq'::regclass);
 
 
+SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: access_maps id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY access_maps ALTER COLUMN id SET DEFAULT nextval('access_maps_id_seq'::regclass);
+
+
 SET search_path = public, pg_catalog;
 
 --
@@ -8531,6 +8712,22 @@ ALTER TABLE ONLY hd_profiles
 
 
 --
+-- Name: hd_provider_units hd_provider_units_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_provider_units
+    ADD CONSTRAINT hd_provider_units_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hd_providers hd_providers_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_providers
+    ADD CONSTRAINT hd_providers_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: hd_schedule_definitions hd_schedule_definitions_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -8560,6 +8757,14 @@ ALTER TABLE ONLY hd_station_locations
 
 ALTER TABLE ONLY hd_stations
     ADD CONSTRAINT hd_stations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hd_transmission_logs hd_transmission_logs_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_transmission_logs
+    ADD CONSTRAINT hd_transmission_logs_pkey PRIMARY KEY (id);
 
 
 --
@@ -9425,6 +9630,18 @@ ALTER TABLE ONLY virology_profiles
 ALTER TABLE ONLY virology_versions
     ADD CONSTRAINT virology_versions_pkey PRIMARY KEY (id);
 
+
+SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: access_maps access_maps_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY access_maps
+    ADD CONSTRAINT access_maps_pkey PRIMARY KEY (id);
+
+
+SET search_path = renalware, pg_catalog;
 
 --
 -- Name: access_plan_uniqueness; Type: INDEX; Schema: renalware; Owner: -
@@ -10470,6 +10687,13 @@ CREATE INDEX index_hd_profiles_on_updated_by_id ON hd_profiles USING btree (upda
 
 
 --
+-- Name: index_hd_provider_units_on_hd_provider_id_and_hospital_unit_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_hd_provider_units_on_hd_provider_id_and_hospital_unit_id ON hd_provider_units USING btree (hd_provider_id, hospital_unit_id);
+
+
+--
 -- Name: index_hd_schedule_definitions_on_days; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -10638,6 +10862,13 @@ CREATE INDEX index_hd_stations_on_updated_by_id ON hd_stations USING btree (upda
 
 
 --
+-- Name: index_hd_transmission_logs_on_session_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_hd_transmission_logs_on_session_id ON hd_transmission_logs USING btree (session_id);
+
+
+--
 -- Name: index_hospital_centres_on_code; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -10743,6 +10974,13 @@ CREATE INDEX index_letter_electronic_receipts_on_recipient_id ON letter_electron
 
 
 --
+-- Name: index_letter_letters_on_approved_at; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_letter_letters_on_approved_at ON letter_letters USING btree (approved_at);
+
+
+--
 -- Name: index_letter_letters_on_approved_by_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -10757,10 +10995,24 @@ CREATE INDEX index_letter_letters_on_author_id ON letter_letters USING btree (au
 
 
 --
+-- Name: index_letter_letters_on_completed_at; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_letter_letters_on_completed_at ON letter_letters USING btree (completed_at);
+
+
+--
 -- Name: index_letter_letters_on_completed_by_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
 CREATE INDEX index_letter_letters_on_completed_by_id ON letter_letters USING btree (completed_by_id);
+
+
+--
+-- Name: index_letter_letters_on_created_at; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_letter_letters_on_created_at ON letter_letters USING btree (created_at);
 
 
 --
@@ -10796,6 +11048,13 @@ CREATE INDEX index_letter_letters_on_letterhead_id ON letter_letters USING btree
 --
 
 CREATE INDEX index_letter_letters_on_patient_id ON letter_letters USING btree (patient_id);
+
+
+--
+-- Name: index_letter_letters_on_submitted_for_approval_at; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_letter_letters_on_submitted_for_approval_at ON letter_letters USING btree (submitted_for_approval_at);
 
 
 --
@@ -11835,6 +12094,83 @@ CREATE INDEX index_renal_versions_on_item_type_and_item_id ON renal_versions USI
 
 
 --
+-- Name: index_renalware.hd_provider_units_on_hd_provider_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX "index_renalware.hd_provider_units_on_hd_provider_id" ON hd_provider_units USING btree (hd_provider_id);
+
+
+--
+-- Name: index_renalware.hd_provider_units_on_hospital_unit_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX "index_renalware.hd_provider_units_on_hospital_unit_id" ON hd_provider_units USING btree (hospital_unit_id);
+
+
+--
+-- Name: index_renalware.hd_provider_units_on_providers_reference; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX "index_renalware.hd_provider_units_on_providers_reference" ON hd_provider_units USING btree (providers_reference);
+
+
+--
+-- Name: index_renalware.hd_transmission_logs_on_direction; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX "index_renalware.hd_transmission_logs_on_direction" ON hd_transmission_logs USING btree (direction);
+
+
+--
+-- Name: index_renalware.hd_transmission_logs_on_format; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX "index_renalware.hd_transmission_logs_on_format" ON hd_transmission_logs USING btree (format);
+
+
+--
+-- Name: index_renalware.hd_transmission_logs_on_hd_provider_unit_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX "index_renalware.hd_transmission_logs_on_hd_provider_unit_id" ON hd_transmission_logs USING btree (hd_provider_unit_id);
+
+
+--
+-- Name: index_renalware.hd_transmission_logs_on_parent_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX "index_renalware.hd_transmission_logs_on_parent_id" ON hd_transmission_logs USING btree (parent_id);
+
+
+--
+-- Name: index_renalware.hd_transmission_logs_on_patient_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX "index_renalware.hd_transmission_logs_on_patient_id" ON hd_transmission_logs USING btree (patient_id);
+
+
+--
+-- Name: index_renalware.hd_transmission_logs_on_result; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX "index_renalware.hd_transmission_logs_on_result" ON hd_transmission_logs USING gin (result);
+
+
+--
+-- Name: index_renalware.hd_transmission_logs_on_status; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX "index_renalware.hd_transmission_logs_on_status" ON hd_transmission_logs USING btree (status);
+
+
+--
+-- Name: index_renalware.hd_transmission_logs_on_transmitted_at; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX "index_renalware.hd_transmission_logs_on_transmitted_at" ON hd_transmission_logs USING btree (transmitted_at);
+
+
+--
 -- Name: index_reporting_hd_blood_pressures_audit_on_hospital_unit_name; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -12388,6 +12724,13 @@ CREATE INDEX index_virology_versions_on_item_type_and_item_id ON virology_versio
 
 
 --
+-- Name: letter_effective_date_idx; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX letter_effective_date_idx ON letter_letters USING btree (COALESCE(completed_at, approved_at, submitted_for_approval_at, created_at));
+
+
+--
 -- Name: master_index_hd_diaries_on_hospital_unit_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -12512,6 +12855,17 @@ CREATE INDEX tx_versions_type_id ON transplant_versions USING btree (item_type, 
 
 CREATE UNIQUE INDEX unique_study_participants ON research_study_participants USING btree (participant_id, study_id) WHERE (deleted_at IS NULL);
 
+
+SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: renalware_diaverum_access_maps_idx; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE UNIQUE INDEX renalware_diaverum_access_maps_idx ON access_maps USING btree (diaverum_location_id, diaverum_type_id);
+
+
+SET search_path = renalware, pg_catalog;
 
 --
 -- Name: delayed_jobs feed_messages_preprocessing_trigger; Type: TRIGGER; Schema: renalware; Owner: -
@@ -12911,6 +13265,14 @@ ALTER TABLE ONLY pd_peritonitis_episode_types
 
 
 --
+-- Name: hd_transmission_logs fk_rails_30b8eea154; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_transmission_logs
+    ADD CONSTRAINT fk_rails_30b8eea154 FOREIGN KEY (hd_provider_unit_id) REFERENCES hd_provider_units(id);
+
+
+--
 -- Name: clinical_dry_weights fk_rails_31546389ab; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -13028,6 +13390,14 @@ ALTER TABLE ONLY transplant_donor_stages
 
 ALTER TABLE ONLY transplant_recipient_operations
     ADD CONSTRAINT fk_rails_3a852d1667 FOREIGN KEY (patient_id) REFERENCES patients(id);
+
+
+--
+-- Name: hd_transmission_logs fk_rails_3b842bb40e; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_transmission_logs
+    ADD CONSTRAINT fk_rails_3b842bb40e FOREIGN KEY (patient_id) REFERENCES patients(id);
 
 
 --
@@ -13479,6 +13849,14 @@ ALTER TABLE ONLY renal_aki_alerts
 
 
 --
+-- Name: hd_provider_units fk_rails_8d21a18a82; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_provider_units
+    ADD CONSTRAINT fk_rails_8d21a18a82 FOREIGN KEY (hospital_unit_id) REFERENCES hospital_units(id);
+
+
+--
 -- Name: access_profiles fk_rails_8d75e5423f; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -13508,6 +13886,14 @@ ALTER TABLE ONLY hospital_units
 
 ALTER TABLE ONLY pathology_request_descriptions_requests_requests
     ADD CONSTRAINT fk_rails_8f574ed703 FOREIGN KEY (request_description_id) REFERENCES pathology_request_descriptions(id);
+
+
+--
+-- Name: hd_provider_units fk_rails_8f5e478f60; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_provider_units
+    ADD CONSTRAINT fk_rails_8f5e478f60 FOREIGN KEY (hd_provider_id) REFERENCES hd_providers(id);
 
 
 --
@@ -14674,7 +15060,7 @@ ALTER TABLE ONLY transplant_registration_statuses
 -- PostgreSQL database dump complete
 --
 
-SET search_path TO renalware_kch, renalware, public;
+SET search_path TO renalware_diaverum,renalware,public;
 
 INSERT INTO "schema_migrations" (version) VALUES
 ('20141004150240'),
@@ -15060,6 +15446,16 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20180605114332'),
 ('20180605141806'),
 ('20180605175211'),
-('20180611152505');
+('20180622130552'),
+('20180625105333'),
+('20180625124431'),
+('20180627155720'),
+('20180628132323'),
+('20180702091222'),
+('20180702091237'),
+('20180702091352'),
+('20180712143314'),
+('20180718172750'),
+('20180730154454');
 
 
