@@ -5,14 +5,18 @@ require "attr_extras"
 module Renalware
   module Diaverum
     module Incoming
-      class SessionIngestor
+      class IngestXmlFiles
         include Diaverum::Logging
 
-        def self.call
-          new.call
+        def call
+          uuid = SecureRandom.uuid
+          import_xml_files(uuid)
+          uuid
         end
 
-        def call
+        private
+
+        def import_xml_files(uuid)
           filename = nil
           filepath = nil
           transmission_log = nil
@@ -25,7 +29,8 @@ module Renalware
               transmission_log = HD::TransmissionLog.create!(
                 direction: :in,
                 format: :xml,
-                filepath: filepath
+                filepath: filepath,
+                uuid: uuid
               )
               Diaverum::Incoming::SavePatientSessions.call(filepath, transmission_log)
               FileUtils.mv filepath, Paths.incoming_archive.join(filename)
@@ -46,8 +51,6 @@ module Renalware
           raise exception
           # Engine.exception_notifier.notify(exception)
         end
-
-        private
 
         def pattern
           Paths.incoming.join("*.xml")

@@ -6,7 +6,7 @@ module Renalware
   module Diaverum
     module Incoming
       describe "rake diaverum:ingest", type: :task do
-        let(:logger) { SessionIngestor.new.logger }
+        let(:logger) { IngestXmlFiles.new.logger }
         before do
           # Wire up the Diaverum path somewhere safe
           path = Rails.root.join("tmp", "diaverum")
