@@ -17,7 +17,7 @@ module Renalware
           #     program: "rails-#{Rails.env}"
           #   )
           # )
-          #Rails.logger.extend(ActiveSupport::Logger.broadcast(syslog_loger))
+          # Rails.logger.extend(ActiveSupport::Logger.broadcast(syslog_loger))
           # logr = Logger.new(STDOUT)
           # file_logger = ActiveSupport::TaggedLogging.new(
           #   Logger.new(

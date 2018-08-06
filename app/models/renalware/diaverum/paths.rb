@@ -21,7 +21,7 @@ module Renalware
         end
 
         def root_path
-          Pathname(ENV["DIAVERUM_FOLDER"])
+          Pathname(ENV.fetch("DIAVERUM_FOLDER"))
         end
 
         def setup

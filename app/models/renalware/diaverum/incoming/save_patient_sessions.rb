@@ -9,7 +9,7 @@ module Renalware
       class SavePatientSessions
         pattr_initialize :patient_node, :transmission_log
 
-        # helperer for new(...).call()
+        # helper for new(...).call()
         def self.call(path_to_xml, transmission_log)
           @transmission_log = transmission_log
           transmission_log.update!(payload: File.read(path_to_xml))

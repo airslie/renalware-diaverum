@@ -6,6 +6,7 @@ module Renalware
   module Diaverum
     module Incoming
       RSpec.describe SavePatientSessions do
+        include DiaverumHelpers
         let!(:system_user) { create(:user, username: SystemUser.username) }
         let(:patient) { create(:hd_patient, local_patient_id: "KCH123", nhs_number: "0123456789") }
         let(:hospital_unit) { create(:hospital_unit) }
@@ -25,17 +26,6 @@ module Renalware
           )
         end
 
-        # Load a sample XML file in ERB and parse it, binding local variables
-        # so they get replaced where we have use <%= .. %> etc in the file.
-        # This lets us create an example XML file, saved to the expected diaverum path,
-        # that mimics the test conditions and data we want.
-        # def create_xml_file_from_fixture(fixture_name)
-        #   fixture = file_fixture("diaverum_#{fixture_name}.xml.erb")
-        #   xml_content = ERB.new(xml_filepath.read).result(binding)
-        #   xml_filepath = File.join(ENV["DIAVERUM_FOLDER"], "#{fixture_name}.xml")
-        #   File.write(xml_filepath, xml_content)
-        # end
-        #
         def create_access_map
           AccessMap.create!(
             diaverum_location_id: "LEJ",
@@ -44,11 +34,8 @@ module Renalware
           )
         end
 
-        before do
-          # Wire up the Diaverum path somewhere safe
-          path = Rails.root.join("tmp", "diaverum")
-          FileUtils.mkdir_p(path)
-          ENV["DIAVERUM_FOLDER"] = path.to_s
+        around(:each) do |example|
+          using_a_tmp_diaverum_path{ example.run }
         end
 
         context "when Diaverum @ St Albans has SFTPed multiple patient XML files, each containing "\

@@ -37,9 +37,6 @@ module Renalware
             rescue StandardError => ex
               handle_ingest_error(filepath, ex, transmission_log)
               log_msg += "FAIL"
-              raise ex
-
-              # Engine.exception_notifier.notify(exception)
               next
             ensure
               FileUtils.mv filepath, Paths.incoming_archive.join(filename)
@@ -47,16 +44,14 @@ module Renalware
             end
           end
         rescue StandardError => exception
-          handle_ingest_error(filepath, exception, transmission_log)
           raise exception
-          # Engine.exception_notifier.notify(exception)
         end
 
         def pattern
           Paths.incoming.join("*.xml")
         end
 
-        def handle_ingest_error(filepath, exception, transmission_log)
+        def handle_ingest_error(_filepath, exception, transmission_log)
           transmission_log.update!(error_messages: ["#{exception.cause} #{exception.message}"])
         end
       end

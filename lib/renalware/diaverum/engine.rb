@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "renalware"
+require "dotenv-rails"
 
 module Renalware
   module Diaverum
