@@ -56,7 +56,7 @@ module Renalware
               task.execute
 
               expect(HD::TransmissionLog.count).to eq(3) # a top level log and one per session
-              expect(HD::TransmissionLog.pluck(:error_messages).uniq.flatten)
+              expect(HD::TransmissionLog.pluck(:error_messages).flatten.uniq)
                 .to eq ["Couldn't find Renalware::HD::Dialysate Fresenius A7"]
               expect(patient.hd_sessions.count).to eq(0)
 

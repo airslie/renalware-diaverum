@@ -11,6 +11,7 @@ module Renalware
         include Diaverum::Logging
         pattr_initialize [:path!, :log_uuid!]
 
+        # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
         def call
           error_count = 0
           lines = []
@@ -26,6 +27,7 @@ module Renalware
           logger.info("Writing summary file #{filepath}")
           File.open(filepath, "w") { |f| f.write(lines.join("\n")) }
         end
+        # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
         private
 

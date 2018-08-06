@@ -16,7 +16,7 @@ module Renalware
               uuid: log_uuid,
               filepath: "somefile"
             )
-            log = create(
+            create(
               :hd_transmission_log,
               :incoming_xml,
               parent: parent,

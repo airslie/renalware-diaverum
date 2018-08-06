@@ -16,22 +16,14 @@ module Renalware
 
         private
 
+        # rubocop:disable Metrics/MethodLength
         def import_xml_files(uuid)
-          filename = nil
-          filepath = nil
-          transmission_log = nil
           logger.info "Ingesting Diaverum HD Sessions using pattern #{pattern}"
           Dir.glob(pattern).sort.each do |filepath|
             filename = File.basename(filepath)
-
             log_msg = "#{filename}..."
             begin
-              transmission_log = HD::TransmissionLog.create!(
-                direction: :in,
-                format: :xml,
-                filepath: filepath,
-                uuid: uuid
-              )
+              transmission_log = create_transmission_log(filepath: filepath, uuid: uuid)
               Diaverum::Incoming::SavePatientSessions.call(filepath, transmission_log)
               log_msg += "DONE"
             rescue StandardError => ex
@@ -45,6 +37,16 @@ module Renalware
           end
         rescue StandardError => exception
           raise exception
+        end
+        # rubocop:enable Metrics/MethodLength
+
+        def create_transmission_log(filepath:, uuid:)
+          HD::TransmissionLog.create!(
+            direction: :in,
+            format: :xml,
+            filepath: filepath,
+            uuid: uuid
+          )
         end
 
         def pattern

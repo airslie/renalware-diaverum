@@ -25,10 +25,14 @@ module Renalware
         end
 
         def setup
-          FileUtils.mkdir_p(outgoing) unless Dir.exist?(outgoing)
-          FileUtils.mkdir_p(outgoing_archive) unless Dir.exist?(outgoing_archive)
-          FileUtils.mkdir_p(incoming) unless Dir.exist?(incoming)
-          FileUtils.mkdir_p(incoming_archive) unless Dir.exist?(incoming_archive)
+          create_folder_if_not_exists(outgoing)
+          create_folder_if_not_exists(outgoing_archive)
+          create_folder_if_not_exists(incoming)
+          create_folder_if_not_exists(incoming_archive)
+        end
+
+        def create_folder_if_not_exists(name)
+          FileUtils.mkdir_p(name) unless Dir.exist?(name)
         end
       end
     end
