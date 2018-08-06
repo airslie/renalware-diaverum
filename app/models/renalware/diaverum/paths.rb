@@ -5,23 +5,30 @@ module Renalware
     class Paths
       class << self
         def outgoing
-          Pathname(Renalware::Diaverum.config.diaverum_outgoing_path)
-        end
-
-        def incoming
-          Pathname(Renalware::Diaverum.config.diaverum_incoming_path)
+          root_path.join("out")
         end
 
         def outgoing_archive
-          Pathname(Renalware::Diaverum.config.diaverum_outgoing_archive_path)
+          root_path.join("out_archive")
+        end
+
+        def incoming
+          root_path.join("in")
         end
 
         def incoming_archive
-          Pathname(Renalware::Diaverum.config.diaverum_incoming_archive_path)
+          root_path.join("in_archive")
         end
 
-        def incoming_error
-          Pathname(Renalware::Diaverum.config.diaverum_incoming_error_path)
+        def root_path
+          Pathname(ENV["DIAVERUM_FOLDER"])
+        end
+
+        def setup
+          FileUtils.mkdir_p(outgoing) unless Dir.exist?(outgoing)
+          FileUtils.mkdir_p(outgoing_archive) unless Dir.exist?(outgoing_archive)
+          FileUtils.mkdir_p(incoming) unless Dir.exist?(incoming)
+          FileUtils.mkdir_p(incoming_archive) unless Dir.exist?(incoming_archive)
         end
       end
     end

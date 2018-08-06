@@ -28,7 +28,7 @@ module Renalware
                   described_class.new(path: "", log_uuid: log_uuid).call
                   expected_filename = "20171124_010444_ok.txt"
                   expect(File.exist?(expected_filename)).to eq(true)
-                  expect(File.open(expected_filename).read).to eq("S1|")
+                  expect(File.open(expected_filename).read).to eq("S1|\n")
                 end
               end
             end
@@ -56,7 +56,7 @@ module Renalware
                   described_class.new(path: "", log_uuid: log_uuid).call
                   expected_filename = "20171124_010444_err.txt"
                   expect(File.exist?(expected_filename)).to eq(true)
-                  expect(File.open(expected_filename).read).to eq("S1|A, B, C")
+                  expect(File.open(expected_filename).read).to eq("S1|A, B, C\n")
                 end
               end
             end

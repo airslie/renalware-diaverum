@@ -27,11 +27,11 @@ module Renalware
 
       before do
         Renalware::Diaverum.configure do |config|
-          diaverum_path = Rails.root.join("tmp", "diaverum")
-          config.diaverum_outgoing_path = diaverum_path.join("out").to_s
-          config.diaverum_outgoing_archive_path = diaverum_path.join("out_archive").to_s
-          FileUtils.mkdir_p config.diaverum_outgoing_path
-          FileUtils.mkdir_p config.diaverum_outgoing_archive_path
+          # diaverum_path = Rails.root.join("tmp", "diaverum")
+          # config.diaverum_outgoing_path = diaverum_path.join("out").to_s
+          # config.diaverum_outgoing_archive_path = diaverum_path.join("out_archive").to_s
+          # FileUtils.mkdir_p config.diaverum_outgoing_path
+          # FileUtils.mkdir_p config.diaverum_outgoing_archive_path
         end
       end
 
@@ -48,9 +48,7 @@ module Renalware
           transmission.reload
 
           expect(transmission.transmitted_at).to eq(time)
-          expect(transmission.filepath).to eq(
-            File.join(Renalware::Diaverum.config.diaverum_outgoing_path, "example.hl7")
-          )
+          expect(transmission.filepath).to eq(Paths.outgoing.join("example.hl7"))
         end
       end
     end

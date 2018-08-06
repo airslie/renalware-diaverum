@@ -33,16 +33,16 @@ module Renalware
                 uuid: uuid
               )
               Diaverum::Incoming::SavePatientSessions.call(filepath, transmission_log)
-              FileUtils.mv filepath, Paths.incoming_archive.join(filename)
               log_msg += "DONE"
             rescue StandardError => ex
               handle_ingest_error(filepath, ex, transmission_log)
               log_msg += "FAIL"
-              # raise ex
+              raise ex
 
               # Engine.exception_notifier.notify(exception)
               next
             ensure
+              FileUtils.mv filepath, Paths.incoming_archive.join(filename)
               logger.info log_msg
             end
           end
@@ -57,21 +57,7 @@ module Renalware
         end
 
         def handle_ingest_error(filepath, exception, transmission_log)
-          if filepath.present?
-            move_failed_xml_to_error_folder(filepath)
-            create_error_file_in_error_folder(filepath, exception)
-          end
           transmission_log.update!(error_messages: ["#{exception.cause} #{exception.message}"])
-        end
-
-        def move_failed_xml_to_error_folder(filepath)
-          FileUtils.mv filepath, Paths.incoming_error.join(File.basename(filepath))
-        end
-
-        def create_error_file_in_error_folder(filepath, exception)
-          filename = File.basename(filepath)
-          msg = "#{exception.class}: #{exception.message}:\n\t#{exception.backtrace.join("\n\t")}"
-          File.write(Paths.incoming_error.join("#{filename}.log"), msg)
         end
       end
     end

@@ -12,6 +12,7 @@ module Renalware
         pattr_initialize [:path!, :log_uuid!]
 
         def call
+          logger.info("UUID #{log_uuid}")
           filepath = Pathname(path).join(filename)
           logger.info("Writing summary file #{filepath}")
           File.open(filepath, "w") do |f|

@@ -6,93 +6,117 @@ module Renalware
   module Diaverum
     module Incoming
       describe "rake diaverum:ingest", type: :task do
-        let(:logger) { IngestXmlFiles.new.logger }
-        before do
-          # Wire up the Diaverum path somewhere safe
-          path = Rails.root.join("tmp", "diaverum")
-          FileUtils.mkdir_p(path)
-          ENV["DIAVERUM_FOLDER"] = path.to_s
-        end
+        let(:patient) { create(:hd_patient, local_patient_id: "KCH123", nhs_number: "0123456789") }
 
         it "preloads the Rails environment" do
           expect(task.prerequisites).to include "environment"
         end
 
         it "runs gracefully with with no files found" do
-          expect { task.execute }.not_to raise_error
+          using_a_tmp_diaverum_path do
+            expect { task.execute }.not_to raise_error
+          end
         end
 
         it "logs to stdout" do
-          # allow_any_instance_of(Logger).to receive(:info)
-          # expect_any_instance_of(Logger).to receive(:infos)
-          # expect { task.execute }.to output("Ingesting Diaverum HD Sessions\n").to_stdout
-          # task.execute
-          # #allow_any_instance_of(Logging.logger).to receive(:info)
-          # expect_any_instance_of(Logger).to receive(:info)
+          using_a_tmp_diaverum_path do
+            expect {
+              task.execute
+            }.to output(/Ingesting Diaverum HD Sessions/).to_stdout_from_any_process
+          end
         end
 
-        context "when there are 2 xml files waiting in the folder" do
-          it "delegates work to the service object for each file, and logs the filenames" do
-            pending
+        context "when there a patient XML file waiting in the incoming folder having 10 sessions" do
+          context "when the file is valid" do
+            it "imports all the sessions and moves/creates necessary files" do
+              using_a_tmp_diaverum_path do
+                copy_example_xml_file_into_diaverum_in_folder
 
-            Dir.mktmpdir do |dir|
-              ENV["DIAVERUM_FOLDER"] = dir
-              dir = Pathname(dir)
-
-              # Create some dummy xml files to simulate those coming in from Diaverum
-              (1..2).each do |idx|
-                filepath = Pathname(dir).join("#{idx}.xml")
-                File.write(filepath, "<Patients><Patient></Patient></Patients>")
-              end
-
-              allow(SavePatientSessions).to receive(:call)
-
-              expect {
                 task.execute
-              }.to output("Ingesting Diaverum HD Sessions\n1.xml...OK\n2.xml...OK\n").to_stdout
 
-              expect(SavePatientSessions).to have_received(:call).exactly(:twice)
+                expect(HD::TransmissionLog.count).to eq(3) # a top level log and one per session
+                expect(HD::TransmissionLog.pluck(:error_messages).flatten).to eq []
+                expect(patient.hd_sessions.count).to eq(2)
 
-              # Successfully processed files are removed from folder and moved to the archive folder
-              expect(Dir.glob(dir.join("*.xml")).count).to eq(0)
-              expect(Dir.glob(dir.join("archive", "*.xml")).count).to eq(2)
+                # Processed files are moved from incoming folder..
+                expect(Dir.glob(Paths.incoming.join("*.xml")).count).to eq(0)
+                # ..to the incoming archive
+                expect(Dir.glob(Paths.incoming_archive.join("*.xml")).count).to eq(1)
+                # ..and a summary file created - in this case ending in ok.txt as there are 0 errors
+                expect(Dir.glob(Paths.incoming.join("*_ok.txt")).count).to eq(1)
+              end
             end
           end
 
-          context "when the processing of a file raises an error and cannot be ingested" do
-            it "is moved to the error folder" do
-              pending
+          context "when the file is NOT valid" do
+            it "imports any sessions it can and moves/creates necessary files" do
+              using_a_tmp_diaverum_path do
+                copy_example_xml_file_into_diaverum_in_folder
+                # now delete all dialysates so we'll get a missing dialysate error
+                HD::Dialysate.delete_all
 
-              Dir.mktmpdir do |dir|
-                ENV["DIAVERUM_FOLDER"] = dir
-                dir = Pathname(dir)
+                task.execute
 
-                # Create a dummy xml file
-                filepath = dir.join("1.xml")
-                File.write(filepath, "<Patients><Patient></Patient></Patients>")
+                expect(HD::TransmissionLog.count).to eq(3) # a top level log and one per session
+                expect(HD::TransmissionLog.pluck(:error_messages).uniq.flatten)
+                  .to eq ["Couldn't find Renalware::HD::Dialysate Fresenius A7"]
+                expect(patient.hd_sessions.count).to eq(0)
 
-                # Mock the SavePatientSessions to return false to indicate failure
-                # - in which case the processed files are moved to the archive folder
-                allow(SavePatientSessions)
-                  .to receive(:call).and_raise(ArgumentError.new("BOOM"))
+                # Processed files are moved from in folder..
+                expect(Dir.glob(Paths.incoming.join("*.xml")).count).to eq(0)
+                # ..to the incoming archive
+                expect(Dir.glob(Paths.incoming_archive.join("*.xml")).count).to eq(1)
+                # ..and a summary file created - in this case ending in ok.txt as there are 0 errors
+                expect(Dir.glob(Paths.incoming.join("*_ok.txt")).count).to eq(0)
+                expect(Dir.glob(Paths.incoming.join("*_err.txt")).count).to eq(1)
 
-                expect {
-                  task.execute
-                }.to output("Ingesting Diaverum HD Sessions\n1.xml...FAIL\n").to_stdout
-
-                expect(SavePatientSessions).to have_received(:call).exactly(:once)
-
-                # Processed files should be removed from folder and moved to the errors folder
-                expect(Dir.glob(dir.join("1.xml")).count).to eq(0)
-                expect(Dir.glob(dir.join("archive", "1.xml")).count).to eq(0)
-                expect(Dir.glob(dir.join("error", "1.xml")).count).to eq(1)
-
-                # We also put a file in there with the error report
-                error_msg = File.read(dir.join("error", "1.xml.log"))
-                expect(error_msg).to match(/BOOM/)
-                expect(error_msg).to match(/ArgumentError/)
+                err_file_content = Dir.glob(Paths.incoming.join("*_err.txt"))
+                  .map{ |p| File.read(p) }.join("")
+                expect(err_file_content)
+                  .to match(/Couldn't find Renalware::HD::Dialysate Fresenius A7/)
               end
             end
+          end
+        end
+
+        def copy_example_xml_file_into_diaverum_in_folder
+          File.write(
+            Paths.incoming.join("diaverum_example.xml"),
+            create_patient_xml_document.to_xml
+          )
+        end
+
+        def create_patient_xml_document(options: {})
+          erb_template = options.fetch(
+            :erb_template,
+            Engine.root.join("spec", "fixtures", "files", "diaverum_example.xml.erb")
+          )
+          system_user = create(:user, username: SystemUser.username)
+          access_map = AccessMap.create!(
+            diaverum_location_id: "LEJ",
+            diaverum_type_id: 7,
+            access_type: create(:access_type),
+            side: :left
+          )
+          hospital_unit = create(:hospital_unit)
+          dialysate = create(:hd_dialysate)
+          provider = HD::Provider.create!(name: "Diaverum")
+          dialysis_unit = HD::ProviderUnit.create!(
+            hospital_unit: hospital_unit,
+            hd_provider: provider,
+            providers_reference: "123"
+          )
+          xml_filepath = Engine.root.join("spec", "fixtures", "files", "diaverum_example.xml.erb")
+          xml_string = ERB.new(xml_filepath.read).result(binding)
+          Nokogiri::XML(xml_string)
+        end
+
+        def using_a_tmp_diaverum_path
+          Dir.mktmpdir do |dir|
+            p dir
+            ENV["DIAVERUM_FOLDER"] = dir
+            Paths.setup
+            yield
           end
         end
       end
