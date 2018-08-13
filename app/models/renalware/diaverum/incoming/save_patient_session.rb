@@ -13,6 +13,21 @@ module Renalware
         # rubocop:disable Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
         def call
+          existing_session = Renalware::HD::Session
+            .select(:id, :external_id, :created_at)
+            .find_by(external_id: session_node.TreatmentId)
+
+          if existing_session.present?
+            transmission_log.update!(
+              result: "previously imported #{I18n.l(existing_session.created_at)}",
+              session: existing_session,
+              external_session_id: session_node.TreatmentId
+            )
+            return
+          end
+
+          return if Renalware::HD::Session.exists?(external_id: session_node.TreatmentId)
+
           transmission_log.update!(
             payload: session_node.to_xml,
             external_session_id: session_node.TreatmentId
@@ -32,7 +47,8 @@ module Renalware
               signed_off_by: user,
               signed_off_at: Time.zone.parse("#{session_node.Date} #{session_node.EndTime}"),
               dry_weight: most_recent_dry_weight,
-              dialysate: dialysate
+              dialysate: dialysate,
+              external_id: session_node.TreatmentId
             )
 
             info = session.document.info

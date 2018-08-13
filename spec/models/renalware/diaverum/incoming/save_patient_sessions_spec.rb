@@ -2,6 +2,10 @@
 
 require "rails_helper"
 
+# TODO: Improvements
+# - log individual entries to results {}
+# - test SaveSession in isolation
+# - break up #call
 module Renalware
   module Diaverum
     module Incoming
@@ -80,6 +84,7 @@ module Renalware
                 .and change(patient.hd_sessions.closed, :count).by(2)
 
                 expect(HD::TransmissionLog.pluck(:session_id).uniq.compact.count).to eq(2)
+                expect(HD::Session::Closed.pluck(:external_id)).to eq([1, 2])
               end
 
               context "when config.diaverum_incoming_skip_session_save is true" do
@@ -138,6 +143,20 @@ module Renalware
                   expect(child_logs.length).to eq(2)
                   expect(child_logs.map(&:error_messages).flatten.uniq)
                     .to eq(["Session End Time can't be blank"])
+                end
+              end
+            end
+            describe "handling of duplicates" do
+              context "when the same session is imported again (which will happen everyday) as "\
+                      "the file contains the last 30 days of sesssons" do
+                it "does not change the previoulsly saved session" do
+                  # The first session has a TreatmentID of 1 in the file, the second is 2
+                  create(:hd_closed_session, patient: patient, by: system_user, external_id: "1")
+
+                  # Should only import 1 new one
+                  expect{
+                    SavePatientSessions.new(payload, transmission_log).call
+                  }.to change(HD::Session, :count).by(1)
                 end
               end
             end
