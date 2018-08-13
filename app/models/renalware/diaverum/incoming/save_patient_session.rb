@@ -11,6 +11,7 @@ module Renalware
         pattr_initialize :patient, :session_node, :transmission_log
 
         # rubocop:disable Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/AbcSize
+        # rubocop:disable Metrics/PerceivedComplexity
         def call
           transmission_log.update!(
             payload: session_node.to_xml,
@@ -75,8 +76,13 @@ module Renalware
           end
 
           begin
-            session.save!
-            transmission_log.update!(result: "ok", session: session)
+            if Diaverum.config.diaverum_incoming_skip_session_save
+              session.validate!
+              transmission_log.update!(result: "ok")
+            else
+              session.save!
+              transmission_log.update!(result: "ok", session: session)
+            end
           rescue ActiveRecord::RecordInvalid
             error_messages = [
               session.errors&.full_messages,
@@ -89,6 +95,7 @@ module Renalware
           end
         end
         # rubocop:enable Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/AbcSize
+        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 
