@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/airslie/renalware-core.git
-  revision: d9f3f6ecc55c62675f5e68db4ab9e8907d20c327
+  revision: ecbab1f427c312dd411bddaa0e874d8404733fa1
   branch: chore/hd/diaverum_support
   specs:
     renalware-core (2.0.39)
@@ -80,6 +80,7 @@ PATH
   remote: .
   specs:
     renalware-diaverum (0.1.0)
+      dotenv-rails
       pg (~> 1.0.0)
       puma (~> 3.11.2)
       rails (>= 5.1.6, < 6.0.0)
@@ -238,7 +239,7 @@ GEM
     fuubar (2.3.1)
       rspec-core (~> 3.0)
       ruby-progressbar (~> 1.4)
-    geocoder (1.4.9)
+    geocoder (1.5.0)
     globalid (0.4.1)
       activesupport (>= 4.2.0)
     gpgme (2.0.16)
@@ -499,4 +500,4 @@ RUBY VERSION
    ruby 2.5.0p0
 
 BUNDLED WITH
-   1.16.1
+   1.16.3

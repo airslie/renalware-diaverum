@@ -17,6 +17,10 @@ namespace :diaverum do
   desc "Iterate through diaverum files in the folder $DIAVERUM_FOLDER that match the pattern "\
         "and for each file (it should be one per patient) import any sessions contained therein."
   task ingest: :environment do
-    Renalware::Diaverum::Incoming::SessionIngestor.call
+    uuid = Renalware::Diaverum::Incoming::IngestXmlFiles.new.call
+    Renalware::Diaverum::Incoming::GenerateSummaryFile.new(
+      log_uuid: uuid,
+      path: Renalware::Diaverum::Paths.incoming
+    ).call
   end
 end

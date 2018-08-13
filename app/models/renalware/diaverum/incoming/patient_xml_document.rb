@@ -49,7 +49,7 @@ module Renalware
             raise(Errors::DiaverumXMLParsingError, "Unexpected root element #{node.root.name}")
           end
           if node.xpath("Patients/Patient").length != 1
-            raise(Errors::DiaverumXMLParsingError, "File does not contain exactly one Patient element!")
+            raise(Errors::DiaverumXMLParsingError, "File doesn't contain only one Patient element!")
           end
         end
       end

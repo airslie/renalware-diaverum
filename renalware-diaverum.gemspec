@@ -19,9 +19,9 @@ Gem::Specification.new do |s|
 
   s.files = Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
 
+  s.add_dependency "dotenv-rails"
   s.add_dependency "pg", "~> 1.0.0"
   s.add_dependency "puma", "~> 3.11.2"
   s.add_dependency "rails", ">= 5.1.6", "< 6.0.0"
-
   # s.add_dependency "renalware-core"
 end

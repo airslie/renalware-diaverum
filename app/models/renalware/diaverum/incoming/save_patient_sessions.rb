@@ -9,12 +9,11 @@ module Renalware
       class SavePatientSessions
         pattr_initialize :patient_node, :transmission_log
 
-        # helperer for new(...).call()
+        # helper for new(...).call()
         def self.call(path_to_xml, transmission_log)
           @transmission_log = transmission_log
           transmission_log.update!(payload: File.read(path_to_xml))
           doc = File.open(Pathname(path_to_xml)) { |f| Nokogiri::XML(f) }
-          File.write(Rails.root.join("bla2.xml"), doc.to_xml)
           new(Incoming::PatientXmlDocument.new(doc), transmission_log).call
         end
 
