@@ -25,6 +25,7 @@ module Renalware
             format: :xml
           )
         end
+        before { Diaverum.config.diaverum_incoming_skip_session_save = false }
 
         def create_access_map
           AccessMap.create!(
@@ -72,14 +73,30 @@ module Renalware
 
             context "when all sessions are valid" do
               it "creates a new HD session for each session in the file" do
+                Diaverum.config.diaverum_incoming_skip_session_save = false
                 expect{
                   SavePatientSessions.new(payload, transmission_log).call
                 }.to change(HD::Session, :count).by(2)
                 .and change(patient.hd_sessions.closed, :count).by(2)
+
+                expect(HD::TransmissionLog.pluck(:session_id).uniq.compact.count).to eq(2)
+              end
+
+              context "when config.diaverum_incoming_skip_session_save is true" do
+                it "does not attempt to save the session but still logs (without session id)" do
+                  Diaverum.config.diaverum_incoming_skip_session_save = true
+                  expect{
+                    SavePatientSessions.new(payload, transmission_log).call
+                  }.to change(HD::Session, :count).by(0)
+                  .and change(HD::TransmissionLog, :count).by(3)
+
+                  expect(HD::TransmissionLog.pluck(:session_id).uniq.compact.count).to eq(0)
+                  Diaverum.config.diaverum_incoming_skip_session_save = false
+                end
               end
             end
 
-            context "when sessions are invalid becuase they are missing an end_time" do
+            context "when sessions are invalid because they are missing an end_time" do
               let(:end_time) { nil }
 
               it "does not create any new sessions" do
@@ -102,6 +119,26 @@ module Renalware
                 expect(child_logs.length).to eq(2)
                 expect(child_logs.map(&:error_messages).flatten.uniq)
                   .to eq(["Session End Time can't be blank"])
+              end
+
+              context "when config.diaverum_incoming_skip_session_save is true" do
+                it "does not attempt to save the session but still logs with errors" do
+                  Diaverum.config.diaverum_incoming_skip_session_save = true
+
+                  expect {
+                    SavePatientSessions.new(payload, transmission_log).call
+                  }.to change(HD::Session, :count).by(0)
+
+                  parent_logs = HD::TransmissionLog.where(parent_id: nil).all
+                  expect(parent_logs.length).to eq(1)
+                  parent_log = parent_logs.first
+                  expect(parent_log.error_messages).to eq([])
+
+                  child_logs = parent_log.children
+                  expect(child_logs.length).to eq(2)
+                  expect(child_logs.map(&:error_messages).flatten.uniq)
+                    .to eq(["Session End Time can't be blank"])
+                end
               end
             end
           end
