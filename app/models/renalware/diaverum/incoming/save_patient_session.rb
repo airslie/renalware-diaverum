@@ -98,9 +98,10 @@ module Renalware
             if Diaverum.config.diaverum_incoming_skip_session_save
               session.validate!
               transmission_log.update!(result: "ok")
-            else
-              session.save!
-              transmission_log.update!(result: "ok", session: session)
+              # else
+              # Commented out for now to be safe
+              # session.save!
+              # transmission_log.update!(result: "ok", session: session)
             end
           rescue ActiveRecord::RecordInvalid
             error_messages = [
