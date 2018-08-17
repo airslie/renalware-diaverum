@@ -64,7 +64,7 @@ module Renalware
             dialysis.flow_rate = session_node.DialysateFlow
             dialysis.machine_urr = nil
             dialysis.machine_ktv = session_node.KTV
-            dialysis.litres_processed = session_node.InfusionVolume
+            dialysis.litres_processed = session_node.TreatedBloodVolume
 
             pre = session.document.observations_before
             pre.pulse = session_node.PulsePre
@@ -83,6 +83,9 @@ module Renalware
             post.weight = session_node.WeightPost
             post.temperature_measured = session_node.TemperaturePost.present? ? :yes : :no
             post.temperature = session_node.TemperaturePost
+
+            hdf = session.document.hdf
+            hdf.subs_volume = session_node.InfusionVolume
           rescue StandardError => exception
             transmission_log.update!(
               error_messages: ["#{exception.cause} #{exception.message}"],
