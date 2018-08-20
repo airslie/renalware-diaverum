@@ -95,13 +95,13 @@ module Renalware
           end
 
           begin
-            if Diaverum.config.diaverum_incoming_skip_session_save
+            # For now skip saving in production
+            if Diaverum.config.diaverum_incoming_skip_session_save || Rails.env.production?
               session.validate!
               transmission_log.update!(result: "ok")
-              # else
-              # Commented out for now to be safe
-              # session.save!
-              # transmission_log.update!(result: "ok", session: session)
+            else
+              session.save!
+              transmission_log.update!(result: "ok", session: session)
             end
           rescue ActiveRecord::RecordInvalid
             error_messages = [

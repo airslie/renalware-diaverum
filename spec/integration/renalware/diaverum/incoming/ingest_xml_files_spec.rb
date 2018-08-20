@@ -27,7 +27,7 @@ module Renalware
           }.to output(/Ingesting Diaverum HD Sessions/).to_stdout_from_any_process
         end
 
-        context "when there a patient XML file waiting in the incoming folder having 10 sessions" do
+        context "when there a patient XML file waiting in the incoming folder having 2 sessions" do
           context "when the file is valid" do
             it "imports all the sessions and moves/creates necessary files" do
               copy_example_xml_file_into_diaverum_in_folder
