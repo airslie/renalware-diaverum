@@ -6,7 +6,7 @@ module Renalware
   module Diaverum
     module Outgoing
       #
-      # A subscriber to renalware-core patholoy messages.
+      # A subscriber to renalware-core pathology messages.
       #
       class PathologyListener
         # This method intercepts the event raised when an HL7 message has been
@@ -19,9 +19,8 @@ module Renalware
           patient = find_diaverum_patient(local_patient_id)
           return if patient.blank?
 
-          # TODO
-          ForwardHl7Job.perform_now(
-            transmission: transmission_for(patient, feed_message)
+          ForwardHl7Job.perform_later(
+            transmission: transmission_log_for(patient, feed_message)
           )
         end
 
@@ -31,13 +30,12 @@ module Renalware
           PatientQuery.new(local_patient_id: local_patient_id).call
         end
 
-        def transmission_for(patient, feed_message)
-          Transmission.create!(
+        def transmission_log_for(patient, feed_message)
+          Renalware::HD::TransmissionLog.new(
             patient: patient,
-            dialysis_unit: nil, # TODO: lookup
-            direction: :out,
+            payload: feed_message.body,
             format: :hl7,
-            payload: feed_message.body
+            direction: :out
           )
         end
       end
