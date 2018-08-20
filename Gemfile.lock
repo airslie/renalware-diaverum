@@ -1,8 +1,8 @@
 GIT
   remote: https://github.com/airslie/renalware-core.git
-  revision: 106428cadb2e597666bca7f0804c5a94268aedb3
+  revision: dd1d881212afd12c8eed7b242fb7ae00c03e7bec
   specs:
-    renalware-core (2.0.42)
+    renalware-core (2.0.43)
       active_type (~> 0.7.1)
       activerecord-import (~> 0.22.0)
       ahoy_matey (~> 2.1.0)

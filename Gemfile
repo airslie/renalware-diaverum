@@ -9,8 +9,7 @@ gemspec
 
 gem "dotenv-rails", "~> 2.5.0"
 # gem "renalware-core", path: "../renalwarev2"
-gem "renalware-core",
-    git: "https://github.com/airslie/renalware-core.git"
+gem "renalware-core", git: "https://github.com/airslie/renalware-core.git"
 # branch: "chore/hd/diaverum_support"
 # path: "../renalwarev2"
 # branch: "chore/hd/diaverum_support"
