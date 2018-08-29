@@ -2245,7 +2245,8 @@ ALTER SEQUENCE hd_diary_slots_id_seq OWNED BY hd_diary_slots.id;
 CREATE TABLE hd_diurnal_period_codes (
     id bigint NOT NULL,
     code character varying NOT NULL,
-    description text
+    description text,
+    sort_order integer DEFAULT 0 NOT NULL
 );
 
 
@@ -2519,7 +2520,9 @@ CREATE TABLE hd_schedule_definitions (
     diurnal_period_id integer NOT NULL,
     deleted_at timestamp without time zone,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    days_text text,
+    sort_order integer DEFAULT 0 NOT NULL
 );
 
 
@@ -5805,55 +5808,6 @@ CREATE MATERIALIZED VIEW reporting_hd_blood_pressures_audit AS
 
 
 --
--- Name: reporting_hd_overall_audit; Type: MATERIALIZED VIEW; Schema: renalware; Owner: -
---
-
-CREATE MATERIALIZED VIEW reporting_hd_overall_audit AS
- WITH fistula_or_graft_access_types AS (
-         SELECT access_types.id
-           FROM access_types
-          WHERE (((access_types.name)::text ~~* '%fistula%'::text) OR ((access_types.name)::text ~~* '%graft%'::text))
-        ), stats AS (
-         SELECT s.patient_id,
-            s.hospital_unit_id,
-            s.month,
-            s.year,
-            s.session_count,
-            s.number_of_missed_sessions,
-            s.number_of_sessions_with_dialysis_minutes_shortfall_gt_5_pct,
-            ((((s.number_of_missed_sessions)::double precision / NULLIF((s.session_count)::double precision, (0)::double precision)) * (100.0)::double precision) > (10.0)::double precision) AS missed_sessions_gt_10_pct,
-            (s.dialysis_minutes_shortfall)::double precision AS dialysis_minutes_shortfall,
-            (convert_to_float(((s.pathology_snapshot -> 'HGB'::text) ->> 'result'::text)) > (100)::double precision) AS hgb_gt_100,
-            (convert_to_float(((s.pathology_snapshot -> 'HGB'::text) ->> 'result'::text)) > (130)::double precision) AS hgb_gt_130,
-            (convert_to_float(((s.pathology_snapshot -> 'PTH'::text) ->> 'result'::text)) < (300)::double precision) AS pth_lt_300,
-            (convert_to_float(((s.pathology_snapshot -> 'URR'::text) ->> 'result'::text)) > (64)::double precision) AS urr_gt_64,
-            (convert_to_float(((s.pathology_snapshot -> 'URR'::text) ->> 'result'::text)) > (69)::double precision) AS urr_gt_69,
-            (convert_to_float(((s.pathology_snapshot -> 'PHOS'::text) ->> 'result'::text)) < (1.8)::double precision) AS phos_lt_1_8
-           FROM hd_patient_statistics s
-          WHERE (s.rolling IS NULL)
-        )
- SELECT hu.name,
-    stats.year,
-    stats.month,
-    count(*) AS patient_count,
-    round((avg(stats.dialysis_minutes_shortfall))::numeric, 2) AS avg_missed_hd_time,
-    round(avg(stats.number_of_sessions_with_dialysis_minutes_shortfall_gt_5_pct), 2) AS pct_shortfall_gt_5_pct,
-    round(((((count(*) FILTER (WHERE (stats.missed_sessions_gt_10_pct = true)))::double precision / (count(*))::double precision) * (100)::double precision))::numeric, 2) AS pct_missed_sessions_gt_10_pct,
-    round(((((count(*) FILTER (WHERE (stats.hgb_gt_100 = true)))::double precision / (count(*))::double precision) * (100)::double precision))::numeric, 2) AS percentage_hgb_gt_100,
-    round(((((count(*) FILTER (WHERE (stats.hgb_gt_130 = true)))::double precision / (count(*))::double precision) * (100)::double precision))::numeric, 2) AS percentage_hgb_gt_130,
-    round(((((count(*) FILTER (WHERE (stats.pth_lt_300 = true)))::double precision / (count(*))::double precision) * (100)::double precision))::numeric, 2) AS percentage_pth_lt_300,
-    round(((((count(*) FILTER (WHERE (stats.urr_gt_64 = true)))::double precision / (count(*))::double precision) * (100)::double precision))::numeric, 2) AS percentage_urr_gt_64,
-    round(((((count(*) FILTER (WHERE (stats.urr_gt_69 = true)))::double precision / (count(*))::double precision) * (100)::double precision))::numeric, 2) AS percentage_urr_gt_69,
-    round(((((count(*) FILTER (WHERE (stats.phos_lt_1_8 = true)))::double precision / (count(*))::double precision) * (100)::double precision))::numeric, 2) AS percentage_phosphate_lt_1_8,
-    'TBC'::text AS percentage_access_fistula_or_graft
-   FROM (stats
-     JOIN hospital_units hu ON ((hu.id = stats.hospital_unit_id)))
-  GROUP BY hu.name, stats.year, stats.month
-  ORDER BY hu.name, stats.year, stats.month
-  WITH NO DATA;
-
-
---
 -- Name: users; Type: TABLE; Schema: renalware; Owner: -
 --
 
@@ -7206,6 +7160,86 @@ CREATE SEQUENCE access_maps_id_seq
 --
 
 ALTER SEQUENCE access_maps_id_seq OWNED BY access_maps.id;
+
+
+--
+-- Name: hd_schedule_definition_filters; Type: VIEW; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE VIEW hd_schedule_definition_filters AS
+ SELECT filter.ids,
+    ((filter.days_text || ' '::text) || upper((filter.dirunal_code)::text)) AS days
+   FROM ( SELECT array_agg(s1.id) AS ids,
+            0 AS dirunal_order,
+            s1.days_text,
+            ''::character varying AS dirunal_code
+           FROM renalware.hd_schedule_definitions s1
+          GROUP BY s1.days_text
+        UNION ALL
+         SELECT public.intset((s2.id)::integer) AS intset,
+            hdpc.sort_order,
+            s2.days_text,
+            hdpc.code
+           FROM (renalware.hd_schedule_definitions s2
+             JOIN renalware.hd_diurnal_period_codes hdpc ON ((s2.diurnal_period_id = hdpc.id)))) filter
+  ORDER BY filter.days_text, filter.dirunal_order;
+
+
+--
+-- Name: reporting_hd_overall_audit; Type: MATERIALIZED VIEW; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE MATERIALIZED VIEW reporting_hd_overall_audit AS
+ WITH fistula_or_graft_access_types AS (
+         SELECT access_types.id
+           FROM renalware.access_types
+          WHERE (((access_types.name)::text ~~* '%fistula%'::text) OR ((access_types.name)::text ~~* '%graft%'::text))
+        ), patients_w_fistula_or_graft AS (
+         SELECT access_profiles.patient_id
+           FROM renalware.access_profiles
+          WHERE (access_profiles.type_id IN ( SELECT fistula_or_graft_access_types.id
+                   FROM fistula_or_graft_access_types))
+        ), stats AS (
+         SELECT s.patient_id,
+            s.hospital_unit_id,
+            s.month,
+            s.year,
+            s.session_count,
+            s.number_of_missed_sessions,
+            s.number_of_sessions_with_dialysis_minutes_shortfall_gt_5_pct,
+            (EXISTS ( SELECT x.patient_id
+                   FROM patients_w_fistula_or_graft x
+                  WHERE (x.patient_id = s.patient_id))) AS has_fistula_or_graft,
+            ((((s.number_of_missed_sessions)::double precision / NULLIF((s.session_count)::double precision, (0)::double precision)) * (100.0)::double precision) > (10.0)::double precision) AS missed_sessions_gt_10_pct,
+            (s.dialysis_minutes_shortfall)::double precision AS dialysis_minutes_shortfall,
+            (renalware.convert_to_float(((s.pathology_snapshot -> 'HGB'::text) ->> 'result'::text)) > (100)::double precision) AS hgb_gt_100,
+            (renalware.convert_to_float(((s.pathology_snapshot -> 'HGB'::text) ->> 'result'::text)) > (130)::double precision) AS hgb_gt_130,
+            (renalware.convert_to_float(((s.pathology_snapshot -> 'PTH'::text) ->> 'result'::text)) < (300)::double precision) AS pth_lt_300,
+            (renalware.convert_to_float(((s.pathology_snapshot -> 'URR'::text) ->> 'result'::text)) > (64)::double precision) AS urr_gt_64,
+            (renalware.convert_to_float(((s.pathology_snapshot -> 'URR'::text) ->> 'result'::text)) > (69)::double precision) AS urr_gt_69,
+            (renalware.convert_to_float(((s.pathology_snapshot -> 'PHOS'::text) ->> 'result'::text)) < (1.8)::double precision) AS phos_lt_1_8
+           FROM renalware.hd_patient_statistics s
+          WHERE (s.rolling IS NULL)
+        )
+ SELECT hu.name,
+    stats.year,
+    stats.month,
+    count(*) AS patient_count,
+    round((avg(stats.dialysis_minutes_shortfall))::numeric, 2) AS avg_missed_hd_time,
+    round(avg(stats.number_of_sessions_with_dialysis_minutes_shortfall_gt_5_pct), 2) AS pct_shortfall_gt_5_pct,
+    round(((((count(*) FILTER (WHERE (stats.missed_sessions_gt_10_pct = true)))::double precision / (count(*))::double precision) * (100)::double precision))::numeric, 2) AS pct_missed_sessions_gt_10_pct,
+    round(((((count(*) FILTER (WHERE (stats.hgb_gt_100 = true)))::double precision / (count(*))::double precision) * (100)::double precision))::numeric, 2) AS percentage_hgb_gt_100,
+    round(((((count(*) FILTER (WHERE (stats.hgb_gt_130 = true)))::double precision / (count(*))::double precision) * (100)::double precision))::numeric, 2) AS percentage_hgb_gt_130,
+    round(((((count(*) FILTER (WHERE (stats.pth_lt_300 = true)))::double precision / (count(*))::double precision) * (100)::double precision))::numeric, 2) AS percentage_pth_lt_300,
+    round(((((count(*) FILTER (WHERE (stats.urr_gt_64 = true)))::double precision / (count(*))::double precision) * (100)::double precision))::numeric, 2) AS percentage_urr_gt_64,
+    round(((((count(*) FILTER (WHERE (stats.urr_gt_69 = true)))::double precision / (count(*))::double precision) * (100)::double precision))::numeric, 2) AS percentage_urr_gt_69,
+    round(((((count(*) FILTER (WHERE (stats.phos_lt_1_8 = true)))::double precision / (count(*))::double precision) * (100)::double precision))::numeric, 2) AS percentage_phosphate_lt_1_8,
+    round(((((count(*) FILTER (WHERE (stats.has_fistula_or_graft = true)))::double precision / (count(*))::double precision) * (100)::double precision))::numeric, 2) AS percentage_access_fistula_or_graft
+   FROM (stats
+     JOIN renalware.hospital_units hu ON ((hu.id = stats.hospital_unit_id)))
+  GROUP BY hu.name, stats.year, stats.month
+  ORDER BY hu.name, stats.year, stats.month
+  WITH NO DATA;
 
 
 SET search_path = renalware, pg_catalog;
@@ -9736,6 +9770,13 @@ CREATE INDEX idx_mp_patient_id_medication_route_id ON medication_prescriptions U
 
 
 --
+-- Name: idx_patients_on_lower_family_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX idx_patients_on_lower_family_name ON patients USING btree (lower((family_name)::text), given_name);
+
+
+--
 -- Name: idx_practice_membership; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -11353,6 +11394,13 @@ CREATE INDEX index_modality_descriptions_on_id_and_type ON modality_descriptions
 
 
 --
+-- Name: index_modality_descriptions_on_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_modality_descriptions_on_name ON modality_descriptions USING btree (name);
+
+
+--
 -- Name: index_modality_modalities_on_created_by_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -11364,6 +11412,13 @@ CREATE INDEX index_modality_modalities_on_created_by_id ON modality_modalities U
 --
 
 CREATE INDEX index_modality_modalities_on_description_id ON modality_modalities USING btree (description_id);
+
+
+--
+-- Name: index_modality_modalities_on_ended_on; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_modality_modalities_on_ended_on ON modality_modalities USING btree (ended_on);
 
 
 --
@@ -12736,6 +12791,20 @@ CREATE INDEX index_transplant_registration_statuses_on_description_id ON transpl
 --
 
 CREATE INDEX index_transplant_registration_statuses_on_registration_id ON transplant_registration_statuses USING btree (registration_id);
+
+
+--
+-- Name: index_transplant_registration_statuses_on_started_on; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_transplant_registration_statuses_on_started_on ON transplant_registration_statuses USING btree (started_on);
+
+
+--
+-- Name: index_transplant_registration_statuses_on_terminated_on; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_transplant_registration_statuses_on_terminated_on ON transplant_registration_statuses USING btree (terminated_on);
 
 
 --
@@ -15611,9 +15680,14 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20180702091352'),
 ('20180712143314'),
 ('20180718172750'),
+('20180725132557'),
+('20180725132808'),
 ('20180730154454'),
+('20180802103013'),
 ('20180802132417'),
 ('20180802144507'),
-('20180803131157');
+('20180803131157'),
+('20180814103916'),
+('20180815144429');
 
 
