@@ -9,7 +9,7 @@ module Renalware
         pattr_initialize [:patient!]
 
         def to_s
-          timestamp = Time.zone.now.strftime("%Y%m%d%H%M%S")
+          timestamp = Time.zone.now.strftime("%Y%m%d%H%M%S%L")
           dob = patient.born_on&.strftime("%Y%m%d")
           "#{timestamp}_#{patient.nhs_number}_#{patient.local_patient_id&.upcase}_#{dob}.hl7"
         end
