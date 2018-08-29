@@ -9,14 +9,16 @@ module Renalware
         Patient.new(born_on: "01-12-2000", nhs_number: "0123456789", local_patient_id: "kch1")
       end
 
-      let(:time) { Time.zone.parse("11-12-2000 01:02:03") }
+      let(:time) {
+        Time.zone.strptime("2000-12-11 01:02:03.000", "%Y-%m-%d %H:%M:%S.%N")
+      }
 
       describe ".to_s" do
         subject { described_class.new(patient: patient).to_s }
 
         it {
           travel_to(time) do
-            is_expected.to eq("20001211010203_0123456789_KCH1_20001201.hl7")
+            is_expected.to eq("20001211010203000_0123456789_KCH1_20001201.hl7")
           end
         }
       end
