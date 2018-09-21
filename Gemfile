@@ -8,8 +8,8 @@ source "https://rails-assets.org"
 gemspec
 
 gem "dotenv-rails", "~> 2.5.0"
-# gem "renalware-core", path: "../renalwarev2"
 gem "renalware-core", git: "https://github.com/airslie/renalware-core.git"
+
 # branch: "chore/hd/diaverum_support"
 # path: "../renalwarev2"
 # branch: "chore/hd/diaverum_support"
@@ -19,7 +19,8 @@ gem "renalware-core", git: "https://github.com/airslie/renalware-core.git"
 # Because we can't include git reference in the gemspec in renalware, for now include it here
 # (its also in the renalware Gemfile which applies only to running renalware tests or running
 # up the spec/dummy app)
-gem "devise_security_extension", git: "https://github.com/phatworx/devise_security_extension.git"
+gem "devise_security_extension",
+    git: "https://github.com/phatworx/devise_security_extension.git"
 
 group :development, :test do
   gem "bootsnap"
