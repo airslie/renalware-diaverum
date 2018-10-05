@@ -10,6 +10,14 @@ gemspec
 gem "dotenv-rails", "~> 2.5.0"
 gem "renalware-core", git: "https://github.com/airslie/renalware-core.git"
 
+# The main trix gem at https://github.com/maclover7/trix is not yet Rails 5.2 compatible; it give
+# an argument error when calling f.trix_editor due to a Rails 5.2 ActionView change.
+# For now use this fork until the upstream has been fixed (this line will also need to appear in
+# each hospital's Gemfile for now)
+gem "trix",
+    git: "https://github.com/airslie/trix.git",
+    branch: "master"
+
 # branch: "chore/hd/diaverum_support"
 # path: "../renalwarev2"
 # branch: "chore/hd/diaverum_support"
