@@ -39,8 +39,16 @@ module Renalware
         end
 
         def each_session
-          patient_node.xpath("/Patients/Patient/Treatments/Treatment").each do |node|
+          session_nodes.each do |node|
             yield SessionXmlDocument.new(node) if block_given?
+          end
+        end
+
+        def session_nodes
+          @session_nodes ||= begin
+            patient_node.xpath("/Patients/Patient/Treatments/Treatment").map do |node|
+              SessionXmlDocument.new(node)
+            end
           end
         end
 

@@ -12,8 +12,8 @@ but in this case has 2 sessions
     <LastName><%= patient.family_name %></LastName>
     <DateOfBirth><%= I18n.l(patient.born_on) %></DateOfBirth>
     <Sex>F</Sex>
-    <ModalityTypeId>HFLUX</ModalityTypeId>
-    <ModalityTypeDescription>High flux hemodialysis</ModalityTypeDescription>
+    <ModalityTypeId><%= defined?(hd_type) ? hd_type : "HFLUX" %></ModalityTypeId>
+    <ModalityTypeDescription><%= defined?(hd_type) ? hd_type : "HFLUX" %></ModalityTypeDescription>
     <PrimaryRenalDiagnosisCodeId>00</PrimaryRenalDiagnosisCodeId>
     <PrimaryRenalDiagnosisCodeDescription>Chronic renal failure; aetiology uncertain</PrimaryRenalDiagnosisCodeDescription>
     <RaceId>1</RaceId>
@@ -46,8 +46,8 @@ but in this case has 2 sessions
         <DialysateGlucose>1</DialysateGlucose>
         <DialysatePotassium>2</DialysatePotassium>
         <DialysateSodium>140</DialysateSodium>
-        <TypeId>HFLUX</TypeId>
-        <TypeDescription>High flux hemodialysis</TypeDescription>
+        <TypeId><%= defined?(hd_type) ? hd_type : "HFLUX" %></TypeId>
+        <TypeDescription><%= defined?(hd_type) ? hd_type : "HFLUX" %></TypeDescription>
         <SystolicBloodPressurePre>147</SystolicBloodPressurePre>
         <DiastolicBloodPressurePre>71</DiastolicBloodPressurePre>
         <SystolicBloodPressurePost>158</SystolicBloodPressurePost>

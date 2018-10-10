@@ -146,6 +146,7 @@ module Renalware
                 end
               end
             end
+
             describe "handling of duplicates" do
               context "when the same session is imported again (which will happen everyday) as "\
                       "the file contains the last 30 days of sesssons" do

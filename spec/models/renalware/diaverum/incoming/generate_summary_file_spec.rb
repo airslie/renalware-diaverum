@@ -36,6 +36,7 @@ module Renalware
             end
           end
         end
+
         context "when there are validation errors" do
           it "outputs a _err.txt file with the errors in it" do
             log_uuid = SecureRandom.uuid

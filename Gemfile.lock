@@ -1,13 +1,28 @@
 GIT
-  remote: https://github.com/airslie/renalware-core.git
-  revision: 1256e368c190dc7b2fe20d9c04656fc144604fae
+  remote: https://github.com/airslie/trix.git
+  revision: 56d84ae42e34488b0bb301bd9bd0f54fac7fc811
+  branch: master
   specs:
-    renalware-core (2.0.47)
+    trix (0.11.1)
+      rails (> 4.1, <= 6.0)
+
+GIT
+  remote: https://github.com/phatworx/devise_security_extension.git
+  revision: b2ee978af7d49f0fb0e7271c6ac074dfb4d39353
+  specs:
+    devise_security_extension (0.10.0)
+      devise (>= 3.0.0, < 5.0)
+      railties (>= 3.2.6, < 6.0)
+
+PATH
+  remote: ../renalwarev2
+  specs:
+    renalware-core (2.0.51)
       active_type (~> 0.7.1)
-      activerecord-import (~> 0.22.0)
+      activerecord-import (~> 0.26.0)
       ahoy_matey (~> 2.1.0)
       attr_extras (~> 5.2.0)
-      autoprefixer-rails (~> 8.4.1)
+      autoprefixer-rails (~> 9.1.4)
       chosen-rails (~> 1.8.3)
       client_side_validations (= 11.1.2)
       client_side_validations-simple_form (~> 6.6.0)
@@ -25,7 +40,6 @@ GIT
       font-awesome-sass (~> 5.3.1)
       foundation-rails (~> 5.5.3.2)
       friendly_id (~> 5.2.3)
-      gpgme (~> 2.0.16)
       hashdiff (~> 0.3.7)
       httparty (~> 0.16.2)
       jbuilder (~> 2.7.0)
@@ -56,7 +70,7 @@ GIT
       scenic (~> 1.4.1)
       simple_form (= 4.0.0)
       sinatra (~> 2.0.1)
-      slim-rails (~> 3.1.3)
+      slim-rails (~> 3.2.0)
       uglifier (~> 4.1.17)
       underscore-rails (~> 1.8.3)
       validates_timeliness (~> 4.0.2)
@@ -67,22 +81,6 @@ GIT
       wisper-activejob (~> 1.0.0)
       wkhtmltopdf-binary (= 0.12.3.1)
       yard (~> 0.9.15)
-
-GIT
-  remote: https://github.com/airslie/trix.git
-  revision: 56d84ae42e34488b0bb301bd9bd0f54fac7fc811
-  branch: master
-  specs:
-    trix (0.11.1)
-      rails (> 4.1, <= 6.0)
-
-GIT
-  remote: https://github.com/phatworx/devise_security_extension.git
-  revision: b2ee978af7d49f0fb0e7271c6ac074dfb4d39353
-  specs:
-    devise_security_extension (0.10.0)
-      devise (>= 3.0.0, < 5.0)
-      railties (>= 3.2.6, < 6.0)
 
 PATH
   remote: .
@@ -131,7 +129,7 @@ GEM
       activemodel (= 5.2.1)
       activesupport (= 5.2.1)
       arel (>= 9.0)
-    activerecord-import (0.22.0)
+    activerecord-import (0.26.0)
       activerecord (>= 3.2)
     activestorage (5.2.1)
       actionpack (= 5.2.1)
@@ -158,7 +156,7 @@ GEM
     arel (9.0.0)
     ast (2.4.0)
     attr_extras (5.2.0)
-    autoprefixer-rails (8.4.1)
+    autoprefixer-rails (9.1.4)
       execjs
     axiom-types (0.1.1)
       descendants_tracker (~> 0.0.4)
@@ -258,8 +256,6 @@ GEM
     geocoder (1.5.0)
     globalid (0.4.1)
       activesupport (>= 4.2.0)
-    gpgme (2.0.16)
-      mini_portile2 (~> 2.3)
     hashdiff (0.3.7)
     hashery (2.1.2)
     httparty (0.16.2)
@@ -296,7 +292,7 @@ GEM
       activerecord
       kaminari-core (= 1.1.1)
     kaminari-core (1.1.1)
-    liquid (4.0.0)
+    liquid (4.0.1)
     lograge (0.10.0)
       actionpack (>= 4)
       activesupport (>= 4)
@@ -458,13 +454,13 @@ GEM
       rack (~> 2.0)
       rack-protection (= 2.0.4)
       tilt (~> 2.0)
-    slim (3.0.9)
+    slim (4.0.1)
       temple (>= 0.7.6, < 0.9)
-      tilt (>= 1.3.3, < 2.1)
-    slim-rails (3.1.3)
+      tilt (>= 2.0.6, < 2.1)
+    slim-rails (3.2.0)
       actionpack (>= 3.1)
       railties (>= 3.1)
-      slim (~> 3.0)
+      slim (>= 3.0, < 5.0)
     sprockets (3.7.2)
       concurrent-ruby (~> 1.0)
       rack (> 1, < 3)
@@ -485,7 +481,7 @@ GEM
     underscore-rails (1.8.3)
     unicode (0.4.4.4)
     unicode-display_width (1.4.0)
-    user_agent_parser (2.4.1)
+    user_agent_parser (2.5.0)
     validates_timeliness (4.0.2)
       timeliness (~> 0.3.7)
     virtus (1.0.5)
