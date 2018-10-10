@@ -7,6 +7,7 @@ module Renalware
     class PatientPresenter < SimpleDelegator
       def height_in_cm
         return if last_clinic_visit.blank? || last_clinic_visit.height.blank?
+
         last_clinic_visit.height.to_f * 100.0
       end
 
