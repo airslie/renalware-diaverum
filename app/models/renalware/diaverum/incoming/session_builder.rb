@@ -9,11 +9,12 @@ module Renalware
       # Given a Diaverum HD Treatment XML node and a patient, build a new, unsaved HD::Session
       # object by mapping diaverum attributes to Renalware ones.
       class SessionBuilder
-        attr_reader :patient, :treatment_node, :session
+        attr_reader :patient, :treatment_node, :user, :session
 
-        def initialize(patient:, treatment_node:, session: nil)
+        def initialize(patient:, treatment_node:, user:, session: nil)
           @patient = patient
           @treatment_node = treatment_node
+          @user = user
           @session = session || Renalware::HD::Session::Closed.new
         end
 
@@ -50,7 +51,7 @@ module Renalware
 
         def build_info
           info = session.document.info
-          info.hd_type = :hd
+          info.hd_type = HDTypeMap.for(diaverum_type_id: treatment_node.TypeId)
           info.machine_no = treatment_node.MachineIdentifier
           build_access(info)
         end
@@ -126,6 +127,13 @@ module Renalware
 
         def hd_type
           HDTypeMap.for(diaverum_type_id: treatment_node.TypeId)
+        end
+
+        def most_recent_dry_weight
+          Renalware::Clinical::DryWeight
+            .for_patient(patient)
+            .order(assessed_on: :desc)
+            .first
         end
       end
     end

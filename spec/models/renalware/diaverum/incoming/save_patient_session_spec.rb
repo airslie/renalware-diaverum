@@ -2,9 +2,6 @@
 
 require "rails_helper"
 
-# we want to test that
-# a) values are mapped correctly
-# b) validation works if value missing or out of range
 module Renalware
   module Diaverum
     module Incoming
@@ -47,26 +44,7 @@ module Renalware
         it "meta test: there should be 2 sessions in the XML file" do
           expect(payload.session_nodes.count).to eq(2)
         end
-
-        context "when the HDType is HFLUX" do
-          let(:hd_type) { "HFLUX" }
-
-          it "maps the hd_type to HD" do
-            session = SavePatientSession.new(
-              patient,
-              payload.session_nodes[0],
-              transmission_log
-            ).call
-
-            expect(session.document.info.hd_type).to eq(:hd)
-          end
-        end
       end
     end
   end
 end
-
-# we want to test that
-# a) values are mapped correctly
-# b) validation works if value missing or out of range
-#

@@ -19,7 +19,7 @@ PATH
   specs:
     renalware-core (2.0.51)
       active_type (~> 0.7.1)
-      activerecord-import (~> 0.26.0)
+      activerecord-import (~> 0.27.0)
       ahoy_matey (~> 2.1.0)
       attr_extras (~> 5.2.0)
       autoprefixer-rails (~> 9.1.4)
@@ -129,7 +129,7 @@ GEM
       activemodel (= 5.2.1)
       activesupport (= 5.2.1)
       arel (>= 9.0)
-    activerecord-import (0.26.0)
+    activerecord-import (0.27.0)
       activerecord (>= 3.2)
     activestorage (5.2.1)
       actionpack (= 5.2.1)

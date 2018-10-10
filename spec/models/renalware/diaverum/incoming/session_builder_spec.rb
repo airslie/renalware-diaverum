@@ -11,11 +11,11 @@ module Renalware
       RSpec.describe SessionBuilder do
         include DiaverumHelpers
         subject(:builder) do
-          described_class.new(patient: patient, treatment_node: treatment_node)
+          described_class.new(patient: patient, treatment_node: treatment_node, user: user)
         end
+        let(:user) { create(:user) }
         let(:patient) { build(:hd_patient, local_patient_id: "KCH123", nhs_number: "0123456789") }
         let(:treatment_node) { nil }
-
         let(:xml_filepath) { file_fixture("diaverum_example.xml.erb") }
         let(:payload) { PatientXmlDocument.new(doc) }
         let(:doc) do
@@ -26,61 +26,106 @@ module Renalware
           Nokogiri::XML(xml)
         end
         let(:treatment_node) { payload.session_nodes.first }
-        let(:hospital_unit) { build_stubbed(:hospital_unit) }
+        let(:hospital_unit) { create(:hospital_unit) }
         let(:dialysis_unit) do
-          build_stubbed(:hd_provider_unit, hospital_unit: hospital_unit, providers_reference: "123")
+          create(:hd_provider_unit, hospital_unit: hospital_unit, providers_reference: "123")
         end
-        let(:dialysate)     { build_stubbed(:hd_dialysate) }
-        let(:provider)      { HD::Provider.create!(name: "Diaverum") }
+        let(:dialysate) { create(:hd_dialysate) }
+        let(:provider) { HD::Provider.create!(name: "Diaverum") }
+        let(:access_type) { create(:access_type) }
+
+        def create_access_map
+          AccessMap.create!(
+            diaverum_location_id: "LEJ",
+            diaverum_type_id: 7,
+            access_type: access_type,
+            side: :left
+          )
+        end
+
+        def create_hd_type_map
+          HDTypeMap.create!(diaverum_type_id: "HFLUX", hd_type: :hd)
+        end
+
+        def create_dry_weight
+          Clinical::DryWeight.create!(
+            patient: Clinical.cast_patient(patient),
+            assessor: user,
+            weight: 123.4,
+            assessed_on: Time.zone.now,
+            by: user
+          )
+        end
 
         it "asas" do
-          builder.call
+          create_access_map
+          create_hd_type_map
+          create_dry_weight
+
+          session = builder.call
+
+          expect(session).to have_attributes(
+            patient: patient,
+            hospital_unit: hospital_unit,
+            performed_on: Date.parse(treatment_node.Date),
+            notes: treatment_node.Notes,
+            dialysate: dialysate,
+            external_id: treatment_node.TreatmentId.to_i,
+            created_by: user,
+            updated_by: user,
+            signed_on_by: user,
+            signed_off_by: user,
+            signed_off_at: Time.zone.parse("#{treatment_node.Date} #{treatment_node.EndTime}")
+          )
+
+          expect(session.start_time.to_s).to include(treatment_node.StartTime)
+          expect(session.end_time.to_s).to include(treatment_node.EndTime)
+          expect(session.dry_weight).to be_present
+
+          info = session.document.info
+          expect(info).to have_attributes(
+            hd_type: "hd",
+            machine_no: treatment_node.MachineIdentifier,
+            access_confirmed: true,
+            access_type: access_type.name,
+            access_type_abbreviation: access_type.abbreviation,
+            access_side: "left"
+          )
+
+          dialysis = session.document.dialysis
+          expect(dialysis.arterial_pressure.to_s).to eq(treatment_node.ArterialPressure)
+          expect(dialysis.venous_pressure.to_s).to eq(treatment_node.VenousPressure)
+          expect(dialysis.fluid_removed.to_s).to eq(treatment_node.RemovedVolume)
+          expect(dialysis.blood_flow.to_s).to eq(treatment_node.Bloodflow)
+          expect(dialysis.flow_rate.to_s).to eq(treatment_node.DialysateFlow)
+          expect(dialysis.machine_urr).to be_nil
+          expect(dialysis.machine_ktv.to_s).to eq(treatment_node.KTV)
+          expect(dialysis.litres_processed.to_s).to eq(treatment_node.TreatedBloodVolume)
+
+          pre = session.document.observations_before
+          expect(pre.pulse.to_s).to eq(treatment_node.PulsePre)
+          expect(pre.blood_pressure.systolic.to_s).to eq(treatment_node.SystolicBloodPressurePre)
+          expect(pre.blood_pressure.diastolic.to_s).to eq(treatment_node.DiastolicBloodPressurePre)
+          expect(pre.weight_measured).to eq(:yes)
+          expect(pre.weight).to eq(84.5)
+          expect(pre.temperature_measured).to eq(:yes)
+          expect(pre.temperature).to eq(35.6)
+
+          post = session.document.observations_after
+          expect(post.pulse.to_s).to eq(treatment_node.PulsePost)
+          expect(post.blood_pressure.systolic.to_s).to eq(treatment_node.SystolicBloodPressurePost)
+          expect(post.blood_pressure.diastolic.to_s).to eq(
+            treatment_node.DiastolicBloodPressurePost
+          )
+          expect(post.weight_measured).to eq(:yes)
+          expect(post.weight).to eq(83.6)
+          expect(post.temperature_measured).to eq(:yes)
+          expect(post.temperature).to eq(35.4)
+
+          hdf = session.document.hdf
+          expect(hdf.subs_volume).to eq(124.0)
         end
       end
     end
   end
 end
-
-# we want to test that
-# a) values are mapped correctly
-# b) validation works if value missing or out of range
-#
-#       # let!(:system_user) { create(:user, username: SystemUser.username) }
-#       let(:patient) { create(:hd_patient, local_patient_id: "KCH123", nhs_number: "0123456789") }
-#       let(:transmission_log) do
-#         HD::TransmissionLog.create!(
-#           direction: :in,
-#           format: :xml
-#         )
-#       end
-#
-#       before { Diaverum.config.diaverum_incoming_skip_session_save = false }
-#       around(:each){ |example| using_a_tmp_diaverum_path{ example.run } }
-#
-#       let(:xml_filepath) { file_fixture("diaverum_example.xml.erb") }
-#       let(:doc) do
-#         # Set up an erb template based on the XML fixture so we can insert patient identifiers
-#         # into the XML.By magic, the patient variable is in binding so can be resolved in
-#         # the ERB template
-#         xml = ERB.new(xml_filepath.read).result(binding)
-#         Nokogiri::XML(xml)
-#       end
-#       let(:payload) { PatientXmlDocument.new(doc) }
-#       it "meta test: there should be 2 sessions in the XML file" do
-#         expect(payload.session_nodes.count).to eq(2)
-#       end
-#
-#       context "when the HDType is HFLUX" do
-#         let(:hd_type) { "HFLUX" }
-#
-#         it "maps the hd_type to HD" do
-#           session = SavePatientSession.new(
-#             patient,
-#             payload.session_nodes[0],
-#             transmission_log
-#           ).call
-#
-#           expect(session.document.info.hd_type).to eq(:hd)
-#
-#         end
-#        end
