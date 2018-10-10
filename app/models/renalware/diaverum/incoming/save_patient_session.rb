@@ -141,6 +141,7 @@ module Renalware
 
         def dialysate
           raise Errors::DialysateMissingError if session_node.Dialysate.blank?
+
           Renalware::HD::Dialysate.find_by!(name: session_node.Dialysate)
         rescue ActiveRecord::RecordNotFound
           raise Errors::DialysateNotFoundError, session_node.Dialysate
