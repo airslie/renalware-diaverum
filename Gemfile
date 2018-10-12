@@ -39,7 +39,7 @@ group :development, :test do
   gem "faker"
   gem "fuubar"
   gem "rspec-rails"
-  gem "rspec_junit_formatter", "~> 0.3.0"
+  gem "rspec_junit_formatter", "~> 0.3"
   gem "rubocop"
   gem "shoulda-matchers"
   gem "webmock", require: false
