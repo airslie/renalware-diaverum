@@ -1,21 +1,7 @@
 GIT
-  remote: https://github.com/airslie/trix.git
-  revision: 56d84ae42e34488b0bb301bd9bd0f54fac7fc811
+  remote: https://github.com/airslie/renalware-core.git
+  revision: 776a8be9454567c1b33d04352d166d8287224cfa
   branch: master
-  specs:
-    trix (0.11.1)
-      rails (> 4.1, <= 6.0)
-
-GIT
-  remote: https://github.com/phatworx/devise_security_extension.git
-  revision: b2ee978af7d49f0fb0e7271c6ac074dfb4d39353
-  specs:
-    devise_security_extension (0.10.0)
-      devise (>= 3.0.0, < 5.0)
-      railties (>= 3.2.6, < 6.0)
-
-PATH
-  remote: ../renalwarev2
   specs:
     renalware-core (2.0.51)
       active_type (~> 0.7.1)
@@ -81,6 +67,22 @@ PATH
       wisper-activejob (~> 1.0.0)
       wkhtmltopdf-binary (= 0.12.3.1)
       yard (~> 0.9.15)
+
+GIT
+  remote: https://github.com/airslie/trix.git
+  revision: 56d84ae42e34488b0bb301bd9bd0f54fac7fc811
+  branch: master
+  specs:
+    trix (0.11.1)
+      rails (> 4.1, <= 6.0)
+
+GIT
+  remote: https://github.com/phatworx/devise_security_extension.git
+  revision: b2ee978af7d49f0fb0e7271c6ac074dfb4d39353
+  specs:
+    devise_security_extension (0.10.0)
+      devise (>= 3.0.0, < 5.0)
+      railties (>= 3.2.6, < 6.0)
 
 PATH
   remote: .
@@ -260,7 +262,7 @@ GEM
     hashery (2.1.2)
     httparty (0.16.2)
       multi_xml (>= 0.5.2)
-    i18n (1.1.0)
+    i18n (1.1.1)
       concurrent-ruby (~> 1.0)
     ice_nine (0.11.2)
     jaro_winkler (1.5.1)
@@ -301,7 +303,7 @@ GEM
     loofah (2.2.2)
       crass (~> 1.0.2)
       nokogiri (>= 1.5.9)
-    mail (2.7.0)
+    mail (2.7.1)
       mini_mime (>= 0.1.1)
     marcel (0.3.3)
       mimemagic (~> 0.3.2)

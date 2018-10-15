@@ -9,7 +9,8 @@ gemspec
 
 gem "dotenv-rails", "~> 2.5.0"
 gem "renalware-core",
-  path: "../renalwarev2"
+  git: "https://github.com/airslie/renalware-core.git",
+  branch: "master"
 
 # git: "https://github.com/airslie/renalware-core.git",
 

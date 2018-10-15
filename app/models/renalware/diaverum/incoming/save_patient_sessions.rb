@@ -27,7 +27,7 @@ module Renalware
               SavePatientSession.new(patient, session_node, child_log).call
             rescue Errors::SessionInvalidError
               # Do nothing as already logged in SavePatientSession in child_log.
-              # Move onto try importing the next session
+              # Move on to try importing the next session
             end
           end
         end

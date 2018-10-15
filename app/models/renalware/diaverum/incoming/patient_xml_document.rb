@@ -8,6 +8,7 @@ module Renalware
       # Wraps an incoming Patient XML node
       class PatientXmlDocument
         attr_reader :node
+        delegate :xpath, to: "node"
 
         def initialize(node)
           @node = node

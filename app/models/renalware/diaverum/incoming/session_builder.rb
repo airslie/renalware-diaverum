@@ -11,6 +11,10 @@ module Renalware
       class SessionBuilder
         attr_reader :patient, :treatment_node, :user, :session
 
+        def self.call(**args)
+          new(**args).call
+        end
+
         def initialize(patient:, treatment_node:, user:, session: nil)
           @patient = patient
           @treatment_node = treatment_node
@@ -25,6 +29,7 @@ module Renalware
           build_observations_before
           build_observations_after
           build_hdf
+          byebug
           session
         end
 

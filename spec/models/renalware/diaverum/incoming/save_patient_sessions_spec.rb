@@ -13,16 +13,6 @@ module Renalware
         include DiaverumHelpers
         let!(:system_user) { create(:user, username: SystemUser.username) }
         let(:patient) { create(:hd_patient, local_patient_id: "KCH123", nhs_number: "0123456789") }
-        let(:hospital_unit) { create(:hospital_unit) }
-        let(:dialysate)     { create(:hd_dialysate) }
-        let(:provider)      { HD::Provider.create!(name: "Diaverum") }
-        let(:dialysis_unit) do
-          HD::ProviderUnit.create!(
-            hospital_unit: hospital_unit,
-            hd_provider: provider,
-            providers_reference: "123"
-          )
-        end
         let(:transmission_log) do
           HD::TransmissionLog.create!(
             direction: :in,
@@ -30,14 +20,6 @@ module Renalware
           )
         end
         before { Diaverum.config.diaverum_incoming_skip_session_save = false }
-
-        def create_access_map
-          AccessMap.create!(
-            diaverum_location_id: "LEJ",
-            diaverum_type_id: 7,
-            access_type: create(:access_type)
-          )
-        end
 
         around(:each) do |example|
           using_a_tmp_diaverum_path{ example.run }
@@ -60,36 +42,25 @@ module Renalware
               Nokogiri::XML(xml)
             end
             let(:payload) { PatientXmlDocument.new(doc) }
-            let!(:access_map) do
-              AccessMap.create!(
-                diaverum_location_id: "LEJ",
-                diaverum_type_id: 7,
-                access_type: create(:access_type),
-                side: :left
-              )
-            end
-
-            it "meta test: fixture rendered via ERB contains patient data bound via "\
-               "'patient' variable" do
-              expect(payload.local_patient_id).to eq(patient.local_patient_id)
-              expect(payload.nhs_number).to eq(patient.nhs_number)
-            end
 
             context "when all sessions are valid" do
-              it "creates a new HD session for each session in the file" do
-                Diaverum.config.diaverum_incoming_skip_session_save = false
-                expect{
-                  SavePatientSessions.new(payload, transmission_log).call
-                }.to change(HD::Session, :count).by(2)
-                .and change(patient.hd_sessions.closed, :count).by(2)
+              it "delegates session creation to SessionBuilder" do
+                allow(SessionBuilder)
+                  .to receive(:call)
+                  .and_return(build(:hd_closed_session, patient: patient, by: system_user))
 
-                expect(HD::TransmissionLog.pluck(:session_id).uniq.compact.count).to eq(2)
-                expect(HD::Session::Closed.pluck(:external_id)).to eq([1, 2])
+                SavePatientSessions.new(payload, transmission_log).call
+
+                expect(SessionBuilder).to have_received(:call).twice
               end
 
               context "when config.diaverum_incoming_skip_session_save is true" do
                 it "does not attempt to save the session but still logs (without session id)" do
                   Diaverum.config.diaverum_incoming_skip_session_save = true
+                  allow(SessionBuilder)
+                    .to receive(:call)
+                    .and_return(build(:hd_closed_session, patient: patient, by: system_user))
+
                   expect{
                     SavePatientSessions.new(payload, transmission_log).call
                   }.to change(HD::Session, :count).by(0)
@@ -105,12 +76,20 @@ module Renalware
               let(:end_time) { nil }
 
               it "does not create any new sessions" do
+                allow(SessionBuilder)
+                  .to receive(:call)
+                  .and_return(build(:hd_closed_session, patient: patient, by: system_user, end_time: nil))
+
                 expect{
                   SavePatientSessions.new(payload, transmission_log).call
                 }.to change(HD::Session, :count).by(0)
               end
 
               it "logs an error to each child TransmissionLog" do
+                allow(SessionBuilder)
+                  .to receive(:call)
+                  .and_return(build(:hd_closed_session, patient: patient, by: system_user, end_time: nil))
+
                 expect{
                   SavePatientSessions.new(payload, transmission_log).call
                 }.to change(HD::TransmissionLog, :count).by(3) # 1 parent 2 children
@@ -129,6 +108,10 @@ module Renalware
               context "when config.diaverum_incoming_skip_session_save is true" do
                 it "does not attempt to save the session but still logs with errors" do
                   Diaverum.config.diaverum_incoming_skip_session_save = true
+
+                  allow(SessionBuilder)
+                    .to receive(:call)
+                    .and_return(build(:hd_closed_session, patient: patient, by: system_user, end_time: nil))
 
                   expect {
                     SavePatientSessions.new(payload, transmission_log).call

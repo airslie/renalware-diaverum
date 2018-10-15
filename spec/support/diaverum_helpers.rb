@@ -35,6 +35,19 @@ module Renalware
         xml_string = ERB.new(xml_filepath.read).result(binding)
         Nokogiri::XML(xml_string)
       end
+
+      def create_access_map
+        AccessMap.create!(
+          diaverum_location_id: "LEJ",
+          diaverum_type_id: 7,
+          access_type: access_type,
+          side: :left
+        )
+      end
+
+      def create_hd_type_map
+        HDTypeMap.create!(diaverum_type_id: "HFLUX", hd_type: :hd)
+      end
     end
   end
 end

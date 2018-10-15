@@ -8,6 +8,7 @@ module Renalware
       # Wraps an incoming Treatment XML node
       class SessionXmlDocument
         pattr_initialize :node
+        delegate :xpath, to: :node
 
         # Delegate methods names in CamelCase to the decorated XML Treatment node
         # so we can use e.g. session_xml_doc.TreatmentId
@@ -21,7 +22,7 @@ module Renalware
         end
 
         def to_xml
-          node.to_xml(indent: 2)
+          node.to_xml #(indent: 2)
         end
       end
     end
