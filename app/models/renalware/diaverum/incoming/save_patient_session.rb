@@ -43,11 +43,13 @@ module Renalware
         end
 
         def build_session
-          SessionBuilder.call(
-            patient: patient,
+          args = {
             treatment_node: treatment_node,
+            patient: patient,
             user: user
-          )
+          }
+          builder = SessionBuilderFactory.builder_for(**args)
+          builder.call
         end
 
         def save_session(session)

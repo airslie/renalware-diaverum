@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
   s.homepage    = "https://github.com/airslie/renalwarev-diaverum"
   s.summary     = "Diaverum integration for Renalware 2"
   s.description = "Adds support for ingesting HD Sessions from Diaverum dialysers via iRIMS "\
-                  "and exporting patient XML in order to keep the two systems in sync."
+                  "and exporting data in order to keep the two systems in sync."
   s.license     = "MIT"
 
   s.files = Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
