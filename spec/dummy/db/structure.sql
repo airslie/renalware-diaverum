@@ -5811,7 +5811,10 @@ CREATE VIEW reporting_daily_letters AS
           WHERE ((letter_letters.created_at)::date = (now())::date)) AS letters_created_today,
     ( SELECT count(*) AS count
            FROM letter_letters
-          WHERE ((letter_letters.completed_at)::date = (now())::date)) AS letters_printed_today;
+          WHERE ((letter_letters.completed_at)::date = (now())::date)) AS letters_printed_today,
+    ( SELECT count(*) AS count
+           FROM letter_letters
+          WHERE (((letter_letters.type)::text = 'Renalware::Letters::Letter::Draft'::text) AND (letter_letters.issued_on < (CURRENT_DATE - '14 days'::interval)))) AS draft_letters_older_than_14_days;
 
 
 --
@@ -5829,17 +5832,27 @@ CREATE VIEW reporting_daily_pathology AS
           WHERE ((delayed_jobs.last_error IS NOT NULL) AND (delayed_jobs.failed_at IS NULL))) AS delayed_jobs_retrying,
     ( SELECT count(*) AS count
            FROM delayed_jobs
-          WHERE ((delayed_jobs.last_error IS NOT NULL) AND (delayed_jobs.failed_at IS NULL))) AS delayed_jobs_failed,
+          WHERE ((delayed_jobs.last_error IS NOT NULL) AND (delayed_jobs.failed_at IS NOT NULL))) AS delayed_jobs_failed,
     ( SELECT max(delayed_jobs.created_at) AS max
            FROM delayed_jobs) AS delayed_jobs_latest_entry,
     ( SELECT count(*) AS count
            FROM delayed_jobs
           WHERE (delayed_jobs.created_at >= (now())::date)) AS delayed_jobs_added_today,
-    ( SELECT jsonb_agg(query.*) AS jsonb_agg
+    ( SELECT json_object_agg(query.priority, query.count) AS json_object_agg
            FROM ( SELECT delayed_jobs.priority,
                     count(*) AS count
                    FROM delayed_jobs
                   GROUP BY delayed_jobs.priority) query) AS delayed_jobs_priority_counts,
+    ( SELECT json_object_agg(query.queue, query.count) AS json_object_agg
+           FROM ( SELECT delayed_jobs.queue,
+                    count(*) AS count
+                   FROM delayed_jobs
+                  GROUP BY delayed_jobs.queue) query) AS delayed_jobs_queue_counts,
+    ( SELECT json_object_agg(query.attempts, query.count) AS json_object_agg
+           FROM ( SELECT delayed_jobs.attempts,
+                    count(*) AS count
+                   FROM delayed_jobs
+                  GROUP BY delayed_jobs.attempts) query) AS delayed_jobs_attempts_counts,
     ( SELECT count(*) AS count
            FROM feed_messages) AS feed_messages_total,
     ( SELECT count(*) AS count
@@ -5852,6 +5865,16 @@ CREATE VIEW reporting_daily_pathology AS
           WHERE ((pathology_observations.created_at)::date >= (now())::date)) AS pathology_observations_added_today,
     ( SELECT max(pathology_observations.observed_at) AS max
            FROM pathology_observations) AS pathology_observations_latest_observed_at;
+
+
+--
+-- Name: reporting_daily_ukrdc; Type: VIEW; Schema: renalware; Owner: -
+--
+
+CREATE VIEW reporting_daily_ukrdc AS
+ SELECT ( SELECT count(*) AS count
+           FROM patients
+          WHERE ((patients.sent_to_ukrdc_at)::date = CURRENT_DATE)) AS patients_sent_to_ukrdc_today;
 
 
 --
@@ -13078,13 +13101,6 @@ CREATE INDEX obx_unique_letter_grouping ON pathology_observation_descriptions US
 
 
 --
--- Name: pathology_observations_created_on; Type: INDEX; Schema: renalware; Owner: -
---
-
-CREATE INDEX pathology_observations_created_on ON pathology_observations USING btree (((created_at)::date));
-
-
---
 -- Name: patient_bookmarks_uniqueness; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -15816,6 +15832,9 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20180831134926'),
 ('20180907100545'),
 ('20181001162513'),
-('20181010123132');
+('20181008144324'),
+('20181008145159'),
+('20181010123132'),
+('20181013115138');
 
 

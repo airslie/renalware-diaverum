@@ -78,7 +78,14 @@ module Renalware
               it "does not create any new sessions" do
                 allow(SessionBuilder)
                   .to receive(:call)
-                  .and_return(build(:hd_closed_session, patient: patient, by: system_user, end_time: nil))
+                  .and_return(
+                    build(
+                      :hd_closed_session,
+                      patient: patient,
+                      by: system_user,
+                      end_time: nil
+                    )
+                  )
 
                 expect{
                   SavePatientSessions.new(payload, transmission_log).call
@@ -88,7 +95,14 @@ module Renalware
               it "logs an error to each child TransmissionLog" do
                 allow(SessionBuilder)
                   .to receive(:call)
-                  .and_return(build(:hd_closed_session, patient: patient, by: system_user, end_time: nil))
+                  .and_return(
+                    build(
+                      :hd_closed_session,
+                      patient: patient,
+                      by: system_user,
+                      end_time: nil
+                    )
+                  )
 
                 expect{
                   SavePatientSessions.new(payload, transmission_log).call
@@ -111,7 +125,14 @@ module Renalware
 
                   allow(SessionBuilder)
                     .to receive(:call)
-                    .and_return(build(:hd_closed_session, patient: patient, by: system_user, end_time: nil))
+                    .and_return(
+                      build(
+                        :hd_closed_session,
+                        patient: patient,
+                        by: system_user,
+                        end_time: nil
+                      )
+                    )
 
                   expect {
                     SavePatientSessions.new(payload, transmission_log).call
@@ -133,8 +154,25 @@ module Renalware
             describe "handling of duplicates" do
               context "when the same session is imported again (which will happen everyday) as "\
                       "the file contains the last 30 days of sesssons" do
-                it "does not change the previoulsly saved session" do
+                let(:access_type) { create(:access_type) }
+                let(:user) { create(:user) }
+                let(:provider) { HD::Provider.create!(name: "Diaverum") }
+                let(:dialysis_unit) do
+                  HD::ProviderUnit.create!(
+                    hospital_unit: hospital_unit,
+                    hd_provider: provider,
+                    providers_reference: "123"
+                  )
+                end
+                let(:dialysate) { create(:hd_dialysate) }
+                let(:hospital_unit) { create(:hospital_unit) }
+
+                it "does not change the previously saved session" do
                   # The first session has a TreatmentID of 1 in the file, the second is 2
+                  Diaverum.config.diaverum_incoming_skip_session_save = false
+                  create_access_map
+                  create_hd_type_map
+                  create_dry_weight
                   create(:hd_closed_session, patient: patient, by: system_user, external_id: "1")
 
                   # Should only import 1 new one

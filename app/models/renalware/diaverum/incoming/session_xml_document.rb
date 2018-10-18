@@ -21,9 +21,7 @@ module Renalware
           end
         end
 
-        def to_xml
-          node.to_xml #(indent: 2)
-        end
+        delegate :to_xml, to: :node
       end
     end
   end

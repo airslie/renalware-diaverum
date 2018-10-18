@@ -11,6 +11,17 @@ module Renalware
         end
       end
 
+      def create_dry_weight
+        Clinical::DryWeight.create!(
+          patient: Clinical.cast_patient(patient),
+          assessor: user,
+          weight: 123.4,
+          assessed_on: Time.zone.now,
+          by: user
+        )
+      end
+
+      # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
       def create_patient_xml_document(options: {})
         erb_template = options.fetch(
           :erb_template,
@@ -35,6 +46,7 @@ module Renalware
         xml_string = ERB.new(xml_filepath.read).result(binding)
         Nokogiri::XML(xml_string)
       end
+      # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
       def create_access_map
         AccessMap.create!(

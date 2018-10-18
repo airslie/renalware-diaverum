@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# rubocop:disable Metrics/AbcSize, Metrics/ClassLength, Metrics/MethodLength
+# rubocop:disable Metrics/ClassLength, Metrics/MethodLength, Metrics/AbcSize
 require "attr_extras"
 
 module Renalware
@@ -29,7 +29,6 @@ module Renalware
           build_observations_before
           build_observations_after
           build_hdf
-          byebug
           session
         end
 
@@ -144,4 +143,4 @@ module Renalware
     end
   end
 end
-# rubocop:enable Metrics/AbcSize, Metrics/ClassLength, Metrics/MethodLength
+# rubocop:enable Metrics/ClassLength, Metrics/MethodLength, Metrics/AbcSize

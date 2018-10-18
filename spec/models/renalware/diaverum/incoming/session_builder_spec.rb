@@ -36,16 +36,6 @@ module Renalware
         let(:provider) { HD::Provider.create!(name: "Diaverum") }
         let(:access_type) { create(:access_type) }
 
-        def create_dry_weight
-          Clinical::DryWeight.create!(
-            patient: Clinical.cast_patient(patient),
-            assessor: user,
-            weight: 123.4,
-            assessed_on: Time.zone.now,
-            by: user
-          )
-        end
-
         describe ".call" do
           it "builds a new Session object" do
             create_access_map
@@ -99,7 +89,8 @@ module Renalware
             pre = session.document.observations_before
             expect(pre.pulse.to_s).to eq(treatment_node.PulsePre)
             expect(pre.blood_pressure.systolic.to_s).to eq(treatment_node.SystolicBloodPressurePre)
-            expect(pre.blood_pressure.diastolic.to_s).to eq(treatment_node.DiastolicBloodPressurePre)
+            expect(pre.blood_pressure.diastolic.to_s)
+              .to eq(treatment_node.DiastolicBloodPressurePre)
             expect(pre.weight_measured).to eq(:yes)
             expect(pre.weight).to eq(84.5)
             expect(pre.temperature_measured).to eq(:yes)
@@ -107,7 +98,8 @@ module Renalware
 
             post = session.document.observations_after
             expect(post.pulse.to_s).to eq(treatment_node.PulsePost)
-            expect(post.blood_pressure.systolic.to_s).to eq(treatment_node.SystolicBloodPressurePost)
+            expect(post.blood_pressure.systolic.to_s)
+              .to eq(treatment_node.SystolicBloodPressurePost)
             expect(post.blood_pressure.diastolic.to_s).to eq(
               treatment_node.DiastolicBloodPressurePost
             )
