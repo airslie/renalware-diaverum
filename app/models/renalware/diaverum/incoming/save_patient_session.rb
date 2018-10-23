@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# rubocop:disable Metrics/ClassLength
 require "attr_extras"
 
 module Renalware
@@ -8,169 +7,94 @@ module Renalware
     module Incoming
       class SavePatientSession
         include Diaverum::Logging
-        pattr_initialize :patient, :session_node, :transmission_log
+        pattr_initialize :patient, :treatment_node, :log
 
-        # rubocop:disable Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/AbcSize
-        # rubocop:disable Metrics/PerceivedComplexity
         def call
-          existing_session = Renalware::HD::Session
-            .select(:id, :external_id, :created_at)
-            .find_by(external_id: session_node.TreatmentId)
+          return if session_exists_already?
 
-          if existing_session.present?
-            transmission_log.update!(
-              result: "previously imported #{I18n.l(existing_session.created_at)}",
-              session: existing_session,
-              external_session_id: session_node.TreatmentId
-            )
-            return
-          end
-
-          return if Renalware::HD::Session.exists?(external_id: session_node.TreatmentId)
-
-          transmission_log.update!(
-            payload: session_node.to_xml,
-            external_session_id: session_node.TreatmentId
-          )
-
-          begin
-            session = Renalware::HD::Session::Closed.new(
-              patient: patient,
-              hospital_unit: hospital_unit,
-              performed_on: session_node.Date,
-              start_time: session_node.StartTime,
-              end_time: session_node.EndTime,
-              notes: session_node.Notes,
-              created_by: user,
-              updated_by: user,
-              signed_on_by: user,
-              signed_off_by: user,
-              signed_off_at: Time.zone.parse("#{session_node.Date} #{session_node.EndTime}"),
-              dry_weight: most_recent_dry_weight,
-              dialysate: dialysate,
-              external_id: session_node.TreatmentId
-            )
-
-            info = session.document.info
-            info.hd_type = :hd
-            info.machine_no = session_node.MachineIdentifier
-            build_access(info)
-
-            dialysis = session.document.dialysis
-            dialysis.arterial_pressure = session_node.ArterialPressure
-            dialysis.venous_pressure = session_node.VenousPressure
-            dialysis.fluid_removed = session_node.RemovedVolume
-            dialysis.blood_flow = session_node.Bloodflow
-            dialysis.flow_rate = session_node.DialysateFlow
-            dialysis.machine_urr = nil
-            dialysis.machine_ktv = session_node.KTV
-            dialysis.litres_processed = session_node.TreatedBloodVolume
-
-            pre = session.document.observations_before
-            pre.pulse = session_node.PulsePre
-            pre.blood_pressure.systolic = session_node.SystolicBloodPressurePre
-            pre.blood_pressure.diastolic = session_node.DiastolicBloodPressurePre
-            pre.weight_measured = session_node.WeightPre.present? ? :yes : :no
-            pre.weight = session_node.WeightPre
-            pre.temperature_measured = session_node.TemperaturePre.present? ? :yes : :no
-            pre.temperature = session_node.TemperaturePre
-
-            post = session.document.observations_after
-            post.pulse = session_node.PulsePost
-            post.blood_pressure.systolic = session_node.SystolicBloodPressurePost
-            post.blood_pressure.diastolic = session_node.DiastolicBloodPressurePost
-            post.weight_measured = session_node.WeightPost.present? ? :yes : :no
-            post.weight = session_node.WeightPost
-            post.temperature_measured = session_node.TemperaturePost.present? ? :yes : :no
-            post.temperature = session_node.TemperaturePost
-
-            hdf = session.document.hdf
-            hdf.subs_volume = session_node.InfusionVolume
-          rescue StandardError => exception
-            transmission_log.update!(
-              error_messages: ["#{exception.cause} #{exception.message}"],
-              result: "error"
-            )
-            return
-          end
-
-          begin
-            # For now skip saving in production
-            if Diaverum.config.diaverum_incoming_skip_session_save || Rails.env.production?
-              session.validate!
-              transmission_log.update!(result: "ok")
-            else
-              session.save!
-              transmission_log.update!(result: "ok", session: session)
-            end
-          rescue ActiveRecord::RecordInvalid
-            error_messages = [
-              session.errors&.full_messages,
-              session.document.error_messages
-            ].flatten.compact.reject{ |msg| msg == "is invalid" }
-
-            transmission_log.update!(error_messages: error_messages, result: "error")
-
-            raise Errors::SessionInvalidError, error_messages
-          end
+          log_payload
+          session = build_session
+          save_session(session)
+        rescue ActiveRecord::RecordNotFound,
+               ActiveRecord::RecordInvalid,
+               Errors::SessionError => exception
+          error_messages = errors_in(session, exception)
+          raise Errors::SessionInvalidError, error_messages
         end
-        # rubocop:enable Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/AbcSize
-        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 
-        def build_access(info)
-          info.access_confirmed = true
-          info.access_type = access_type.access_type&.name
-          info.access_type_abbreviation = access_type.access_type&.abbreviation
-          info.access_side = access_type.side
+        def session_exists_already?
+          if existing_session.present?
+            log_warning_that_session_already_exists
+            true
+          else
+            false
+          end
         end
 
         # Returns an existing session or a new one if not found
-        def existing_session(external_id)
-          patient.hd_sessions.closed.find_by(external_id: external_id)
-        end
-
-        def hospital_unit
-          dialysis_unit.hospital_unit
-        end
-
-        def dialysis_unit
-          HD::ProviderUnit.find_by!(providers_reference: session_node.ClinicId)
-        end
-
-        def dialysate
-          raise Errors::DialysateMissingError if session_node.Dialysate.blank?
-
-          Renalware::HD::Dialysate.find_by!(name: session_node.Dialysate)
-        rescue ActiveRecord::RecordNotFound
-          raise Errors::DialysateNotFoundError, session_node.Dialysate
-        end
-
-        def access_type
-          @access_type ||= begin
-            args = {
-              diaverum_location: session_node.AccessLocationId,
-              diaverum_type: session_node.AccessTypeId
-            }
-            AccessMap.for(args)
+        def existing_session
+          @existing_session ||= begin
+            Renalware::HD::Session
+              .select(:id, :external_id, :created_at)
+              .find_by(external_id: treatment_node.TreatmentId)
           end
-        rescue ActiveRecord::RecordNotFound
-          raise AccesMapError, args
+        end
+
+        def build_session
+          args = {
+            treatment_node: treatment_node,
+            patient: patient,
+            user: user
+          }
+          builder = SessionBuilderFactory.builder_for(**args)
+          builder.call
+        end
+
+        def save_session(session)
+          # For now skip saving in production
+          if Diaverum.config.diaverum_incoming_skip_session_save || Rails.env.production?
+            session.validate!
+            log.update!(result: "ok")
+          else
+            session.save!
+            log.update!(result: "ok", session: session)
+          end
+        end
+
+        def errors_in(session, exception)
+          error_messages = if session.present?
+                             [
+                               session.errors&.full_messages,
+                               session.document.error_messages
+                             ].flatten.compact.reject{ |msg| msg == "is invalid" }
+                           else
+                             ["#{exception.cause} #{exception.message}"]
+                           end
+          log.update!(error_messages: error_messages, result: "error")
+          error_messages
+        end
+
+        def log_payload
+          log.update!(
+            payload: treatment_node.to_xml,
+            external_session_id: treatment_node.TreatmentId
+          )
+        end
+
+        def log_warning_that_session_already_exists
+          log.update!(
+            result: "previously imported #{I18n.l(existing_session.created_at)}",
+            session: existing_session,
+            external_session_id: treatment_node.TreatmentId
+          )
         end
 
         def user
           @user ||= Renalware::SystemUser.find
         end
-
-        def most_recent_dry_weight
-          Renalware::Clinical::DryWeight
-            .for_patient(patient)
-            .order(assessed_on: :desc)
-            .first
-        end
       end
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

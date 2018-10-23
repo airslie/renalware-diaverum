@@ -2850,7 +2850,8 @@ CREATE TABLE hospital_wards (
     deleted_at timestamp without time zone,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    code character varying
+    code character varying,
+    active boolean DEFAULT true NOT NULL
 );
 
 
@@ -3114,7 +3115,8 @@ CREATE TABLE letter_letters (
     approved_at timestamp without time zone,
     approved_by_id bigint,
     completed_at timestamp without time zone,
-    completed_by_id bigint
+    completed_by_id bigint,
+    page_count integer
 );
 
 
@@ -5800,6 +5802,82 @@ CREATE VIEW reporting_bone_audit AS
 
 
 --
+-- Name: reporting_daily_letters; Type: VIEW; Schema: renalware; Owner: -
+--
+
+CREATE VIEW reporting_daily_letters AS
+ SELECT ( SELECT count(*) AS count
+           FROM letter_letters
+          WHERE ((letter_letters.created_at)::date = (now())::date)) AS letters_created_today,
+    ( SELECT count(*) AS count
+           FROM letter_letters
+          WHERE ((letter_letters.completed_at)::date = (now())::date)) AS letters_printed_today,
+    ( SELECT count(*) AS count
+           FROM letter_letters
+          WHERE (((letter_letters.type)::text = 'Renalware::Letters::Letter::Draft'::text) AND (letter_letters.issued_on < (CURRENT_DATE - '14 days'::interval)))) AS draft_letters_older_than_14_days;
+
+
+--
+-- Name: reporting_daily_pathology; Type: VIEW; Schema: renalware; Owner: -
+--
+
+CREATE VIEW reporting_daily_pathology AS
+ SELECT ( SELECT count(*) AS count
+           FROM delayed_jobs) AS delayed_jobs_total,
+    ( SELECT count(*) AS count
+           FROM delayed_jobs
+          WHERE (delayed_jobs.attempts = 0)) AS delayed_jobs_unprocessed,
+    ( SELECT count(*) AS count
+           FROM delayed_jobs
+          WHERE ((delayed_jobs.last_error IS NOT NULL) AND (delayed_jobs.failed_at IS NULL))) AS delayed_jobs_retrying,
+    ( SELECT count(*) AS count
+           FROM delayed_jobs
+          WHERE ((delayed_jobs.last_error IS NOT NULL) AND (delayed_jobs.failed_at IS NOT NULL))) AS delayed_jobs_failed,
+    ( SELECT max(delayed_jobs.created_at) AS max
+           FROM delayed_jobs) AS delayed_jobs_latest_entry,
+    ( SELECT count(*) AS count
+           FROM delayed_jobs
+          WHERE (delayed_jobs.created_at >= (now())::date)) AS delayed_jobs_added_today,
+    ( SELECT json_object_agg(query.priority, query.count) AS json_object_agg
+           FROM ( SELECT delayed_jobs.priority,
+                    count(*) AS count
+                   FROM delayed_jobs
+                  GROUP BY delayed_jobs.priority) query) AS delayed_jobs_priority_counts,
+    ( SELECT json_object_agg(query.queue, query.count) AS json_object_agg
+           FROM ( SELECT delayed_jobs.queue,
+                    count(*) AS count
+                   FROM delayed_jobs
+                  GROUP BY delayed_jobs.queue) query) AS delayed_jobs_queue_counts,
+    ( SELECT json_object_agg(query.attempts, query.count) AS json_object_agg
+           FROM ( SELECT delayed_jobs.attempts,
+                    count(*) AS count
+                   FROM delayed_jobs
+                  GROUP BY delayed_jobs.attempts) query) AS delayed_jobs_attempts_counts,
+    ( SELECT count(*) AS count
+           FROM feed_messages) AS feed_messages_total,
+    ( SELECT count(*) AS count
+           FROM feed_messages
+          WHERE (feed_messages.created_at >= (now())::date)) AS feed_messages_added_today,
+    ( SELECT max(feed_messages.created_at) AS max
+           FROM feed_messages) AS feed_messages_added_latest_entry,
+    ( SELECT count(*) AS count
+           FROM pathology_observations
+          WHERE ((pathology_observations.created_at)::date >= (now())::date)) AS pathology_observations_added_today,
+    ( SELECT max(pathology_observations.observed_at) AS max
+           FROM pathology_observations) AS pathology_observations_latest_observed_at;
+
+
+--
+-- Name: reporting_daily_ukrdc; Type: VIEW; Schema: renalware; Owner: -
+--
+
+CREATE VIEW reporting_daily_ukrdc AS
+ SELECT ( SELECT count(*) AS count
+           FROM patients
+          WHERE ((patients.sent_to_ukrdc_at)::date = CURRENT_DATE)) AS patients_sent_to_ukrdc_today;
+
+
+--
 -- Name: reporting_hd_blood_pressures_audit; Type: MATERIALIZED VIEW; Schema: renalware; Owner: -
 --
 
@@ -7242,6 +7320,38 @@ CREATE SEQUENCE access_maps_id_seq
 ALTER SEQUENCE access_maps_id_seq OWNED BY access_maps.id;
 
 
+--
+-- Name: hd_type_maps; Type: TABLE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE TABLE hd_type_maps (
+    id bigint NOT NULL,
+    diaverum_type_id character varying NOT NULL,
+    hd_type character varying NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: hd_type_maps_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE SEQUENCE hd_type_maps_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: hd_type_maps_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER SEQUENCE hd_type_maps_id_seq OWNED BY hd_type_maps.id;
+
+
 SET search_path = renalware, pg_catalog;
 
 --
@@ -8364,6 +8474,13 @@ SET search_path = renalware_diaverum, pg_catalog;
 --
 
 ALTER TABLE ONLY access_maps ALTER COLUMN id SET DEFAULT nextval('access_maps_id_seq'::regclass);
+
+
+--
+-- Name: hd_type_maps id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY hd_type_maps ALTER COLUMN id SET DEFAULT nextval('hd_type_maps_id_seq'::regclass);
 
 
 SET search_path = public, pg_catalog;
@@ -9674,6 +9791,14 @@ SET search_path = renalware_diaverum, pg_catalog;
 
 ALTER TABLE ONLY access_maps
     ADD CONSTRAINT access_maps_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hd_type_maps hd_type_maps_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY hd_type_maps
+    ADD CONSTRAINT hd_type_maps_pkey PRIMARY KEY (id);
 
 
 SET search_path = renalware, pg_catalog;
@@ -13083,6 +13208,20 @@ CREATE UNIQUE INDEX unique_study_participants ON research_study_participants USI
 SET search_path = renalware_diaverum, pg_catalog;
 
 --
+-- Name: index_renalware_diaverum.hd_type_maps_on_diaverum_type_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE UNIQUE INDEX "index_renalware_diaverum.hd_type_maps_on_diaverum_type_id" ON hd_type_maps USING btree (diaverum_type_id);
+
+
+--
+-- Name: index_renalware_diaverum.hd_type_maps_on_hd_type; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE UNIQUE INDEX "index_renalware_diaverum.hd_type_maps_on_hd_type" ON hd_type_maps USING btree (hd_type);
+
+
+--
 -- Name: renalware_diaverum_access_maps_idx; Type: INDEX; Schema: renalware_diaverum; Owner: -
 --
 
@@ -15688,6 +15827,14 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20180802144507'),
 ('20180803131157'),
 ('20180814103916'),
-('20180815144429');
+('20180815144429'),
+('20180831134606'),
+('20180831134926'),
+('20180907100545'),
+('20181001162513'),
+('20181008144324'),
+('20181008145159'),
+('20181010123132'),
+('20181013115138');
 
 

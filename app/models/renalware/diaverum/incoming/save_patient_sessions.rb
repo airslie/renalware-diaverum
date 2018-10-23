@@ -7,39 +7,39 @@ module Renalware
     module Incoming
       # Save all Sessions
       class SavePatientSessions
-        pattr_initialize :patient_node, :transmission_log
+        pattr_initialize :patient_node, :log
 
         # helper for new(...).call()
-        def self.call(path_to_xml, transmission_log)
-          @transmission_log = transmission_log
-          transmission_log.update!(payload: File.read(path_to_xml))
+        def self.call(path_to_xml, log)
+          @log = log
+          log.update!(payload: File.read(path_to_xml))
           doc = File.open(Pathname(path_to_xml)) { |f| Nokogiri::XML(f) }
-          new(Incoming::PatientXmlDocument.new(doc), transmission_log).call
+          new(Incoming::PatientXmlDocument.new(doc), log).call
         end
 
         def call
           patient = find_patient
-          transmission_log.update!(patient: patient)
+          log.update!(patient: patient)
 
           patient_node.each_session do |session_node|
-            child_log = create_child_transmission_log
+            child_log = create_child_log
             begin
               SavePatientSession.new(patient, session_node, child_log).call
             rescue Errors::SessionInvalidError
               # Do nothing as already logged in SavePatientSession in child_log.
-              # Move onto try importing the next session
+              # Move on to try importing the next session
             end
           end
         end
 
         private
 
-        def create_child_transmission_log
+        def create_child_log
           HD::TransmissionLog.create!(
             direction: :in,
             format: :xml,
-            parent_id: transmission_log.id,
-            patient_id: transmission_log.patient_id
+            parent_id: log.id,
+            patient_id: log.patient_id
           )
         end
 

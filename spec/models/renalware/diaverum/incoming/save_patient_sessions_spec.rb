@@ -2,10 +2,6 @@
 
 require "rails_helper"
 
-# TODO: Improvements
-# - log individual entries to results {}
-# - test SaveSession in isolation
-# - break up #call
 module Renalware
   module Diaverum
     module Incoming
@@ -13,16 +9,6 @@ module Renalware
         include DiaverumHelpers
         let!(:system_user) { create(:user, username: SystemUser.username) }
         let(:patient) { create(:hd_patient, local_patient_id: "KCH123", nhs_number: "0123456789") }
-        let(:hospital_unit) { create(:hospital_unit) }
-        let(:dialysate)     { create(:hd_dialysate) }
-        let(:provider)      { HD::Provider.create!(name: "Diaverum") }
-        let(:dialysis_unit) do
-          HD::ProviderUnit.create!(
-            hospital_unit: hospital_unit,
-            hd_provider: provider,
-            providers_reference: "123"
-          )
-        end
         let(:transmission_log) do
           HD::TransmissionLog.create!(
             direction: :in,
@@ -30,14 +16,6 @@ module Renalware
           )
         end
         before { Diaverum.config.diaverum_incoming_skip_session_save = false }
-
-        def create_access_map
-          AccessMap.create!(
-            diaverum_location_id: "LEJ",
-            diaverum_type_id: 7,
-            access_type: create(:access_type)
-          )
-        end
 
         around(:each) do |example|
           using_a_tmp_diaverum_path{ example.run }
@@ -60,42 +38,42 @@ module Renalware
               Nokogiri::XML(xml)
             end
             let(:payload) { PatientXmlDocument.new(doc) }
-            let!(:access_map) do
-              AccessMap.create!(
-                diaverum_location_id: "LEJ",
-                diaverum_type_id: 7,
-                access_type: create(:access_type),
-                side: :left
-              )
-            end
-
-            it "meta test: fixture rendered via ERB contains patient data bound via "\
-               "'patient' variable" do
-              expect(payload.local_patient_id).to eq(patient.local_patient_id)
-              expect(payload.nhs_number).to eq(patient.nhs_number)
-            end
 
             context "when all sessions are valid" do
-              it "creates a new HD session for each session in the file" do
-                Diaverum.config.diaverum_incoming_skip_session_save = false
-                expect{
-                  SavePatientSessions.new(payload, transmission_log).call
-                }.to change(HD::Session, :count).by(2)
-                .and change(patient.hd_sessions.closed, :count).by(2)
+              it "delegates session creation to ClosedSessionBuilder" do
+                closed_session = build(
+                  :hd_closed_session,
+                  patient: patient,
+                  by: system_user
+                )
+                builder = instance_double(ClosedSessionBuilder, call: closed_session)
+                allow(SessionBuilderFactory).to receive(:builder_for).and_return(builder)
 
-                expect(HD::TransmissionLog.pluck(:session_id).uniq.compact.count).to eq(2)
-                expect(HD::Session::Closed.pluck(:external_id)).to eq([1, 2])
+                SavePatientSessions.new(payload, transmission_log).call
+
+                expect(builder).to have_received(:call).twice
               end
 
               context "when config.diaverum_incoming_skip_session_save is true" do
                 it "does not attempt to save the session but still logs (without session id)" do
                   Diaverum.config.diaverum_incoming_skip_session_save = true
+
+                  closed_session = build(
+                    :hd_closed_session,
+                    patient: patient,
+                    by: system_user
+                  )
+                  builder = instance_double(ClosedSessionBuilder, call: closed_session)
+                  allow(SessionBuilderFactory).to receive(:builder_for).and_return(builder)
+
                   expect{
                     SavePatientSessions.new(payload, transmission_log).call
                   }.to change(HD::Session, :count).by(0)
                   .and change(HD::TransmissionLog, :count).by(3)
 
                   expect(HD::TransmissionLog.pluck(:session_id).uniq.compact.count).to eq(0)
+                  expect(HD::TransmissionLog.pluck(:error_messages).flatten.compact.uniq).to eq([])
+
                   Diaverum.config.diaverum_incoming_skip_session_save = false
                 end
               end
@@ -103,6 +81,17 @@ module Renalware
 
             context "when sessions are invalid because they are missing an end_time" do
               let(:end_time) { nil }
+
+              before do
+                closed_session = build(
+                  :hd_closed_session,
+                  patient: patient,
+                  by: system_user,
+                  end_time: nil
+                )
+                builder = instance_double(ClosedSessionBuilder, call: closed_session)
+                allow(SessionBuilderFactory).to receive(:builder_for).and_return(builder)
+              end
 
               it "does not create any new sessions" do
                 expect{
@@ -146,11 +135,29 @@ module Renalware
                 end
               end
             end
+
             describe "handling of duplicates" do
               context "when the same session is imported again (which will happen everyday) as "\
                       "the file contains the last 30 days of sesssons" do
-                it "does not change the previoulsly saved session" do
+                let(:access_type) { create(:access_type) }
+                let(:user) { create(:user) }
+                let(:provider) { HD::Provider.create!(name: "Diaverum") }
+                let(:dialysis_unit) do
+                  HD::ProviderUnit.create!(
+                    hospital_unit: hospital_unit,
+                    hd_provider: provider,
+                    providers_reference: "123"
+                  )
+                end
+                let(:dialysate) { create(:hd_dialysate) }
+                let(:hospital_unit) { create(:hospital_unit) }
+
+                it "does not change the previously saved session" do
                   # The first session has a TreatmentID of 1 in the file, the second is 2
+                  Diaverum.config.diaverum_incoming_skip_session_save = false
+                  create_access_map
+                  create_hd_type_map
+                  create_dry_weight
                   create(:hd_closed_session, patient: patient, by: system_user, external_id: "1")
 
                   # Should only import 1 new one

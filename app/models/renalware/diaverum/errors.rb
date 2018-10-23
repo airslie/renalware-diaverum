@@ -5,11 +5,13 @@ require "attr_extras"
 module Renalware
   module Diaverum
     module Errors
-      class DiaverumXMLParsingError < StandardError; end
-      class AccessMapError < StandardError; end
-      class SessionInvalidError < StandardError; end
-      class DialysateNotFoundError < StandardError; end
-      class DialysateMissingError < StandardError; end
+      class SessionError < StandardError; end
+      class DiaverumXMLParsingError < SessionError; end
+      class AccessMapError < SessionError; end
+      class HDTypeMapError < SessionError; end
+      class SessionInvalidError < SessionError; end
+      class DialysateNotFoundError < SessionError; end
+      class DialysateMissingError < SessionError; end
     end
   end
 end

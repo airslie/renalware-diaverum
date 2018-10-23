@@ -30,6 +30,7 @@ module Renalware
         context "when there a patient XML file waiting in the incoming folder having 2 sessions" do
           context "when the file is valid" do
             it "imports all the sessions and moves/creates necessary files" do
+              create_hd_type_map
               copy_example_xml_file_into_diaverum_in_folder
 
               task.execute
