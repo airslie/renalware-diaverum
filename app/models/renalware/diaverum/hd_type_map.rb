@@ -7,10 +7,10 @@ module Renalware
     # Maps a Diaverum HDType (as found in the XML) from eg HFLUX to :hd, or HDFPO to :hdf_post
     # Diaverum types are for example:
     # HDFPO: HDF-Postdilution => :hdf_post
-    # HDFPR: HDF-Predilution => :hdf_post
+    # HDFPR: HDF-Predilution => :hdf_pre
     # HFPO: HF-Postdilution => :hd
     # HDPR: HF-Predilution => :hd
-    # HFUX: High flux hemodialysis => :hd
+    # HFLUX: High flux hemodialysis => :hd
     # HD: Low flux hemodialysis => :hd
     class HDTypeMap < ApplicationRecord
       def self.for(diaverum_type_id:)
