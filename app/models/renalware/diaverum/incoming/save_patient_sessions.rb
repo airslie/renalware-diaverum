@@ -18,7 +18,7 @@ module Renalware
         end
 
         def call
-          patient = find_patient
+          patient = case_insensitive_find_patient
           log.update!(patient: patient)
 
           patient_node.each_session do |session_node|
@@ -43,9 +43,11 @@ module Renalware
           )
         end
 
-        # Raises an exception if the patient is not found
-        def find_patient
-          Renalware::HD::Patient.find_by!(local_patient_id: patient_node.local_patient_id)
+        def case_insensitive_find_patient
+          Renalware::HD::Patient.where(
+            "upper(local_patient_id) = ?",
+            patient_node.local_patient_id.upcase
+          ).first!
         end
       end
     end
