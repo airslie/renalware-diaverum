@@ -53,6 +53,14 @@ module Renalware
           end
         end
 
+        def current_dialysis_prescription
+          @current_dialysis_prescription ||= begin
+            path = "/Patients/Patient/DialysisPrescriptions/DialysisPrescriptions"
+            prescriptions = patient_node.xpath(path).map{ |node| Nodes::Prescription.new(node) }
+            prescriptions.detect{ |node| node.active? }
+          end
+        end
+
         private
 
         def validate

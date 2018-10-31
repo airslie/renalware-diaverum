@@ -18,11 +18,9 @@ module Renalware
 
         # rubocop:disable Metrics/MethodLength
         def import_xml_files(uuid)
-          logger.info "Ingesting Diaverum HD Sessions using pattern #{pattern}"
-          Dir.glob(pattern).sort.each do |filepath|
-            filename = File.basename(filepath)
-            log_msg = "#{filename}..."
+          XmlFileList.new(logger, pattern).each_file do |filepath, filename|
             begin
+              log_msg = "#{filename}..."
               transmission_log = create_transmission_log(filepath: filepath, uuid: uuid)
               Diaverum::Incoming::SavePatientSessions.call(filepath, transmission_log)
               log_msg += "DONE"

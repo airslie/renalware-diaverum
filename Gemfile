@@ -38,6 +38,7 @@ group :development, :test do
   gem "bootsnap"
   gem "bundler-audit", require: false
   gem "byebug"
+  gem "climate_control"
   gem "equivalent-xml"
   gem "factory_bot_rails", require: false
   gem "faker"

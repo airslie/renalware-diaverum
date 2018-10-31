@@ -87,7 +87,7 @@ GIT
 PATH
   remote: .
   specs:
-    renalware-diaverum (0.1.7)
+    renalware-diaverum (0.1.8)
       dotenv-rails
       pg (~> 1.0)
       rails (>= 5.1)
@@ -185,6 +185,7 @@ GEM
     client_side_validations-simple_form (6.6.0)
       client_side_validations (>= 9.3.2, < 12)
       simple_form (>= 3.5, < 5)
+    climate_control (0.2.0)
     clipboard-rails (1.7.1)
     cocoon (1.2.11)
     coercible (1.0.0)
@@ -517,6 +518,7 @@ DEPENDENCIES
   bootsnap
   bundler-audit
   byebug
+  climate_control
   devise_security_extension!
   dotenv-rails (~> 2.5.0)
   equivalent-xml

@@ -14,7 +14,8 @@ module Renalware
           @log = log
           log.update!(payload: File.read(path_to_xml))
           doc = File.open(Pathname(path_to_xml)) { |f| Nokogiri::XML(f) }
-          new(Incoming::PatientXmlDocument.new(doc), log).call
+          patient_document = Incoming::PatientXmlDocument.new(doc)
+          new(doc, log).call
         end
 
         def call
