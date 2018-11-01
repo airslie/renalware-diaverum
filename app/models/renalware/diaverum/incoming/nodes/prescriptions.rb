@@ -9,7 +9,7 @@ module Renalware
         # Wraps an incoming DialysisPrescriptions XML node
         class Prescriptions < Node
           def current
-            children.detect(:active?)
+            children.detect(&:active?)
           end
 
           def children

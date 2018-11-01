@@ -23,7 +23,7 @@ module Renalware
           xml = ERB.new(xml_filepath.read).result(binding)
           Nokogiri::XML(xml)
         end
-        let(:treatment_node) { payload.session_nodes.first }
+        let(:treatment_node) { payload.treatment_nodes.first }
         let(:hospital_unit) { create(:hospital_unit) }
         let(:dialysis_unit) do
           HD::ProviderUnit.create!(

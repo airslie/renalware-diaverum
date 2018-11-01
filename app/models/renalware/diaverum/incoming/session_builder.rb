@@ -7,19 +7,28 @@ module Renalware
     module Incoming
       # Base class for e.g. DNASessionBuilder
       class SessionBuilder
-        attr_reader :patient, :treatment_node, :user
+        attr_reader :patient, :treatment_node, :user, :patient_node
 
         def self.call(**args)
           new(**args).call
         end
 
-        def initialize(patient:, treatment_node:, user:)
+        def initialize(patient:, treatment_node:, user:, patient_node: nil)
           @patient = patient
           @treatment_node = treatment_node
           @user = user
+          @patient_node = patient_node
         end
 
         protected
+
+        def hd_profile_document
+          HD::Profile.for_patient(patient)&.document
+        end
+
+        def current_prescription
+          patient_node.prescriptions&.current
+        end
 
         def hospital_unit
           dialysis_unit.hospital_unit

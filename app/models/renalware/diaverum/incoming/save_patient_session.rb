@@ -7,7 +7,7 @@ module Renalware
     module Incoming
       class SavePatientSession
         include Diaverum::Logging
-        pattr_initialize :patient, :treatment_node, :log
+        pattr_initialize :patient, :current_prescription_node, :treatment_node, :log
 
         def call
           return if session_exists_already?

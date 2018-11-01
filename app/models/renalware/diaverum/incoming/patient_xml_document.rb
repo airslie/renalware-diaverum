@@ -40,13 +40,13 @@ module Renalware
         end
 
         def each_session
-          session_nodes.each do |node|
+          treatment_nodes.each do |node|
             yield SessionXmlDocument.new(node) if block_given?
           end
         end
 
-        def session_nodes
-          @session_nodes ||= begin
+        def treatment_nodes
+          @treatment_nodes ||= begin
             patient_node.xpath("/Patients/Patient/Treatments/Treatment").map do |node|
               SessionXmlDocument.new(node)
             end
@@ -57,7 +57,7 @@ module Renalware
           @current_dialysis_prescription ||= begin
             path = "/Patients/Patient/DialysisPrescriptions/DialysisPrescriptions"
             prescriptions = patient_node.xpath(path).map{ |node| Nodes::Prescription.new(node) }
-            prescriptions.detect{ |node| node.active? }
+            prescriptions.detect(&:active?)
           end
         end
 

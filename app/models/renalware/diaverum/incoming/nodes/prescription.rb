@@ -28,6 +28,14 @@ module Renalware
             today = Time.zone.today
             start_date <= today && end_date >= today
           end
+
+          # Adding this explcitly on the interface so we can mock it in tests (rather than relying
+          # on method_missing)
+          # rubocop:disable Naming/MethodName
+          def DialysateFlow
+            node.xpath("DialysateFlow")&.text
+          end
+          # rubocop:enable Naming/MethodName
         end
       end
     end

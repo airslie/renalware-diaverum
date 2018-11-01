@@ -15,17 +15,22 @@ module Renalware
           log.update!(payload: File.read(path_to_xml))
           doc = File.open(Pathname(path_to_xml)) { |f| Nokogiri::XML(f) }
           patient_document = Incoming::PatientXmlDocument.new(doc)
-          new(doc, log).call
+          new(patient_document, log).call
         end
 
         def call
           patient = case_insensitive_find_patient
           log.update!(patient: patient)
 
-          patient_node.each_session do |session_node|
+          patient_node.each_session do |treatment_node|
             child_log = create_child_log
             begin
-              SavePatientSession.new(patient, session_node, child_log).call
+              SavePatientSession.new(
+                patient,
+                current_prescription_node,
+                treatment_node,
+                child_log
+              ).call
             rescue Errors::SessionInvalidError
               # Do nothing as already logged in SavePatientSession in child_log.
               # Move on to try importing the next session
@@ -34,6 +39,8 @@ module Renalware
         end
 
         private
+
+        def current_prescription_node; end
 
         def create_child_log
           HD::TransmissionLog.create!(
