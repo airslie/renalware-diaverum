@@ -39,7 +39,7 @@ module Renalware
         end
 
         def create_folder_if_not_exists(name)
-          FileUtils.mkdir_p(name) unless Dir.exist?(name)
+          FileUtils.mkdir_p(name) unless File.exist?(name)
         end
       end
     end
