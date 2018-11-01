@@ -6,8 +6,6 @@ module Renalware
   module Diaverum
     module Incoming
       describe ResolveDialysateFlowRate do
-        let(:patient) { nil }
-
         dialysate_flow_examples = [
           { session: "DF_S", prescription: "DF_P",  hd_profile: "DF_HDP", expected: "DF_S"   },
           { session: "",     prescription: "DF_P",  hd_profile: "DF_HDP", expected: "DF_P"   },
@@ -20,7 +18,7 @@ module Renalware
         dialysate_flow_examples.each do |hash|
           dialysate_flow = OpenStruct.new(hash)
 
-          it "asas" do
+          it "resolves the correct profile in order of precedence" do
             treatment_node = instance_double(
               SessionXmlDocument,
               DialysateFlow: dialysate_flow.session
@@ -37,9 +35,7 @@ module Renalware
             hd_profile = HD::Profile.new(
               document: { dialysis: { flow_rate: dialysate_flow.hd_profile } }
             )
-            # allow(HD::Profile).to receive(:for_patient).and_return(hd_profile)
-            # allow(HD).to receive(:cast_patient).and_return(patient)
-            allow(patient).to receive(:current_profile).and_return(hd_profile)
+            patient = instance_double(HD::Patient, hd_profile: hd_profile)
 
             actual_dialysate_flow = described_class.new(
               patient: patient,
