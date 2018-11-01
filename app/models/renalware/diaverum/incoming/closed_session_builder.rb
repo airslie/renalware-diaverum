@@ -14,6 +14,7 @@ module Renalware
           assign_top_level_attributes
           build_info
           build_dialysis
+          build_dialysate_flow_rate
           build_observations_before
           build_observations_after
           build_hdf
@@ -65,10 +66,27 @@ module Renalware
           dialysis.venous_pressure = treatment_node.VenousPressure
           dialysis.fluid_removed = treatment_node.RemovedVolume
           dialysis.blood_flow = treatment_node.Bloodflow
-          dialysis.flow_rate = treatment_node.DialysateFlow
           dialysis.machine_urr = nil
           dialysis.machine_ktv = treatment_node.KTV
           dialysis.litres_processed = treatment_node.TreatedBloodVolume
+        end
+
+        def build_dialysate_flow_rate
+          dialysis = session.document.dialysis
+          dialysis.flow_rate = ResolveDialysateFlowRate.new(
+            patient: patient,
+            patient_node: patient_node,
+            treatment_node: treatment_node
+          ).call
+        end
+
+        # DialysateFlow is not usually present in the DialysisTreatment element for some reason
+        # so if not found we then look at the latest/current DialysisPrescription where we should
+        # find it. if not found there we fallback to looking at the Renalware HD Profile.
+        def resolve_dialysate_flow_rate
+          treatment_node.DialysateFlow.presence ||
+            current_prescription&.DialysateFlow.presence ||
+            hd_profile_document&.dialysis&.flow_rate
         end
 
         def build_observations_before

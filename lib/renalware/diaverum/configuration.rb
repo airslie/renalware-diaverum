@@ -22,12 +22,21 @@ module Renalware
       Dotenv::Railtie.load
 
       config_accessor(:diaverum_incoming_skip_session_save) do
-        ENV.fetch("DIAVERUM_INCOMING_SKIP_SESSION_SAVE", true).to_s == "true"
+        ENV.fetch("DIAVERUM_INCOMING_SKIP_SESSION_SAVE", true).to_s != "false"
+      end
+
+      config_accessor(:diaverum_go_live_date) do
+        Date.parse(ENV.fetch("DIAVERUM_GO_LIVE_DATE") { "2018-11-07" })
       end
     end
 
     def self.config
       @config ||= Configuration.new
+    end
+
+    # Used in tests only! See ConfigurationHelpers
+    def self.reset_config
+      @config = nil
     end
 
     def self.configure

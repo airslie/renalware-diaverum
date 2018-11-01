@@ -7,7 +7,7 @@ module Renalware
     module Incoming
       class SavePatientSession
         include Diaverum::Logging
-        pattr_initialize :patient, :treatment_node, :log
+        pattr_initialize :patient, :current_prescription_node, :treatment_node, :log, :patient_node
 
         def call
           return if session_exists_already?
@@ -46,7 +46,8 @@ module Renalware
           args = {
             treatment_node: treatment_node,
             patient: patient,
-            user: user
+            user: user,
+            patient_node: patient_node
           }
           builder = SessionBuilderFactory.builder_for(**args)
           builder.call

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "benchmark"
 
 namespace :diaverum do
@@ -20,7 +22,7 @@ namespace :diaverum do
     uuid = Renalware::Diaverum::Incoming::IngestXmlFiles.new.call
     Renalware::Diaverum::Incoming::GenerateSummaryFile.new(
       log_uuid: uuid,
-      path: Renalware::Diaverum::Paths.incoming
+      path: Renalware::Diaverum::Paths.outgoing
     ).call
   end
 end

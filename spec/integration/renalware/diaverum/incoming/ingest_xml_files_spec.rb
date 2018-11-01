@@ -44,7 +44,7 @@ module Renalware
               # ..to the incoming archive
               expect(Dir.glob(Paths.incoming_archive.join("*.xml")).count).to eq(1)
               # ..and a summary file created - in this case ending in ok.txt as there are 0 errors
-              expect(Dir.glob(Paths.incoming.join("*_ok.txt")).count).to eq(1)
+              expect(Dir.glob(Paths.outgoing.join("*_ok.txt")).count).to eq(1)
             end
           end
 
@@ -66,10 +66,10 @@ module Renalware
               # ..to the incoming archive
               expect(Dir.glob(Paths.incoming_archive.join("*.xml")).count).to eq(1)
               # ..and a summary file created - in this case ending in ok.txt as there are 0 errors
-              expect(Dir.glob(Paths.incoming.join("*_ok.txt")).count).to eq(0)
-              expect(Dir.glob(Paths.incoming.join("*_err.txt")).count).to eq(1)
+              expect(Dir.glob(Paths.outgoing.join("*_ok.txt")).count).to eq(0)
+              expect(Dir.glob(Paths.outgoing.join("*_err.txt")).count).to eq(1)
 
-              err_file_content = Dir.glob(Paths.incoming.join("*_err.txt"))
+              err_file_content = Dir.glob(Paths.outgoing.join("*_err.txt"))
                 .map{ |p| File.read(p) }.join("")
               expect(err_file_content)
                 .to match(/Couldn't find Renalware::HD::Dialysate Fresenius A7/)

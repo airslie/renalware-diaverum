@@ -10,12 +10,16 @@ module Renalware
         pattr_initialize :node
         delegate :xpath, to: :node
 
-        # Most node attributes and handled in method_missing but StartTime is
-        # a special case because we want to stub in tests and it therefore needs to be
+        # Most node attributes and handled in method_missing but StartTime and DialysateFlow are
+        # special cases because we want to stub in tests and they therefore needs to be
         # on the object's interface.
         # rubocop:disable Naming/MethodName
         def StartTime
           node.xpath("StartTime")&.text
+        end
+
+        def DialysateFlow
+          node.xpath("DialysateFlow")&.text
         end
         # rubocop:enable Naming/MethodName
 
@@ -28,6 +32,12 @@ module Renalware
           else
             super(method, *args, block)
           end
+        end
+
+        # Return true if the method name is camel case eg DialysateFlow
+        def respond_to_missing?(name, _include_private)
+          first_char = name.to_s[0]
+          first_char.upcase == first_char
         end
 
         delegate :to_xml, to: :node
