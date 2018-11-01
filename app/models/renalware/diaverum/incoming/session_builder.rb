@@ -13,7 +13,7 @@ module Renalware
           new(**args).call
         end
 
-        def initialize(patient:, treatment_node:, user:, patient_node: nil)
+        def initialize(patient:, treatment_node:, user:, patient_node:)
           @patient = patient
           @treatment_node = treatment_node
           @user = user

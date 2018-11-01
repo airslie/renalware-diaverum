@@ -29,7 +29,8 @@ module Renalware
                 patient,
                 current_prescription_node,
                 treatment_node,
-                child_log
+                child_log,
+                patient_node
               ).call
             rescue Errors::SessionInvalidError
               # Do nothing as already logged in SavePatientSession in child_log.

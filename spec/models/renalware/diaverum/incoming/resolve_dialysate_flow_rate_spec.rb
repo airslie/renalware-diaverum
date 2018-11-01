@@ -37,7 +37,9 @@ module Renalware
             hd_profile = HD::Profile.new(
               document: { dialysis: { flow_rate: dialysate_flow.hd_profile } }
             )
-            allow(HD::Profile).to receive(:for_patient).and_return(hd_profile)
+            # allow(HD::Profile).to receive(:for_patient).and_return(hd_profile)
+            # allow(HD).to receive(:cast_patient).and_return(patient)
+            allow(patient).to receive(:current_profile).and_return(hd_profile)
 
             actual_dialysate_flow = described_class.new(
               patient: patient,

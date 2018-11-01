@@ -17,7 +17,7 @@ module Renalware
         private
 
         def dialysate_flow_rate_from_hd_profile
-          HD::Profile.for_patient(patient)&.document&.dialysis&.flow_rate
+          patient.hd_profile&.document&.dialysis&.flow_rate
         end
       end
     end

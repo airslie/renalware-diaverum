@@ -48,7 +48,8 @@ module Renalware
               session = described_class.call(
                 patient: patient,
                 treatment_node: treatment_node,
-                user: user
+                user: user,
+                patient_node: instance_double(PatientXmlDocument)
               )
 
               expect(session.class.name).to eq("Renalware::HD::Session::Closed")

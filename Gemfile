@@ -35,6 +35,7 @@ gem "devise_security_extension",
     git: "https://github.com/phatworx/devise_security_extension.git"
 
 group :development, :test do
+  gem "awesome_print"
   gem "bootsnap"
   gem "bundler-audit", require: false
   gem "byebug"

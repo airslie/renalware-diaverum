@@ -11,7 +11,8 @@ module Renalware
             args = {
               treatment_node: instance_double(SessionXmlDocument, StartTime: "13:00"),
               user: instance_double(User),
-              patient: instance_double(Patient)
+              patient: instance_double(Patient),
+              patient_node: instance_double(PatientXmlDocument)
             }
 
             builder = described_class.builder_for(**args)
@@ -25,7 +26,8 @@ module Renalware
             args = {
               treatment_node: instance_double(SessionXmlDocument, StartTime: nil),
               user: instance_double(User),
-              patient: instance_double(Patient)
+              patient: instance_double(Patient),
+              patient_node: instance_double(PatientXmlDocument)
             }
 
             builder = described_class.builder_for(**args)
