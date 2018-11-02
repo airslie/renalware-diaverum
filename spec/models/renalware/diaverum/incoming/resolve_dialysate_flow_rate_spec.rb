@@ -20,7 +20,7 @@ module Renalware
 
           it "resolves the correct profile in order of precedence" do
             treatment_node = instance_double(
-              SessionXmlDocument,
+              Nodes::Treatment,
               DialysateFlow: dialysate_flow.session
             )
             prescription_node = instance_double(
@@ -28,7 +28,7 @@ module Renalware
               DialysateFlow: dialysate_flow.prescription
             )
             patient_node = instance_double(
-              PatientXmlDocument,
+              Nodes::Patient,
               current_dialysis_prescription: prescription_node
             )
             # Using .new not instance_double to get the document hash loaded into a Document object

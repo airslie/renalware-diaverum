@@ -18,8 +18,14 @@ module Renalware
             if first_char.upcase == first_char
               node.xpath(method.to_s)&.text
             else
-              super(method, *args, block)
+              super
             end
+          end
+
+          # Return true if the method name is camel case eg DialysateFlow
+          def respond_to_missing?(name, _include_private)
+            first_char = name.to_s[0]
+            first_char.upcase == first_char
           end
         end
       end

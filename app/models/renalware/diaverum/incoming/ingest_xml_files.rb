@@ -16,17 +16,18 @@ module Renalware
 
         private
 
-        # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
         def import_xml_files(uuid)
           XmlFileList.new(logger, pattern).each_file do |filepath, filename|
             begin
               log_msg = "#{filename}..."
               transmission_log = create_transmission_log(filepath: filepath, uuid: uuid)
-              SavePatientSessions.call(filepath, transmission_log)
+              SavePatientSessions.call(path_to_xml: filepath, log: transmission_log)
               log_msg += "DONE"
             rescue StandardError => ex
               handle_ingest_error(filepath, ex, transmission_log)
               log_msg += "FAIL"
+              # raise(ex) if Rails.env.development?
               next
             ensure
               archive_incoming_file(filename, filepath)
@@ -36,7 +37,7 @@ module Renalware
         rescue StandardError => exception
           raise exception
         end
-        # rubocop:enable Metrics/MethodLength
+        # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
         # We have experiened persmission denied/invalid cross-device link
         # errors attempting to move files from a network share to the local

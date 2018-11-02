@@ -8,14 +8,14 @@ require "rails_helper"
 module Renalware
   module Diaverum
     module Incoming
-      RSpec.describe ClosedSessionBuilder do
+      RSpec.describe SessionBuilders::Closed do
         include DiaverumHelpers
 
         let(:user) { create(:user) }
         let(:patient) { build(:hd_patient, local_patient_id: "KCH123", nhs_number: "0123456789") }
         let(:treatment_node) { nil }
         let(:xml_filepath) { file_fixture("diaverum_example.xml.erb") }
-        let(:payload) { PatientXmlDocument.new(doc) }
+        let(:payload) { Nodes::Patient.new(doc) }
         let(:doc) do
           # Set up an erb template based on the XML fixture so we can insert patient identifiers
           # into the XML.By magic, the patient variable is in binding so can be resolved in
@@ -49,7 +49,7 @@ module Renalware
                 patient: patient,
                 treatment_node: treatment_node,
                 user: user,
-                patient_node: instance_double(PatientXmlDocument)
+                patient_node: instance_double(Nodes::Patient)
               )
 
               expect(session.class.name).to eq("Renalware::HD::Session::Closed")

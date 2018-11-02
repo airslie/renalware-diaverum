@@ -29,27 +29,26 @@ module Renalware
                   "new ones e.g. because this is a new patient, or the rake task is running for "\
                   "the first time and needs to catchup on the (up to 30 days of) backlog" do
 
-            let(:xml_filepath) { file_fixture("diaverum_example.xml.erb") }
-            let(:doc) do
-              # Set up an erb template based on the XML fixture so we can insert patient identifiers
-              # into the XML.By magic, the patient variable is in binding so can be resolved in
-              # the ERB template
-              xml = ERB.new(xml_filepath.read).result(binding)
-              Nokogiri::XML(xml)
-            end
-            let(:payload) { PatientXmlDocument.new(doc) }
+            let(:xml_filepath) {
+              file = file_fixture("diaverum_example.xml.erb")
+              xml = ERB.new(file.read).result(binding)
+              tempfile = Tempfile.new("diaverum_example")
+              tempfile.write(xml)
+              tempfile.close
+              tempfile.path
+            }
 
             context "when all sessions are valid" do
-              it "delegates session creation to ClosedSessionBuilder" do
+              it "delegates session creation to SessionBuilders::Closed" do
                 closed_session = build(
                   :hd_closed_session,
                   patient: patient,
                   by: system_user
                 )
-                builder = instance_double(ClosedSessionBuilder, call: closed_session)
-                allow(SessionBuilderFactory).to receive(:builder_for).and_return(builder)
+                builder = instance_double(SessionBuilders::Closed, call: closed_session)
+                allow(SessionBuilders::Factory).to receive(:builder_for).and_return(builder)
 
-                SavePatientSessions.new(payload, transmission_log).call
+                SavePatientSessions.new(path_to_xml: xml_filepath, log: transmission_log).call
 
                 expect(builder).to have_received(:call).twice
               end
@@ -63,11 +62,11 @@ module Renalware
                     patient: patient,
                     by: system_user
                   )
-                  builder = instance_double(ClosedSessionBuilder, call: closed_session)
-                  allow(SessionBuilderFactory).to receive(:builder_for).and_return(builder)
+                  builder = instance_double(SessionBuilders::Closed, call: closed_session)
+                  allow(SessionBuilders::Factory).to receive(:builder_for).and_return(builder)
 
                   expect{
-                    SavePatientSessions.new(payload, transmission_log).call
+                    SavePatientSessions.new(path_to_xml: xml_filepath, log: transmission_log).call
                   }.to change(HD::Session, :count).by(0)
                   .and change(HD::TransmissionLog, :count).by(3)
 
@@ -89,19 +88,19 @@ module Renalware
                   by: system_user,
                   end_time: nil
                 )
-                builder = instance_double(ClosedSessionBuilder, call: closed_session)
-                allow(SessionBuilderFactory).to receive(:builder_for).and_return(builder)
+                builder = instance_double(SessionBuilders::Closed, call: closed_session)
+                allow(SessionBuilders::Factory).to receive(:builder_for).and_return(builder)
               end
 
               it "does not create any new sessions" do
                 expect{
-                  SavePatientSessions.new(payload, transmission_log).call
+                  SavePatientSessions.new(path_to_xml: xml_filepath, log: transmission_log).call
                 }.to change(HD::Session, :count).by(0)
               end
 
               it "logs an error to each child TransmissionLog" do
                 expect{
-                  SavePatientSessions.new(payload, transmission_log).call
+                  SavePatientSessions.new(path_to_xml: xml_filepath, log: transmission_log).call
                 }.to change(HD::TransmissionLog, :count).by(3) # 1 parent 2 children
 
                 parent_logs = HD::TransmissionLog.where(parent_id: nil).all
@@ -120,7 +119,7 @@ module Renalware
                   Diaverum.config.diaverum_incoming_skip_session_save = true
 
                   expect {
-                    SavePatientSessions.new(payload, transmission_log).call
+                    SavePatientSessions.new(path_to_xml: xml_filepath, log: transmission_log).call
                   }.to change(HD::Session, :count).by(0)
 
                   parent_logs = HD::TransmissionLog.where(parent_id: nil).all
@@ -162,7 +161,7 @@ module Renalware
 
                   # Should only import 1 new one
                   expect{
-                    SavePatientSessions.new(payload, transmission_log).call
+                    SavePatientSessions.new(path_to_xml: xml_filepath, log: transmission_log).call
                   }.to change(HD::Session, :count).by(1)
                 end
               end

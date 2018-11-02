@@ -5,43 +5,42 @@ require "attr_extras"
 module Renalware
   module Diaverum
     module Incoming
-      # Save all Sessions
+      # Save all Sessions in a particular patient XML file.
       class SavePatientSessions
-        pattr_initialize :patient_node, :log
+        pattr_initialize [:path_to_xml!, :log!]
 
-        # helper for new(...).call()
-        def self.call(path_to_xml, log)
-          @log = log
-          log.update!(payload: File.read(path_to_xml))
-          doc = File.open(Pathname(path_to_xml)) { |f| Nokogiri::XML(f) }
-          patient_document = Incoming::PatientXmlDocument.new(doc)
-          new(patient_document, log).call
+        def self.call(**args)
+          new(**args).call
         end
 
+        # rubocop:disable Metrics/MethodLength
         def call
-          patient = case_insensitive_find_patient
-          log.update!(patient: patient)
-
-          patient_node.each_session do |treatment_node|
+          patient_node.each_treatment do |treatment_node|
             child_log = create_child_log
             begin
               SavePatientSession.new(
                 patient,
-                current_prescription_node,
                 treatment_node,
                 child_log,
                 patient_node
               ).call
-            rescue Errors::SessionInvalidError
+            rescue Errors::SessionInvalidError => e
+              raise(e) if Rails.env.development?
               # Do nothing as already logged in SavePatientSession in child_log.
               # Move on to try importing the next session
             end
           end
         end
+        # rubocop:enable Metrics/MethodLength
 
         private
 
-        def current_prescription_node; end
+        def patient_node
+          @patient_node ||= begin
+            xml_document = File.open(Pathname(path_to_xml)) { |f| Nokogiri::XML(f) }
+            Nodes::Patients.new(xml_document.root).one_and_only_patient_node
+          end
+        end
 
         def create_child_log
           HD::TransmissionLog.create!(
@@ -52,11 +51,17 @@ module Renalware
           )
         end
 
+        def patient
+          @patient = case_insensitive_find_patient
+        end
+
         def case_insensitive_find_patient
-          Renalware::HD::Patient.where(
+          patient = Renalware::HD::Patient.where(
             "upper(local_patient_id) = ?",
             patient_node.local_patient_id.upcase
           ).first!
+          log.update!(patient: patient)
+          patient
         end
       end
     end
