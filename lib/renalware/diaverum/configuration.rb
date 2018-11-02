@@ -28,6 +28,10 @@ module Renalware
       config_accessor(:diaverum_go_live_date) do
         Date.parse(ENV.fetch("DIAVERUM_GO_LIVE_DATE") { "2018-11-07" })
       end
+
+      config_accessor(:honour_treatment_deleted_flag) do
+        Date.parse(ENV.fetch("HONOUR_TREATMENT_DELETED_FLAG") { "true" })
+      end
     end
 
     def self.config
