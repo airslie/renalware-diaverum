@@ -20,16 +20,40 @@ bundle exec rake app:db:demo:seed
 
 For each HD patient dialysing at a Diaverum unit, Diaverum will SFTP us an XML file
 (probably overnight) containing HD Sessions for the last 30 days.
+We import these sessions into Renalware.
 
-We import these sessions, mapping across various fields into for example Renal Registry codes.
-
-Session data is imported with
+### Running the import script
 
 ```
 bundle exec rake diaverum:ingest
 or, if running in development
 bundle exec rake app:diaverum:ingest
 ```
+
+### Configuration
+
+Configure in a host application using:
+
+```
+Renalware::Diaverum.configure do |config|
+  config.xxx = "yyy"
+end
+```
+
+The default configuration is in `lib/renalware/diaverum/configuration.rb` and is driven by an
+ENV variable of the same name:
+
+|          |               |       |
+|----------|---------------|------:|
+| `diaverum_incoming_skip_session_save` | Set to "false" to _actually_ import sessions rather then doing a dry run. |
+| `DIAVERUM_INCOMING_SKIP_SESSION_SAVE` | |
+| `diaverum_go_live_date` | e.g. "2018-11-01". Sessions (XML 'Treatments') earlier than this date will not be imported. |
+| `DIAVERUM_GO_LIVE_DATE` | | |
+| `honour_treatment_deleted_flag` | > If set to "true" then for each patient XML file, in addition to importing new sessions, |
+| `HONOUR_TREATMENT_DELETED_FLAG` | we look at the backlog of sessions in the file (most of which should have already been imported) |
+| | and if we find an imported session that now has a `Deleted=1`, we soft delete that session. |
+| | This allow for the Diaverum to mark accidentally-created or erroneous sessions for deletion. |
+
 
 ## Outgoing
 
