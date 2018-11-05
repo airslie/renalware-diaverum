@@ -29,7 +29,7 @@ module Renalware
               log_msg += "FAIL"
               next
             ensure
-              FileUtils.mv filepath, Paths.incoming_archive.join(filename)
+              archive_incoming_file(filename, filepath)
               logger.info log_msg
             end
           end
@@ -37,6 +37,20 @@ module Renalware
           raise exception
         end
         # rubocop:enable Metrics/MethodLength
+
+        # We have experiened persmission denied/invalid cross-device link
+        # errors attempting to move files from a network share to the local
+        # archive/incoming folder. Provide an alternative implementation
+        # which does a cp then an rm in attempt to skip the implicit rename
+        # that occurs during a mv.
+        def archive_incoming_file(filename, filepath)
+          if ENV.key?("DIAVERUM_DO_NOT_USE_MV")
+            FileUtils.cp filepath, Paths.incoming_archive.join(filename)
+            FileUtils.rm filepath
+          else
+            FileUtils.mv filepath, Paths.incoming_archive.join(filename)
+          end
+        end
 
         def create_transmission_log(filepath:, uuid:)
           HD::TransmissionLog.create!(
