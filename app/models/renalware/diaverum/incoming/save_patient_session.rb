@@ -7,11 +7,11 @@ module Renalware
     module Incoming
       class SavePatientSession
         include Diaverum::Logging
-        pattr_initialize :patient, :treatment_node, :log, :patient_node
+        pattr_initialize [:patient!, :treatment_node!, :log!, :patient_node!]
 
         def call
           if session_exists_already?
-            marked_existing_session_as_deleted if treatment_node.Deleted == "1"
+            marked_existing_session_as_deleted if treatment_node.Deleted.to_i == 1
             return
           end
 
@@ -36,7 +36,9 @@ module Renalware
           end
         end
 
-        def marked_existing_session_as_deleted; end
+        def marked_existing_session_as_deleted
+          existing_session.delete # skip callbacks
+        end
 
         # Returns an existing session or a new one if not found
         def existing_session

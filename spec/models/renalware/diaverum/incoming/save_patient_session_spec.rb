@@ -7,6 +7,7 @@ module Renalware
     module Incoming
       RSpec.describe SavePatientSession do
         include DiaverumHelpers
+        include Diaverum::ConfigurationHelpers
       end
     end
   end

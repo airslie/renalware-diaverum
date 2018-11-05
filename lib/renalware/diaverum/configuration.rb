@@ -30,7 +30,7 @@ module Renalware
       end
 
       config_accessor(:honour_treatment_deleted_flag) do
-        ENV.fetch("HONOUR_TREATMENT_DELETED_FLAG") { "true" }
+        ENV.fetch("HONOUR_TREATMENT_DELETED_FLAG", true).to_s != "false"
       end
     end
 

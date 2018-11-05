@@ -19,6 +19,14 @@ module Renalware
           def DialysateFlow
             node.xpath("DialysateFlow")&.text
           end
+
+          def Deleted
+            node.xpath("Deleted")&.text
+          end
+
+          def TreatmentId
+            node.xpath("TreatmentId")&.text
+          end
           # rubocop:enable Naming/MethodName
         end
       end

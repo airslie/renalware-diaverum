@@ -19,10 +19,10 @@ module Renalware
             child_log = create_child_log
             begin
               SavePatientSession.new(
-                patient,
-                treatment_node,
-                child_log,
-                patient_node
+                patient: patient,
+                treatment_node: treatment_node,
+                log: child_log,
+                patient_node: patient_node
               ).call
             rescue Errors::SessionInvalidError => e
               raise(e) if Rails.env.development?
