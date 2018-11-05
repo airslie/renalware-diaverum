@@ -4,7 +4,7 @@ jobs:
     working_directory: ~/renalware-diaverum
     docker:
       # this is important to use proper image with browsers support
-      - image: circleci/ruby:2.5.0-node-browsers
+      - image: circleci/ruby:2.5.3-stretch-node-browsers-legacy
         environment:
           PGHOST: 127.0.0.1
           PGUSER: renalware
@@ -31,7 +31,8 @@ jobs:
         paths:
           - vendor/bundle
 
-      - run: sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ stretch-pgdg main" >> /etc/apt/sources.list.d/pgdg.list'
+      #- run: sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ stretch-pgdg main" >> /etc/apt/sources.list.d/pgdg.list'
+      - run: sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" > /etc/apt/sources.list.d/PostgreSQL.list'
       - run: sudo sh -c 'wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -'
       - run: sudo apt-get update
       - run: sudo apt-get install postgresql-client-10
