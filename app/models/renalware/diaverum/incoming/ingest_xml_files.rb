@@ -22,11 +22,12 @@ module Renalware
             begin
               log_msg = "#{filename}..."
               transmission_log = create_transmission_log(filepath: filepath, uuid: uuid)
-              SavePatientSessions.call(filepath, transmission_log)
+              SaveSessions.call(path_to_xml: filepath, log: transmission_log)
               log_msg += "DONE"
             rescue StandardError => ex
               handle_ingest_error(filepath, ex, transmission_log)
               log_msg += "FAIL"
+              # raise(ex) if Rails.env.development?
               next
             ensure
               archive_incoming_file(filename, filepath)

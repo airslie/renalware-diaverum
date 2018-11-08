@@ -10,11 +10,14 @@ require File.expand_path("dummy/config/environment", __dir__)
 abort("The Rails environment is running in production mode!") if Rails.env.production?
 require "rspec/rails"
 require "factory_bot_rails"
+require "capybara/rspec"
+require "capybara-screenshot/rspec"
 
 # Add additional requires below this line. Rails is not loaded until this point!
-Dir[Renalware::Engine.root.join("spec/factories/**/*.rb")].each { |f| load f }
-Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each { |f| require f }
-Dir[Renalware::Engine.root.join("spec/support/**/*.rb")].each { |f| require f }
+Dir[Renalware::Engine.root.join("spec/factories/**/*.rb")].each { |file| require file }
+Dir[Renalware::Engine.root.join("spec/support/**/*.rb")].each { |file| require file }
+Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each { |file| require file }
+# Dir[Renalware::Engine.root.join("spec/support/**/*.rb")].each { |f| require f }
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
 # spec/support/ and its subdirectories. Files matching `spec/**/*_spec.rb` are
