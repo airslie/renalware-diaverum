@@ -50,3 +50,8 @@ group :development, :test do
   gem "shoulda-matchers"
   gem "webmock", require: false
 end
+
+group :test do
+  gem "capybara"
+  gem "capybara-screenshot"
+end
