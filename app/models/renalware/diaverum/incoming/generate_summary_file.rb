@@ -26,6 +26,9 @@ module Renalware
           filepath = Pathname(path).join(filename(error_count))
           logger.info("Writing summary file #{filepath}")
           File.open(filepath, "w") { |f| f.write(lines.join("\n")) }
+
+          # return filepath Pathname
+          filepath
         end
         # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 

@@ -5,7 +5,7 @@ require "attr_extras"
 module Renalware
   module Diaverum
     module Incoming
-      class IngestXmlFiles
+      class ImportHDSessionsFromXmlFiles
         include Diaverum::Logging
 
         def call

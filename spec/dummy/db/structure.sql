@@ -5844,7 +5844,7 @@ CREATE VIEW reporting_daily_pathology AS
                     count(*) AS count
                    FROM delayed_jobs
                   GROUP BY delayed_jobs.priority) query) AS delayed_jobs_priority_counts,
-    ( SELECT json_object_agg(query.queue, query.count) AS json_object_agg
+    ( SELECT json_object_agg(COALESCE(query.queue, 'unset'::character varying), query.count) AS json_object_agg
            FROM ( SELECT delayed_jobs.queue,
                     count(*) AS count
                    FROM delayed_jobs
