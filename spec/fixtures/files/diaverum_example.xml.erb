@@ -32,9 +32,9 @@ but in this case has 2 sessions
       <Treatment>
         <TreatmentId>1</TreatmentId>
         <Deleted>0</Deleted>
-        <Date>2018-05-10</Date>
-        <ClinicId><%=  defined?(dialysis_unit) ?  dialysis_unit.providers_reference : "" %></ClinicId>
-        <ClinicName><%=  defined?(hospital_unit) ? hospital_unit.name : "'" %></ClinicName>
+        <Date><%= Time.zone.today.to_s %></Date>
+        <ClinicId><%= defined?(dialysis_unit) ?  dialysis_unit.providers_reference : "" %></ClinicId>
+        <ClinicName><%= defined?(hospital_unit) ? hospital_unit.name : "'" %></ClinicName>
         <StartTime>13:45</StartTime>
         <EndTime><%= defined?(end_time) ? end_time : "17:45"%></EndTime>
         <Dialyzer>Elisio-21H-G</Dialyzer>
@@ -83,7 +83,7 @@ but in this case has 2 sessions
       <Treatment>
         <TreatmentId>2</TreatmentId>
         <Deleted>0</Deleted>
-        <Date>2018-05-12</Date>
+        <Date><%= Time.zone.today.to_s %></Date>
         <ClinicId><%=  defined?(dialysis_unit) ?  dialysis_unit.providers_reference : "" %></ClinicId>
         <ClinicName>Darlington</ClinicName>
         <StartTime>13:15</StartTime>

@@ -16,6 +16,10 @@ module Renalware
             node.xpath("StartTime")&.text
           end
 
+          def Date
+            Date.parse(super)
+          end
+
           def DialysateFlow
             node.xpath("DialysateFlow")&.text
           end
@@ -28,6 +32,10 @@ module Renalware
             node.xpath("TreatmentId")&.text
           end
           # rubocop:enable Naming/MethodName
+
+          def requires_deletion?
+            self.Deleted.to_i == 1
+          end
         end
       end
     end

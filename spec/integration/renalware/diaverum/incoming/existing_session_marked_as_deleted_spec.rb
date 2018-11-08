@@ -18,11 +18,11 @@ module Renalware
                 log = instance_double(HD::TransmissionLog, update!: nil)
                 treatment_node = instance_double(
                   Nodes::Treatment,
-                  Deleted: 0,
                   TreatmentId: "123",
-                  to_xml: nil
+                  to_xml: nil,
+                  requires_deletion?: false
                 )
-                service = SavePatientSession.new(
+                service = SaveSession.new(
                   patient: nil,
                   treatment_node: treatment_node,
                   log: log,
@@ -43,11 +43,11 @@ module Renalware
                 log = instance_double(HD::TransmissionLog, update!: nil)
                 treatment_node = instance_double(
                   Nodes::Treatment,
-                  Deleted: 1,
+                  requires_deletion?: true,
                   TreatmentId: "123",
                   to_xml: nil
                 )
-                service = SavePatientSession.new(
+                service = SaveSession.new(
                   patient: nil,
                   treatment_node: treatment_node,
                   log: log,

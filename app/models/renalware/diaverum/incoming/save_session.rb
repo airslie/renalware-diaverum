@@ -5,15 +5,28 @@ require "attr_extras"
 module Renalware
   module Diaverum
     module Incoming
-      class SavePatientSession
+      class SaveSession
         include Diaverum::Logging
         pattr_initialize [:patient!, :treatment_node!, :log!, :patient_node!]
 
         def call
           if session_exists_already?
-            marked_existing_session_as_deleted if treatment_node.Deleted.to_i == 1
-            return
+            handle_existing_session
+          else
+            create_new_session
           end
+        end
+
+        private
+
+        def handle_existing_session
+          marked_existing_session_as_deleted if treatment_node.requires_deletion?
+          log_warning_that_session_already_exists
+        end
+
+        def create_new_session
+          return if treatment_start_date_before_go_live_date?
+          return if treatment_node.requires_deletion?
 
           log_payload
           session = build_session
@@ -25,22 +38,18 @@ module Renalware
           raise Errors::SessionInvalidError, error_messages
         end
 
-        private
-
         def session_exists_already?
-          if existing_session.present?
-            log_warning_that_session_already_exists
-            true
-          else
-            false
-          end
+          existing_session.present?
         end
 
         def marked_existing_session_as_deleted
           existing_session.delete # skip callbacks
         end
 
-        # Returns an existing session or a new one if not found
+        def treatment_start_date_before_go_live_date?
+          treatment_node.Date < Diaverum.config.diaverum_go_live_date
+        end
+
         def existing_session
           @existing_session ||= begin
             Renalware::HD::Session

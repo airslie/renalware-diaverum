@@ -6,7 +6,7 @@ module Renalware
   module Diaverum
     module Incoming
       # Save all Sessions in a particular patient XML file.
-      class SavePatientSessions
+      class SaveSessions
         pattr_initialize [:path_to_xml!, :log!]
 
         def self.call(**args)
@@ -18,7 +18,7 @@ module Renalware
           patient_node.each_treatment do |treatment_node|
             child_log = create_child_log
             begin
-              SavePatientSession.new(
+              SaveSession.new(
                 patient: patient,
                 treatment_node: treatment_node,
                 log: child_log,
@@ -26,7 +26,7 @@ module Renalware
               ).call
             rescue Errors::SessionInvalidError => e
               raise(e) if Rails.env.development?
-              # Do nothing as already logged in SavePatientSession in child_log.
+              # Do nothing as already logged in SaveSession in child_log.
               # Move on to try importing the next session
             end
           end
