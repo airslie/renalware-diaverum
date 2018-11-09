@@ -10,10 +10,8 @@ module Renalware
       class Ingestor
         def call
           uuid = ImportHDSessionsFromXmlFiles.new.call
-          GenerateSummaryFile.new(
-            log_uuid: uuid,
-            path: Paths.outgoing
-          ).call
+          GenerateSummaryFile.new(log_uuid: uuid, path: Paths.outgoing).call
+          GenerateSummaryFile.new(log_uuid: uuid, path: Paths.outgoing_archive).call
         rescue StandardError => exception
           Renalware::Engine.exception_notifier.notify(exception)
           raise exception
