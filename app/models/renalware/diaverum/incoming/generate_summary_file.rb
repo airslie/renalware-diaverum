@@ -15,13 +15,15 @@ module Renalware
         def call
           error_count = 0
           lines = []
-          file_logs.each do |file_log|
-            lines << "File|#{file_log.filepath}|#{file_log.error_messages&.join(', ')}"
-            error_count += file_log.error_messages&.length
-            file_log.children.each do |log|
-              lines << "Treatment|#{log.external_session_id}|#{log.error_messages&.join(', ')}"
-              error_count += log.error_messages&.length
-            end
+
+          logs.each do |log|
+            error_count += log.error_messages&.length
+            errors = log.error_messages&.join(", ")
+            lines << if log.parent_id.nil?
+                       "File|#{log.filepath}|#{errors}"
+                     else
+                       "Treatment|#{log.external_session_id}|#{errors}"
+                     end
           end
           filepath = Pathname(path).join(filename(error_count))
           logger.info("Writing summary file #{filepath}")
@@ -31,16 +33,33 @@ module Renalware
           filepath
         end
         # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+        #
 
         private
+
+        # rubocop:disable Metrics/MethodLength
+        # Log is a view over HD::TransmissionLog, grouping parent and child logs together
+        def logs
+          @logs ||= begin
+            Log
+              .incoming
+              .for_batch(log_uuid)
+              .select(
+                :id,
+                :parent_id,
+                :filepath,
+                :error_messages,
+                :error_messages,
+                :external_session_id
+              )
+              .for_batch(log_uuid)
+          end
+        end
+        # rubocop:enable Metrics/MethodLength
 
         def filename(error_count)
           result = error_count.to_i > 0 ? "err" : "ok"
           Time.zone.now.strftime("%Y%m%d_%H%M%S_#{result}.txt")
-        end
-
-        def file_logs
-          @file_logs ||= Renalware::HD::TransmissionLog.where(uuid: log_uuid)
         end
       end
     end

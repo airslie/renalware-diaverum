@@ -42,12 +42,16 @@ module Renalware
           end
         end
 
+        # Associate the child log with the parent through parent_id but also
+        # propogate the uuid down to child logs in order to tie al log entries together
+        # for this (rake) 'run'
         def create_child_log
           HD::TransmissionLog.create!(
             direction: :in,
             format: :xml,
             parent_id: log.id,
-            patient_id: log.patient_id
+            patient_id: log.patient_id,
+            uuid: log.uuid
           )
         end
 

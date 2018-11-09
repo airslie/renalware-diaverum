@@ -9,9 +9,9 @@ module Renalware
         include Diaverum::Logging
 
         def call
-          uuid = SecureRandom.uuid
-          import_xml_files(uuid)
-          uuid
+          SecureRandom.uuid.tap do |uuid|
+            import_xml_files(uuid)
+          end
         end
 
         private

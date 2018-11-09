@@ -27,6 +27,17 @@ module Renalware
           end
         end
       end
+
+      initializer :resolve_scenic_views_inside_engine do |app|
+        # Set app.config.paths["db/views"] to the engine's db/views path so (our monkey-patched)
+        # scenic will load views from the engine (otherwise not supported unless manually copies in
+        # a rake task, which I am keen to avoid)
+        # See lib/core_extensions/scenic.rb
+        %w(views functions triggers).each do |db_thing|
+          dir = Rails.root.join(config.root, "db", db_thing)
+          app.config.paths.add("db/#{db_thing}", with: dir)
+        end
+      end
     end
   end
 end
