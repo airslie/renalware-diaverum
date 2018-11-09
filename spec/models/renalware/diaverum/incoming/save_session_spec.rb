@@ -12,7 +12,7 @@ module Renalware
           described_class.new(
             patient: patient,
             treatment_node: treatment_node,
-            log: log,
+            parent_log: log,
             patient_node: patient_node
           )
         end

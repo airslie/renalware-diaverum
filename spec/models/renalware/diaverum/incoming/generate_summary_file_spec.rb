@@ -20,6 +20,7 @@ module Renalware
               :hd_transmission_log,
               :incoming_xml,
               parent: parent,
+              uuid: log_uuid,
               external_session_id: "S1"
             )
             date = Time.zone.parse("2017-11-24 01:04:44")
@@ -50,6 +51,7 @@ module Renalware
               :hd_transmission_log,
               :incoming_xml,
               parent: parent,
+              uuid: log_uuid,
               external_session_id: "S1",
               error_messages: %w(A B C)
             )

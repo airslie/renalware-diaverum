@@ -5,14 +5,16 @@ require "attr_extras"
 module Renalware
   module Diaverum
     module Incoming
+      # rubocop:disable Metrics/ClassLength
       class SaveSession
         include Diaverum::Logging
-        pattr_initialize [:patient!, :treatment_node!, :log!, :patient_node!]
+        pattr_initialize [:patient!, :treatment_node!, :parent_log!, :patient_node!]
 
         def call
           if session_exists_already?
             handle_existing_session
           else
+
             create_new_session
           end
         end
@@ -36,6 +38,23 @@ module Renalware
                Errors::SessionError => exception
           error_messages = errors_in(session, exception)
           raise Errors::SessionInvalidError, error_messages
+        end
+
+        def log
+          @log ||= create_child_log
+        end
+
+        # Associate the child log with the parent through parent_id but also
+        # propogate the uuid down to child logs in order to tie al log entries together
+        # for this (rake) 'run'
+        def create_child_log
+          HD::TransmissionLog.create!(
+            direction: :in,
+            format: :xml,
+            parent_id: parent_log.id,
+            patient_id: parent_log.patient_id,
+            uuid: parent_log.uuid
+          )
         end
 
         def session_exists_already?
@@ -101,6 +120,8 @@ module Renalware
         end
 
         def log_warning_that_session_already_exists
+          return if log.blank?
+
           log.update!(
             result: "previously imported #{I18n.l(existing_session.created_at)}",
             session: existing_session,
@@ -113,5 +134,6 @@ module Renalware
         end
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
