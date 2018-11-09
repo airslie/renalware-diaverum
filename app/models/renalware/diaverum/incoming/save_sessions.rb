@@ -13,15 +13,13 @@ module Renalware
           new(**args).call
         end
 
-        # rubocop:disable Metrics/MethodLength
         def call
           patient_node.each_treatment do |treatment_node|
-            child_log = create_child_log
             begin
               SaveSession.new(
                 patient: patient,
                 treatment_node: treatment_node,
-                log: child_log,
+                parent_log: log,
                 patient_node: patient_node
               ).call
             rescue Errors::SessionInvalidError => e
@@ -31,7 +29,6 @@ module Renalware
             end
           end
         end
-        # rubocop:enable Metrics/MethodLength
 
         private
 
@@ -40,19 +37,6 @@ module Renalware
             xml_document = File.open(Pathname(path_to_xml)) { |f| Nokogiri::XML(f) }
             Nodes::Patients.new(xml_document.root).one_and_only_patient_node
           end
-        end
-
-        # Associate the child log with the parent through parent_id but also
-        # propogate the uuid down to child logs in order to tie al log entries together
-        # for this (rake) 'run'
-        def create_child_log
-          HD::TransmissionLog.create!(
-            direction: :in,
-            format: :xml,
-            parent_id: log.id,
-            patient_id: log.patient_id,
-            uuid: log.uuid
-          )
         end
 
         def patient

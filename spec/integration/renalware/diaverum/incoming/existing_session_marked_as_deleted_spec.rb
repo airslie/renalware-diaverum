@@ -15,7 +15,13 @@ module Renalware
             context "when the new session is not marked as deleted" do
               it "does not change the session" do
                 existing_session
-                log = instance_double(HD::TransmissionLog, update!: nil)
+                log = instance_double(
+                  HD::TransmissionLog,
+                  update!: nil,
+                  id: 1,
+                  uuid: "1",
+                  patient_id: nil
+                )
                 treatment_node = instance_double(
                   Nodes::Treatment,
                   TreatmentId: "123",
@@ -25,7 +31,7 @@ module Renalware
                 service = SaveSession.new(
                   patient: nil,
                   treatment_node: treatment_node,
-                  log: log,
+                  parent_log: log,
                   patient_node: nil
                 )
 
@@ -40,7 +46,13 @@ module Renalware
             context "when the incoming session is marked as deleted" do
               it "soft deletes the session" do
                 existing_session
-                log = instance_double(HD::TransmissionLog, update!: nil)
+                log = instance_double(
+                  HD::TransmissionLog,
+                  update!: nil,
+                  id: 1,
+                  uuid: "1",
+                  patient_id: nil
+                )
                 treatment_node = instance_double(
                   Nodes::Treatment,
                   requires_deletion?: true,
@@ -50,7 +62,7 @@ module Renalware
                 service = SaveSession.new(
                   patient: nil,
                   treatment_node: treatment_node,
-                  log: log,
+                  parent_log: log,
                   patient_node: nil
                 )
 

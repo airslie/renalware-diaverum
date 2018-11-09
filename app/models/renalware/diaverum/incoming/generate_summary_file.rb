@@ -41,9 +41,9 @@ module Renalware
         # Log is a view over HD::TransmissionLog, grouping parent and child logs together
         def logs
           @logs ||= begin
-            Log
+            Renalware::HD::GroupedTransmissionLog
               .incoming
-              .for_batch(log_uuid)
+              .for_uuid(log_uuid)
               .select(
                 :id,
                 :parent_id,
@@ -52,7 +52,6 @@ module Renalware
                 :error_messages,
                 :external_session_id
               )
-              .for_batch(log_uuid)
           end
         end
         # rubocop:enable Metrics/MethodLength
