@@ -14,7 +14,6 @@ module Renalware
           if session_exists_already?
             handle_existing_session
           else
-
             create_new_session
           end
         end
