@@ -30,6 +30,7 @@ module Renalware
               TreatmentId: "123"
             )
           }
+          let(:log) { NullObject.instance }
 
           it "does not import it" do
             allow(Diaverum.config)
