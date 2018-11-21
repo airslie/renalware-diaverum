@@ -65,7 +65,9 @@ module Renalware
         end
 
         def treatment_start_date_before_go_live_date?
-          treatment_node.Date < Diaverum.config.diaverum_go_live_date
+          ignore = treatment_node.Date < Diaverum.config.diaverum_go_live_date
+          log_warning_that_xml_predates_go_live_date if ignore
+          ignore
         end
 
         def existing_session
@@ -88,12 +90,13 @@ module Renalware
         end
 
         def save_session(session)
+          success_msg = "imported"
           if Diaverum.config.diaverum_incoming_skip_session_save
             session.validate!
-            log.update!(result: "ok")
+            log.update!(result: success_msg)
           else
             session.save!
-            log.update!(result: "ok", session: session)
+            log.update!(result: success_msg, session: session)
           end
         end
 
@@ -125,6 +128,14 @@ module Renalware
             session: existing_session,
             external_session_id: treatment_node.TreatmentId
           )
+        end
+
+        def log_warning_that_xml_predates_go_live_date
+          return if log.blank?
+
+          msg = "Ignoring as #{treatment_node.Date} pre-dates go live date "\
+                "#{Diaverum.config.diaverum_go_live_date}"
+          log.update!(result: msg, external_session_id: treatment_node.TreatmentId)
         end
 
         def user
