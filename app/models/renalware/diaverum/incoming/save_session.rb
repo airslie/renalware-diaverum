@@ -89,8 +89,7 @@ module Renalware
         end
 
         def save_session(session)
-          # For now skip saving in production
-          if Diaverum.config.diaverum_incoming_skip_session_save || Rails.env.production?
+          if Diaverum.config.diaverum_incoming_skip_session_save
             session.validate!
             log.update!(result: "ok")
           else
