@@ -45,8 +45,9 @@ module Renalware
 
         def case_insensitive_find_patient
           patient = Renalware::HD::Patient.where(
-            "upper(local_patient_id) = ?",
-            patient_node.local_patient_id.upcase
+            "upper(local_patient_id) = ? or nhs_number = ?",
+            patient_node.local_patient_id.upcase,
+            patient_node.local_patient_id
           ).first!
           log.update!(patient: patient)
           patient

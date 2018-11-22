@@ -15,7 +15,7 @@ module Renalware
         let(:patient) { build(:hd_patient, local_patient_id: "KCH123", nhs_number: "0123456789") }
         let(:treatment_node) { nil }
         let(:xml_filepath) { file_fixture("diaverum_example.xml.erb") }
-        let(:payload) { Nodes::Patient.new(doc) }
+        let(:patient_node) { Nodes::Patient.new(doc) }
         let(:doc) do
           # Set up an erb template based on the XML fixture so we can insert patient identifiers
           # into the XML.By magic, the patient variable is in binding so can be resolved in
@@ -23,7 +23,7 @@ module Renalware
           xml = ERB.new(xml_filepath.read).result(binding)
           Nokogiri::XML(xml)
         end
-        let(:treatment_node) { payload.treatment_nodes.first }
+        let(:treatment_node) { patient_node.treatment_nodes.first }
         let(:hospital_unit) { create(:hospital_unit) }
         let(:dialysis_unit) do
           HD::ProviderUnit.create!(
@@ -49,7 +49,7 @@ module Renalware
                 patient: patient,
                 treatment_node: treatment_node,
                 user: user,
-                patient_node: instance_double(Nodes::Patient)
+                patient_node: patient_node
               )
 
               expect(session.class.name).to eq("Renalware::HD::Session::Closed")
@@ -58,7 +58,6 @@ module Renalware
                 patient: patient,
                 hospital_unit: hospital_unit,
                 performed_on: treatment_node.Date,
-                notes: treatment_node.Notes,
                 dialysate: dialysate,
                 external_id: treatment_node.TreatmentId.to_i,
                 created_by: user,
@@ -68,6 +67,15 @@ module Renalware
                 signed_off_at: Time.zone.parse("#{treatment_node.Date} #{treatment_node.EndTime}")
               )
 
+              # Notes are a combination of Treatment/Notes and JournalEntries/JournalEntry
+              # matching that date
+              expected_notes = "Some session notes"
+              expected_notes += "\n#{treatment_node.Date} Daily Notes/General: "\
+                                "Fistula cannulated with no complaints"
+              expected_notes += "\n#{treatment_node.Date} Treatment Notes/XYZ: "\
+                                "Some treatment notes"
+
+              expect(session.notes).to eq(expected_notes)
               expect(session.start_time.to_s).to include(treatment_node.StartTime)
               expect(session.end_time.to_s).to include(treatment_node.EndTime)
               expect(session.dry_weight).to be_present

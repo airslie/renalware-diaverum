@@ -19,6 +19,7 @@ module Renalware
             build_observations_before
             build_observations_after
             build_hdf
+            build_notes
             session
           end
 
@@ -115,6 +116,14 @@ module Renalware
           def build_hdf
             hdf = session.document.hdf
             hdf.subs_volume = treatment_node.InfusionVolume
+          end
+
+          # Append any Patient/JournalEntries/JournalEntry that have the same date
+          # against then to the session notes.
+          def build_notes
+            patient_node.journal_entries_on(treatment_node.Date).each do |entry|
+              session.notes += "\n#{entry.Date} #{entry.Type}/#{entry.Name}: #{entry.Text}"
+            end
           end
         end
       end

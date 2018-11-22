@@ -53,6 +53,20 @@ module Renalware
               prescriptions.detect(&:active?)
             end
           end
+
+          def journal_entries
+            @journal_entries ||= begin
+              xpath("/Patients/Patient/JournalEntries/JournalEntry").map do |node|
+                Nodes::JournalEntry.new(node)
+              end
+            end
+          end
+
+          def journal_entries_on(date)
+            journal_entries.select do |entry|
+              Date.parse(entry.Date) == date
+            end
+          end
         end
       end
     end

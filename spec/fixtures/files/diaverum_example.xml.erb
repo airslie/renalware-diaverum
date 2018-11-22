@@ -70,7 +70,7 @@ but in this case has 2 sessions
         <PulsePost>89</PulsePost>
         <VenousPressure>140</VenousPressure>
         <ArterialPressure>152</ArterialPressure>
-        <Notes></Notes>
+        <Notes>Some session notes</Notes>
         <MachineId>14201</MachineId>
         <MachineModel>DBB 07</MachineModel>
         <MachineIdentifier>15</MachineIdentifier>
@@ -121,7 +121,7 @@ but in this case has 2 sessions
         <PulsePost>80</PulsePost>
         <VenousPressure>169</VenousPressure>
         <ArterialPressure>181</ArterialPressure>
-        <Notes></Notes>
+        <Notes>Some session notes</Notes>
         <MachineId>14201</MachineId>
         <MachineModel>DBB 07</MachineModel>
         <MachineIdentifier>15</MachineIdentifier>
@@ -1288,6 +1288,19 @@ but in this case has 2 sessions
         <DryWeight>83</DryWeight>
       </DialysisPrescription>
     </DialysisPrescriptions>
-    <JournalEntries />
+    <JournalEntries>
+      <JournalEntry>
+        <Type>Daily Notes</Type>
+        <Date><%= Time.zone.today.to_s %></Date>
+        <Name>General</Name>
+        <Text>Fistula cannulated with no complaints</Text>
+      </JournalEntry>
+      <JournalEntry>
+        <Type>Treatment Notes</Type>
+        <Date><%= Time.zone.today.to_s %></Date>
+        <Name>XYZ</Name>
+        <Text>Some treatment notes</Text>
+      </JournalEntry>
+    </JournalEntries>
   </Patient>
 </Patients>
