@@ -95,6 +95,7 @@ module Renalware
             log.update!(result: "would be imported")
           else
             session.save!
+            HD::UpdateRollingPatientStatisticsJob.perform_later(patient)
             log.update!(result: "imported", session: session)
           end
         end

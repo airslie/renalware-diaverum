@@ -7,6 +7,10 @@ This project adheres to Semantic Versioning.
 ## Unreleased
 31-10-2018
 
+## 1.0.2
+### Added
+- Call HD::UpdateRollingPatientStatisticsJob after saving a job
+
 ### Added
 ### Changed
 - Add a configurable go-live date before which sessions will not be imported.
