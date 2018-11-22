@@ -72,10 +72,13 @@ module Renalware
             allow(session).to receive(:save!)
             builder = instance_double(SessionBuilders::Closed, call: session)
             allow(SessionBuilders::Factory).to receive(:builder_for).and_return(builder)
+            allow(HD::UpdateRollingPatientStatisticsJob).to receive(:perform_later)
 
             subject.call
 
             expect(session).to have_received(:save!)
+            expect(HD::UpdateRollingPatientStatisticsJob)
+              .to have_received(:perform_later).with(patient)
           end
         end
       end
