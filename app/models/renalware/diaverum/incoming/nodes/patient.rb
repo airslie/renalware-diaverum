@@ -61,6 +61,12 @@ module Renalware
               end
             end
           end
+
+          def journal_entries_on(date)
+            journal_entries.select do |entry|
+              Date.parse(entry.Date) == date
+            end
+          end
         end
       end
     end
