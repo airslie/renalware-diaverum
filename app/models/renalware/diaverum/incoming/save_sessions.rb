@@ -23,7 +23,7 @@ module Renalware
                 patient_node: patient_node
               ).call
             rescue Errors::SessionInvalidError => e
-              raise(e) if Rails.env.development?
+              # raise(e) if Rails.env.development?
               # Do nothing as already logged in SaveSession in child_log.
               # Move on to try importing the next session
             end

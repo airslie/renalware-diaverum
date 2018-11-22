@@ -90,13 +90,12 @@ module Renalware
         end
 
         def save_session(session)
-          success_msg = "imported"
           if Diaverum.config.diaverum_incoming_skip_session_save
             session.validate!
-            log.update!(result: success_msg)
+            log.update!(result: "would be imported")
           else
             session.save!
-            log.update!(result: success_msg, session: session)
+            log.update!(result: "imported", session: session)
           end
         end
 
