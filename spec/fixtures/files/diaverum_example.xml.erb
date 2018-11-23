@@ -35,7 +35,7 @@ but in this case has 2 sessions
         <Date><%= Time.zone.today.to_s %></Date>
         <ClinicId><%= defined?(dialysis_unit) ?  dialysis_unit.providers_reference : "" %></ClinicId>
         <ClinicName><%= defined?(hospital_unit) ? hospital_unit.name : "'" %></ClinicName>
-        <StartTime>13:45</StartTime>
+        <StartTime><%= defined?(start_time) ? start_time : "13:45" %></StartTime>
         <EndTime><%= defined?(end_time) ? end_time : "17:45"%></EndTime>
         <Dialyzer>Elisio-21H-G</Dialyzer>
         <DialyzerArea>2.1</DialyzerArea>
@@ -86,7 +86,7 @@ but in this case has 2 sessions
         <Date><%= Time.zone.today.to_s %></Date>
         <ClinicId><%=  defined?(dialysis_unit) ?  dialysis_unit.providers_reference : "" %></ClinicId>
         <ClinicName>Darlington</ClinicName>
-        <StartTime>13:15</StartTime>
+        <StartTime><%= defined?(start_time) ? start_time : "13:45" %></StartTime>
         <EndTime><%= defined?(end_time) ? end_time : "17:45"%></EndTime>
         <Dialyzer>Elisio-21H-G</Dialyzer>
         <DialyzerArea>2.1</DialyzerArea>
@@ -1300,6 +1300,12 @@ but in this case has 2 sessions
         <Date><%= Time.zone.today.to_s %></Date>
         <Name>XYZ</Name>
         <Text>Some treatment notes</Text>
+      </JournalEntry>
+      <JournalEntry>
+        <Type>Other Notes</Type>
+        <Date>2018-01-01</Date>
+        <Name>Unmatched</Name>
+        <Text>JournalEntry/Date != any Treatment/Date so will be unasigned and added to a log</Text>
       </JournalEntry>
     </JournalEntries>
   </Patient>

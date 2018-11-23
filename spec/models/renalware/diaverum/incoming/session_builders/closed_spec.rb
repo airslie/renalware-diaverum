@@ -43,89 +43,87 @@ module Renalware
             create_dry_weight
           end
 
-          context "when StartTime is present" do
-            it "builds a new Closed Session object" do
-              session = described_class.call(
-                patient: patient,
-                treatment_node: treatment_node,
-                user: user,
-                patient_node: patient_node
-              )
+          it "builds a valid Session::Closed object" do
+            session = described_class.call(
+              patient: patient,
+              treatment_node: treatment_node,
+              user: user,
+              patient_node: patient_node
+            )
 
-              expect(session.class.name).to eq("Renalware::HD::Session::Closed")
+            expect(session.class.name).to eq("Renalware::HD::Session::Closed")
 
-              expect(session).to have_attributes(
-                patient: patient,
-                hospital_unit: hospital_unit,
-                performed_on: treatment_node.Date,
-                dialysate: dialysate,
-                external_id: treatment_node.TreatmentId.to_i,
-                created_by: user,
-                updated_by: user,
-                signed_on_by: user,
-                signed_off_by: user,
-                signed_off_at: Time.zone.parse("#{treatment_node.Date} #{treatment_node.EndTime}")
-              )
+            expect(session).to have_attributes(
+              patient: patient,
+              hospital_unit: hospital_unit,
+              performed_on: treatment_node.Date,
+              dialysate: dialysate,
+              external_id: treatment_node.TreatmentId.to_i,
+              created_by: user,
+              updated_by: user,
+              signed_on_by: user,
+              signed_off_by: user,
+              signed_off_at: Time.zone.parse("#{treatment_node.Date} #{treatment_node.EndTime}")
+            )
 
-              # Notes are a combination of Treatment/Notes and JournalEntries/JournalEntry
-              # matching that date
-              expected_notes = "Some session notes"
-              expected_notes += "\n#{treatment_node.Date} Daily Notes/General: "\
-                                "Fistula cannulated with no complaints"
-              expected_notes += "\n#{treatment_node.Date} Treatment Notes/XYZ: "\
-                                "Some treatment notes"
+            # Notes are a combination of Treatment/Notes and JournalEntries/JournalEntry
+            # matching that date
+            expected_notes = "Some session notes"
+            expected_notes += "\n#{treatment_node.Date} Daily Notes/General: "\
+                              "Fistula cannulated with no complaints"
+            expected_notes += "\n#{treatment_node.Date} Treatment Notes/XYZ: "\
+                              "Some treatment notes"
 
-              expect(session.notes).to eq(expected_notes)
-              expect(session.start_time.to_s).to include(treatment_node.StartTime)
-              expect(session.end_time.to_s).to include(treatment_node.EndTime)
-              expect(session.dry_weight).to be_present
+            expect(session.notes).to eq(expected_notes)
+            expect(session.start_time.to_s).to include(treatment_node.StartTime)
+            expect(session.end_time.to_s).to include(treatment_node.EndTime)
+            expect(session.dry_weight).to be_present
 
-              info = session.document.info
-              expect(info).to have_attributes(
-                hd_type: "hd",
-                machine_no: treatment_node.MachineIdentifier,
-                access_confirmed: true,
-                access_type: access_type.name,
-                access_type_abbreviation: access_type.abbreviation,
-                access_side: "left"
-              )
+            info = session.document.info
+            expect(info).to have_attributes(
+              hd_type: "hd",
+              machine_no: treatment_node.MachineIdentifier,
+              access_confirmed: true,
+              access_type: access_type.name,
+              access_type_abbreviation: access_type.abbreviation,
+              access_side: "left"
+            )
 
-              dialysis = session.document.dialysis
-              expect(dialysis.arterial_pressure.to_s).to eq(treatment_node.ArterialPressure)
-              expect(dialysis.venous_pressure.to_s).to eq(treatment_node.VenousPressure)
-              expect(dialysis.fluid_removed.to_s).to eq(treatment_node.RemovedVolume)
-              expect(dialysis.blood_flow.to_s).to eq(treatment_node.Bloodflow)
-              expect(dialysis.flow_rate.to_s).to eq(treatment_node.DialysateFlow)
-              expect(dialysis.machine_urr).to be_nil
-              expect(dialysis.machine_ktv.to_s).to eq(treatment_node.KTV)
-              expect(dialysis.litres_processed.to_s).to eq(treatment_node.TreatedBloodVolume)
+            dialysis = session.document.dialysis
+            expect(dialysis.arterial_pressure.to_s).to eq(treatment_node.ArterialPressure)
+            expect(dialysis.venous_pressure.to_s).to eq(treatment_node.VenousPressure)
+            expect(dialysis.fluid_removed.to_s).to eq(treatment_node.RemovedVolume)
+            expect(dialysis.blood_flow.to_s).to eq(treatment_node.Bloodflow)
+            expect(dialysis.flow_rate.to_s).to eq(treatment_node.DialysateFlow)
+            expect(dialysis.machine_urr).to be_nil
+            expect(dialysis.machine_ktv.to_s).to eq(treatment_node.KTV)
+            expect(dialysis.litres_processed.to_s).to eq(treatment_node.TreatedBloodVolume)
 
-              pre = session.document.observations_before
-              expect(pre.pulse.to_s).to eq(treatment_node.PulsePre)
-              expect(pre.blood_pressure.systolic.to_s)
-                .to eq(treatment_node.SystolicBloodPressurePre)
-              expect(pre.blood_pressure.diastolic.to_s)
-                .to eq(treatment_node.DiastolicBloodPressurePre)
-              expect(pre.weight_measured).to eq(:yes)
-              expect(pre.weight).to eq(84.5)
-              expect(pre.temperature_measured).to eq(:yes)
-              expect(pre.temperature).to eq(35.6)
+            pre = session.document.observations_before
+            expect(pre.pulse.to_s).to eq(treatment_node.PulsePre)
+            expect(pre.blood_pressure.systolic.to_s)
+              .to eq(treatment_node.SystolicBloodPressurePre)
+            expect(pre.blood_pressure.diastolic.to_s)
+              .to eq(treatment_node.DiastolicBloodPressurePre)
+            expect(pre.weight_measured).to eq(:yes)
+            expect(pre.weight).to eq(84.5)
+            expect(pre.temperature_measured).to eq(:yes)
+            expect(pre.temperature).to eq(35.6)
 
-              post = session.document.observations_after
-              expect(post.pulse.to_s).to eq(treatment_node.PulsePost)
-              expect(post.blood_pressure.systolic.to_s)
-                .to eq(treatment_node.SystolicBloodPressurePost)
-              expect(post.blood_pressure.diastolic.to_s).to eq(
-                treatment_node.DiastolicBloodPressurePost
-              )
-              expect(post.weight_measured).to eq(:yes)
-              expect(post.weight).to eq(83.6)
-              expect(post.temperature_measured).to eq(:yes)
-              expect(post.temperature).to eq(35.4)
+            post = session.document.observations_after
+            expect(post.pulse.to_s).to eq(treatment_node.PulsePost)
+            expect(post.blood_pressure.systolic.to_s)
+              .to eq(treatment_node.SystolicBloodPressurePost)
+            expect(post.blood_pressure.diastolic.to_s).to eq(
+              treatment_node.DiastolicBloodPressurePost
+            )
+            expect(post.weight_measured).to eq(:yes)
+            expect(post.weight).to eq(83.6)
+            expect(post.temperature_measured).to eq(:yes)
+            expect(post.temperature).to eq(35.4)
 
-              hdf = session.document.hdf
-              expect(hdf.subs_volume).to eq(124.0)
-            end
+            hdf = session.document.hdf
+            expect(hdf.subs_volume).to eq(124.0)
           end
         end
       end

@@ -6,18 +6,19 @@ module Renalware
   module Diaverum
     module Incoming
       module SessionBuilders
-        # Given a Diaverum HD Treatment XML node and a patient, build a new, unsaved HD::Session
-        # object by mapping diaverum attributes to Renalware ones.
+        # Given a Diaverum HD Treatment XML node and a patient, build a new,
+        # unsaved HD::Session::DNA object by mapping diaverum attributes to Renalware ones.
         class DNA < Base
           def call
             assign_top_level_attributes
+            build_notes
             session
           end
 
           private
 
           def session
-            @session ||= Renalware::HD::Session::Closed.new
+            @session ||= Renalware::HD::Session::DNA.new
           end
 
           # rubocop:disable Metrics/AbcSize
@@ -31,9 +32,10 @@ module Renalware
               updated_by: user,
               signed_on_by: user,
               signed_off_by: user,
-              signed_off_at: Time.zone.parse(treatment_node.Date),
               external_id: treatment_node.TreatmentId
             )
+
+            session.document.patient_on_holiday = :no
           end
           # rubocop:enable Metrics/AbcSize
         end
