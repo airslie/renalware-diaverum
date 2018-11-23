@@ -13310,13 +13310,6 @@ CREATE UNIQUE INDEX "index_renalware_diaverum.hd_type_maps_on_diaverum_type_id" 
 
 
 --
--- Name: index_renalware_diaverum.hd_type_maps_on_hd_type; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE UNIQUE INDEX "index_renalware_diaverum.hd_type_maps_on_hd_type" ON hd_type_maps USING btree (hd_type);
-
-
---
 -- Name: renalware_diaverum_access_maps_idx; Type: INDEX; Schema: renalware_diaverum; Owner: -
 --
 
