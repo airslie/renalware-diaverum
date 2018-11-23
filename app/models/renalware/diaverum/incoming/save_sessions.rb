@@ -23,11 +23,11 @@ module Renalware
                 patient_node: patient_node
               ).call
             rescue Errors::SessionInvalidError => e
-              # raise(e) if Rails.env.development?
               # Do nothing as already logged in SaveSession in child_log.
               # Move on to try importing the next session
             end
           end
+          check_for_unassigned_journal_entries
         end
 
         private
@@ -51,6 +51,15 @@ module Renalware
           ).first!
           log.update!(patient: patient)
           patient
+        end
+
+        def check_for_unassigned_journal_entries
+          entries = journal_entries_not_assigned_by_date_to_any_session
+          LogUnassignedJournalEntries.call(entries: entries) if entries.any?
+        end
+
+        def journal_entries_not_assigned_by_date_to_any_session
+          patient_node.journal_entries.reject(&:included_in_session_notes?)
         end
       end
     end
