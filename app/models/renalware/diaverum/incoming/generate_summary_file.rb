@@ -19,10 +19,11 @@ module Renalware
           logs.each do |log|
             error_count += log.error_messages&.length
             errors = log.error_messages&.join(", ")
+            warnings = log.warnings&.join(", ")
             lines << if log.parent_id.nil?
-                       "File|#{log.filepath}|#{errors}"
+                       "File|#{log.filepath}|#{errors}|#{warnings}"
                      else
-                       "Treatment|#{log.external_session_id}|#{errors}"
+                       "Treatment|#{log.external_session_id}|#{errors}|#{warnings}"
                      end
           end
           filepath = Pathname(path).join(filename(error_count))
@@ -49,7 +50,7 @@ module Renalware
                 :parent_id,
                 :filepath,
                 :error_messages,
-                :error_messages,
+                :warnings,
                 :external_session_id
               )
           end

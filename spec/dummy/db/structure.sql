@@ -2290,7 +2290,8 @@ CREATE TABLE hd_transmission_logs (
     updated_at timestamp without time zone NOT NULL,
     external_session_id character varying,
     session_id bigint,
-    uuid uuid DEFAULT public.uuid_generate_v4() NOT NULL
+    uuid uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    warnings character varying[] DEFAULT '{}'::character varying[]
 );
 
 
@@ -2336,7 +2337,8 @@ CREATE VIEW hd_grouped_transmission_logs AS
     h.updated_at,
     h.external_session_id,
     h.session_id,
-    h.uuid
+    h.uuid,
+    h.warnings
    FROM (ordered_parent_child_logs
      JOIN hd_transmission_logs h ON ((h.id = ordered_parent_child_logs.id)))
   WHERE (ordered_parent_child_logs.level = ordered_parent_child_logs.maxlevel)
@@ -15928,6 +15930,8 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20181026145459'),
 ('20181106133500'),
 ('20181109110616'),
-('20181121150007');
+('20181121150007'),
+('20181126090401'),
+('20181126123745');
 
 
