@@ -32,6 +32,10 @@ module Renalware
       config_accessor(:honour_treatment_deleted_flag) do
         ENV.fetch("HONOUR_TREATMENT_DELETED_FLAG", true).to_s != "false"
       end
+
+      config_accessor(:diaverum_reporting_email_addresses) do
+        ENV.fetch("DIAVERUM_REPORTING_EMAIL_ADDRESSES", "dev@airslie.com").split(",")
+      end
     end
 
     def self.config
