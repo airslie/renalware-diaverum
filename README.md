@@ -5,12 +5,17 @@ A Rails engine providing integration with Diaverum dialysers.
 
 ### Running
 
+The gem has a built in test Renalware app you can run
+
 ```
 bundle install
 bundle exec rake db:create
 bundle exec rake db:migrate
-bundle exec rake app:db:demo:seed
+bundle exec rake db:seed
+bin/web
 ```
+
+Credentials are superkch renalware
 
 ![diagram](./diagram.png "Diag")
 

@@ -13,6 +13,7 @@ module Renalware
           new(**args).call
         end
 
+        # rubocop:disable Lint/HandleExceptions
         def call
           patient_node.each_treatment do |treatment_node|
             begin
@@ -22,13 +23,14 @@ module Renalware
                 parent_log: log,
                 patient_node: patient_node
               ).call
-            rescue Errors::SessionInvalidError => e
-              # raise(e) if Rails.env.development?
+            rescue Errors::SessionInvalidError
               # Do nothing as already logged in SaveSession in child_log.
               # Move on to try importing the next session
             end
           end
+          log_unassigned_journal_entries
         end
+        # rubocop:enable Lint/HandleExceptions
 
         private
 
@@ -51,6 +53,15 @@ module Renalware
           ).first!
           log.update!(patient: patient)
           patient
+        end
+
+        def log_unassigned_journal_entries
+          entries = journal_entries_not_assigned_by_date_to_any_session
+          LogUnassignedJournalEntries.call(journal_entries: entries, log: log) if entries.any?
+        end
+
+        def journal_entries_not_assigned_by_date_to_any_session
+          patient_node.journal_entries.reject(&:included_in_session_notes?)
         end
       end
     end

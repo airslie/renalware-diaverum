@@ -7,6 +7,14 @@ This project adheres to Semantic Versioning.
 ## Unreleased
 31-10-2018
 
+## 1.0.3
+### Added
+- Added seed data to make development easier
+- Log JournalEntry's that we did not store because their date did not match any Treatment in the file
+
+### Fixed
+- Store DNA Session notes
+
 ## 1.0.2
 ### Added
 - Call HD::UpdateRollingPatientStatisticsJob after saving a job

@@ -23,6 +23,7 @@ module Renalware
         def handle_existing_session
           marked_existing_session_as_deleted if treatment_node.requires_deletion?
           log_warning_that_session_already_exists
+          flag_journal_entries_for_this_session_as_assigned
         end
 
         def create_new_session
@@ -37,6 +38,12 @@ module Renalware
                Errors::SessionError => exception
           error_messages = errors_in(session, exception)
           raise Errors::SessionInvalidError, error_messages
+        end
+
+        def flag_journal_entries_for_this_session_as_assigned
+          patient_node.journal_entries_on(treatment_node.Date).each do |entry|
+            entry.included_in_session_notes = true
+          end
         end
 
         def log

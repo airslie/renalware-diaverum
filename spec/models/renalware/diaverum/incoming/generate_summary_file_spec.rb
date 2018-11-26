@@ -31,7 +31,7 @@ module Renalware
 
                   expected_filename = "20171124_010444_ok.txt"
                   expect(File.exist?(expected_filename)).to eq(true)
-                  expect(File.open(expected_filename).read).to eq("File|somefile|\nTreatment|S1|")
+                  expect(File.open(expected_filename).read).to eq("File|somefile||\nTreatment|S1||")
                 end
               end
             end
@@ -64,7 +64,7 @@ module Renalware
                   expected_filename = "20171124_010444_err.txt"
                   expect(File.exist?(expected_filename)).to eq(true)
                   expect(File.open(expected_filename).read)
-                    .to eq("File|somefile|\nTreatment|S1|A, B, C")
+                    .to eq("File|somefile||\nTreatment|S1|A, B, C|")
                 end
               end
             end

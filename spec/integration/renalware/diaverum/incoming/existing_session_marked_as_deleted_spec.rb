@@ -26,13 +26,14 @@ module Renalware
                   Nodes::Treatment,
                   TreatmentId: "123",
                   to_xml: nil,
-                  requires_deletion?: false
+                  requires_deletion?: false,
+                  Date: Time.zone.today
                 )
                 service = SaveSession.new(
                   patient: nil,
                   treatment_node: treatment_node,
                   parent_log: log,
-                  patient_node: nil
+                  patient_node: instance_double(Nodes::Patient, journal_entries_on: [])
                 )
 
                 expect{
@@ -57,13 +58,14 @@ module Renalware
                   Nodes::Treatment,
                   requires_deletion?: true,
                   TreatmentId: "123",
+                  Date: Time.zone.today,
                   to_xml: nil
                 )
                 service = SaveSession.new(
                   patient: nil,
+                  patient_node: instance_double(Nodes::Patient, journal_entries_on: []),
                   treatment_node: treatment_node,
-                  parent_log: log,
-                  patient_node: nil
+                  parent_log: log
                 )
 
                 service.call

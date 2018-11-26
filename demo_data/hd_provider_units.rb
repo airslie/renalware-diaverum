@@ -8,5 +8,6 @@ puts "HD::ProviderUnit"
 
 Renalware::HD::ProviderUnit.find_or_create_by!(
   hospital_unit: Renalware::Hospitals::Unit.first,
-  hd_provider: provider
+  hd_provider: provider,
+  providers_reference: "1831"
 )
