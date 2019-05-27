@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.authors     = ["Airslie"]
   s.email       = ["dev@airslie.com"]
   s.homepage    = "https://github.com/airslie/renalwarev-diaverum"
-  s.summary     = "Diaverum integration for Renalware 2"
+  s.summary     = "Diaverum integration for Renalware"
   s.description = "Adds support for ingesting HD Sessions from Diaverum dialysers via iRIMS "\
                   "and exporting data in order to keep the two systems in sync."
   s.license     = "MIT"
