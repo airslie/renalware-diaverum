@@ -124,6 +124,9 @@ module Renalware
 
             hdf = session.document.hdf
             expect(hdf.subs_volume).to eq(124.0)
+
+            complications = session.document.complications
+            expect(complications.line_exit_site_status).to eq("99") # n/a
           end
         end
       end

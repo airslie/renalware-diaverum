@@ -469,6 +469,43 @@ CREATE FUNCTION import_practices_csv(file text) RETURNS void
 
 
 --
+-- Name: new_hl7_message(text); Type: FUNCTION; Schema: renalware; Owner: -
+--
+
+CREATE FUNCTION new_hl7_message(message text) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+/*
+  This fn is called by the Mirth integration engine to add an HL7 message to Renalware.
+  Mirth used to insert data directly into the delayed_jobs table but we are moving away from
+  that approach as it tightly couples Mirth to our internal implementation and prevents us
+  from easily moving to another background processing library eg que.
+
+  When using delayed_jobs
+  -----------------------
+  1. We craft a yml string and translate line endings.
+  2. The trigger function preprocess_hl7_message fires when a row is added to delayed_jobs.
+     It handles escaping odd characters eg 10^12 in the message. See that function for details.
+     Once we have migrated Mirth to use this function and are happy it is working we can
+     move that logic from preprocess_hl7_message into here and drop that function and its trigger.
+
+  When using que
+  ------------------
+  # TODO: psuedo SQL
+*/
+insert into renalware.delayed_jobs(handler, run_at, created_at, updated_at)
+values(
+  E'--- !ruby/struct:FeedJob\nraw_message: |\n  ' || REPLACE(message, E'\r', E'\n  '),
+  NOW() AT TIME ZONE 'UTC',
+  NOW() AT TIME ZONE 'UTC',
+  NOW() AT TIME ZONE 'UTC'
+);
+END;
+$$;
+
+
+--
 -- Name: preprocess_hl7_message(); Type: FUNCTION; Schema: renalware; Owner: -
 --
 
@@ -1867,7 +1904,9 @@ CREATE TABLE event_types (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     event_class_name character varying,
-    slug character varying
+    slug character varying,
+    save_pdf_to_electronic_public_register boolean DEFAULT false NOT NULL,
+    title character varying
 );
 
 
@@ -2829,7 +2868,10 @@ CREATE TABLE hospital_centres (
     active boolean,
     is_transplant_site boolean DEFAULT false,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    info text,
+    trust_name character varying,
+    trust_caption character varying
 );
 
 
@@ -3745,7 +3787,9 @@ CREATE TABLE pathology_observation_descriptions (
     display_group integer,
     display_order integer,
     letter_group integer,
-    letter_order integer
+    letter_order integer,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone
 );
 
 
@@ -3948,7 +3992,9 @@ CREATE TABLE pathology_request_descriptions (
     required_observation_description_id integer,
     expiration_days integer DEFAULT 0 NOT NULL,
     lab_id integer NOT NULL,
-    bottle_type character varying
+    bottle_type character varying,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone
 );
 
 
@@ -5143,7 +5189,8 @@ CREATE TABLE pd_pet_adequacy_results (
     created_by_id integer NOT NULL,
     updated_by_id integer NOT NULL,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    dietry_protein_intake numeric(8,2)
 );
 
 
@@ -5770,7 +5817,7 @@ CREATE VIEW reporting_anaemia_audit AS
           WHERE (e2.hgb >= (13)::numeric)) e6 ON (true))
      LEFT JOIN LATERAL ( SELECT e3.fer AS fer_gt_eq_150
           WHERE (e3.fer >= (150)::numeric)) e7 ON (true))
-  WHERE ((e1.modality_desc)::text = ANY ((ARRAY['HD'::character varying, 'PD'::character varying, 'Transplant'::character varying, 'Low Clearance'::character varying, 'Nephrology'::character varying])::text[]))
+  WHERE ((e1.modality_desc)::text = ANY (ARRAY[('HD'::character varying)::text, ('PD'::character varying)::text, ('Transplant'::character varying)::text, ('Low Clearance'::character varying)::text, ('Nephrology'::character varying)::text]))
   GROUP BY e1.modality_desc;
 
 
@@ -5849,7 +5896,7 @@ CREATE VIEW reporting_bone_audit AS
           WHERE (e2.pth > (300)::numeric)) e7 ON (true))
      LEFT JOIN LATERAL ( SELECT e4.cca AS cca_2_1_to_2_4
           WHERE ((e4.cca >= 2.1) AND (e4.cca <= 2.4))) e8 ON (true))
-  WHERE ((e1.modality_desc)::text = ANY ((ARRAY['HD'::character varying, 'PD'::character varying, 'Transplant'::character varying, 'Low Clearance'::character varying])::text[]))
+  WHERE ((e1.modality_desc)::text = ANY (ARRAY[('HD'::character varying)::text, ('PD'::character varying)::text, ('Transplant'::character varying)::text, ('Low Clearance'::character varying)::text]))
   GROUP BY e1.modality_desc;
 
 
@@ -5904,19 +5951,7 @@ CREATE VIEW reporting_daily_pathology AS
            FROM ( SELECT delayed_jobs.attempts,
                     count(*) AS count
                    FROM delayed_jobs
-                  GROUP BY delayed_jobs.attempts) query) AS delayed_jobs_attempts_counts,
-    ( SELECT count(*) AS count
-           FROM feed_messages) AS feed_messages_total,
-    ( SELECT count(*) AS count
-           FROM feed_messages
-          WHERE (feed_messages.created_at >= (now())::date)) AS feed_messages_added_today,
-    ( SELECT max(feed_messages.created_at) AS max
-           FROM feed_messages) AS feed_messages_added_latest_entry,
-    ( SELECT count(*) AS count
-           FROM pathology_observations
-          WHERE ((pathology_observations.created_at)::date >= (now())::date)) AS pathology_observations_added_today,
-    ( SELECT max(pathology_observations.observed_at) AS max
-           FROM pathology_observations) AS pathology_observations_latest_observed_at;
+                  GROUP BY delayed_jobs.attempts) query) AS delayed_jobs_attempts_counts;
 
 
 --
@@ -7219,7 +7254,7 @@ CREATE TABLE ukrdc_transmission_logs (
     request_uuid uuid NOT NULL,
     payload_hash text,
     payload xml,
-    error text,
+    error text[] DEFAULT '{}'::text[],
     file_path character varying,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL
@@ -7400,6 +7435,74 @@ CREATE SEQUENCE access_maps_id_seq
 --
 
 ALTER SEQUENCE access_maps_id_seq OWNED BY access_maps.id;
+
+
+--
+-- Name: active_storage_attachments; Type: TABLE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE TABLE active_storage_attachments (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    record_type character varying NOT NULL,
+    record_id bigint NOT NULL,
+    blob_id bigint NOT NULL,
+    created_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: active_storage_attachments_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE SEQUENCE active_storage_attachments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: active_storage_attachments_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER SEQUENCE active_storage_attachments_id_seq OWNED BY active_storage_attachments.id;
+
+
+--
+-- Name: active_storage_blobs; Type: TABLE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE TABLE active_storage_blobs (
+    id bigint NOT NULL,
+    key character varying NOT NULL,
+    filename character varying NOT NULL,
+    content_type character varying,
+    metadata text,
+    byte_size bigint NOT NULL,
+    checksum character varying NOT NULL,
+    created_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: active_storage_blobs_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE SEQUENCE active_storage_blobs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: active_storage_blobs_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER SEQUENCE active_storage_blobs_id_seq OWNED BY active_storage_blobs.id;
 
 
 --
@@ -8563,6 +8666,20 @@ SET search_path = renalware_diaverum, pg_catalog;
 --
 
 ALTER TABLE ONLY access_maps ALTER COLUMN id SET DEFAULT nextval('access_maps_id_seq'::regclass);
+
+
+--
+-- Name: active_storage_attachments id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY active_storage_attachments ALTER COLUMN id SET DEFAULT nextval('active_storage_attachments_id_seq'::regclass);
+
+
+--
+-- Name: active_storage_blobs id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY active_storage_blobs ALTER COLUMN id SET DEFAULT nextval('active_storage_blobs_id_seq'::regclass);
 
 
 --
@@ -9888,6 +10005,22 @@ SET search_path = renalware_diaverum, pg_catalog;
 
 ALTER TABLE ONLY access_maps
     ADD CONSTRAINT access_maps_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: active_storage_attachments active_storage_attachments_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY active_storage_attachments
+    ADD CONSTRAINT active_storage_attachments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: active_storage_blobs active_storage_blobs_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY active_storage_blobs
+    ADD CONSTRAINT active_storage_blobs_pkey PRIMARY KEY (id);
 
 
 --
@@ -13305,6 +13438,27 @@ CREATE UNIQUE INDEX unique_study_participants ON research_study_participants USI
 SET search_path = renalware_diaverum, pg_catalog;
 
 --
+-- Name: index_active_storage_attachments_on_blob_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE INDEX index_active_storage_attachments_on_blob_id ON active_storage_attachments USING btree (blob_id);
+
+
+--
+-- Name: index_active_storage_attachments_uniqueness; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_attachments_uniqueness ON active_storage_attachments USING btree (record_type, record_id, name, blob_id);
+
+
+--
+-- Name: index_active_storage_blobs_on_key; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_blobs_on_key ON active_storage_blobs USING btree (key);
+
+
+--
 -- Name: index_renalware_diaverum.hd_type_maps_on_diaverum_type_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
 --
 
@@ -15509,6 +15663,16 @@ ALTER TABLE ONLY transplant_registration_statuses
     ADD CONSTRAINT transplant_registration_statuses_updated_by_id_fk FOREIGN KEY (updated_by_id) REFERENCES users(id);
 
 
+SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: active_storage_attachments fk_rails_c3b3935057; Type: FK CONSTRAINT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY active_storage_attachments
+    ADD CONSTRAINT fk_rails_c3b3935057 FOREIGN KEY (blob_id) REFERENCES active_storage_blobs(id);
+
+
 --
 -- PostgreSQL database dump complete
 --
@@ -15932,6 +16096,14 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20181109110616'),
 ('20181121150007'),
 ('20181126090401'),
-('20181126123745');
+('20181126123745'),
+('20181217124025'),
+('20190104095254'),
+('20190218142207'),
+('20190225103005'),
+('20190315125638'),
+('20190401105149'),
+('20190422095620'),
+('20190424101709');
 
 
