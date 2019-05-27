@@ -4,19 +4,24 @@ jobs:
     working_directory: ~/renalware-diaverum
     docker:
       # this is important to use proper image with browsers support
-      - image: circleci/ruby:2.5.3-stretch-node-browsers-legacy
+      - image: circleci/ruby:2.6.3-node-browsers
         environment:
           PGHOST: 127.0.0.1
           PGUSER: renalware
           RAILS_ENV: test
-      - image: circleci/postgres:10.3-alpine
-        environment:
-          POSTGRES_USER: renalware
+          BUNDLER_VERSION: 2.0.1
+      - image: circleci/postgres:11.2-alpine-ram
       - image: redis:3.2.7
 
     parallelism: 1
 
     steps:
+      - run:
+          name: install dependencies
+          command: |
+            gem update --system
+            gem install bundler
+
       - checkout
       - run: mkdir -p ./tmp/test-artifacts
       - run: mkdir -p ./coverage
@@ -31,13 +36,15 @@ jobs:
         paths:
           - vendor/bundle
 
-      #- run: sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ stretch-pgdg main" >> /etc/apt/sources.list.d/pgdg.list'
-      - run: sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" > /etc/apt/sources.list.d/PostgreSQL.list'
-      - run: sudo sh -c 'wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -'
-      - run: sudo apt-get update
-      - run: sudo apt-get install postgresql-client-10
+      - run:
+          name: Prepare to install postgresql-client 11
+          command: |
+            wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+            RELEASE=$(lsb_release -cs)
+            echo "deb http://apt.postgresql.org/pub/repos/apt/ ${RELEASE}"-pgdg main | sudo tee  /etc/apt/sources.list.d/pgdg.list
 
-      - run: sudo apt install postgresql-client-10
+      - run: sudo apt-get update
+      - run: sudo apt install postgresql-client-11
 
       # Database set-up
       - run: cp ./spec/dummy/config/database.circle.yml ./spec/dummy/config/database.yml
@@ -50,7 +57,7 @@ jobs:
       # RSpec
       - type: shell
         command: |
-          case $CIRCLE_NODE_INDEX in 0) bundle exec rspec --profile 10 \
+          case $CIRCLE_NODE_INDEX in 0) bundle exec rspec \
                             --format RspecJunitFormatter \
                             --out /tmp/test-results/rspec.xml \
                             --format progress \
