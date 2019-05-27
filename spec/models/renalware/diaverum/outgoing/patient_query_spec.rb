@@ -49,6 +49,7 @@ module Renalware
 
             context "when they dialyse elsewhere" do
               let(:hospital_unit) { create(:hospital_unit) }
+
               before do
                 create(:hd_profile, patient: patient, hospital_unit: hospital_unit)
                 # NB: No HD::ProviderUnit setup, so hospital_unit is not associated with

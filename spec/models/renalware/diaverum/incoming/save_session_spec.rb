@@ -17,6 +17,7 @@ module Renalware
             patient_node: patient_node
           )
         end
+
         let(:patient) { nil }
         let(:treatment_node) { nil }
         let(:log) { nil }

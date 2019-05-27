@@ -35,8 +35,8 @@ module Renalware
           save_session(session)
         rescue ActiveRecord::RecordNotFound,
                ActiveRecord::RecordInvalid,
-               Errors::SessionError => exception
-          error_messages = errors_in(session, exception)
+               Errors::SessionError => e
+          error_messages = errors_in(session, e)
           raise Errors::SessionInvalidError, error_messages
         end
 
@@ -112,7 +112,7 @@ module Renalware
                              [
                                session.errors&.full_messages,
                                session.document.error_messages
-                             ].flatten.compact.reject{ |msg| msg == "is invalid" }
+                             ].flatten.compact.reject { |msg| msg == "is invalid" }
                            else
                              ["#{exception.cause} #{exception.message}"]
                            end

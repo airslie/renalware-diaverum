@@ -15,9 +15,9 @@ module Renalware
 
         def call
           save_hl7_file(filename)
-        rescue StandardError => error
-          log_error(error)
-          raise error
+        rescue StandardError => e
+          log_error(e)
+          raise e
         end
 
         private

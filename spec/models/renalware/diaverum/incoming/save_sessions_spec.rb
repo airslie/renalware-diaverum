@@ -15,10 +15,11 @@ module Renalware
             format: :xml
           )
         end
+
         before { Diaverum.config.diaverum_incoming_skip_session_save = false }
 
-        around(:each) do |example|
-          using_a_tmp_diaverum_path{ example.run }
+        around do |example|
+          using_a_tmp_diaverum_path { example.run }
         end
 
         context "when Diaverum @ St Albans has SFTPed multiple patient XML files, each containing "\
@@ -65,7 +66,7 @@ module Renalware
                   builder = instance_double(SessionBuilders::Closed, call: closed_session)
                   allow(SessionBuilders::Factory).to receive(:builder_for).and_return(builder)
 
-                  expect{
+                  expect {
                     SaveSessions.new(path_to_xml: xml_filepath, log: transmission_log).call
                   }.to change(HD::Session, :count).by(0)
                   .and change(HD::TransmissionLog, :count).by(3)
@@ -93,13 +94,13 @@ module Renalware
               end
 
               it "does not create any new sessions" do
-                expect{
+                expect {
                   SaveSessions.new(path_to_xml: xml_filepath, log: transmission_log).call
                 }.to change(HD::Session, :count).by(0)
               end
 
               it "logs an error to each child TransmissionLog" do
-                expect{
+                expect {
                   SaveSessions.new(path_to_xml: xml_filepath, log: transmission_log).call
                 }.to change(HD::TransmissionLog, :count).by(3) # 1 parent 2 children
 
@@ -160,7 +161,7 @@ module Renalware
                   create(:hd_closed_session, patient: patient, by: system_user, external_id: "1")
 
                   # Should only import 1 new one
-                  expect{
+                  expect {
                     SaveSessions.new(path_to_xml: xml_filepath, log: transmission_log).call
                   }.to change(HD::Session, :count).by(1)
                 end

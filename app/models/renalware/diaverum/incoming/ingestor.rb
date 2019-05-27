@@ -13,9 +13,9 @@ module Renalware
           GenerateSummaryFile.new(log_uuid: uuid, path: Paths.outgoing).call
           file_path = GenerateSummaryFile.new(log_uuid: uuid, path: Paths.outgoing_archive).call
           email_summary_report(file_path)
-        rescue StandardError => exception
-          Renalware::Engine.exception_notifier.notify(exception)
-          raise exception
+        rescue StandardError => e
+          Renalware::Engine.exception_notifier.notify(e)
+          raise e
         end
 
         private

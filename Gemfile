@@ -40,6 +40,8 @@ group :development, :test do
   gem "rspec-rails"
   gem "rspec_junit_formatter", "~> 0.3"
   gem "rubocop"
+  gem "rubocop-performance", require: false
+  gem "rubocop-rspec", require: false
   gem "shoulda-matchers"
   gem "webmock", require: false
 end

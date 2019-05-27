@@ -10,7 +10,7 @@ module Renalware
       describe ".for" do
         context "when no matching access found" do
           it "raises an error" do
-            expect{
+            expect {
               HDTypeMap.for(diaverum_type_id: nil)
             }.to raise_error(Errors::HDTypeMapError)
           end

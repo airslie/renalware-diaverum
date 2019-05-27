@@ -11,7 +11,7 @@ module Renalware
       describe ".for" do
         context "when no matching access found" do
           it "raises an error" do
-            expect{
+            expect {
               AccessMap.for(diaverum_location: nil, diaverum_type: nil)
             }.to raise_error(Errors::AccessMapError)
           end

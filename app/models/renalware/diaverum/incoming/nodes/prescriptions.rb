@@ -14,7 +14,7 @@ module Renalware
 
           def children
             @children ||= begin
-              xpath("DialysisPrescription").map{ |node| Nodes::Prescription.new(node) }
+              xpath("DialysisPrescription").map { |node| Nodes::Prescription.new(node) }
             end
           end
         end
