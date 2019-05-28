@@ -13,7 +13,6 @@ module Renalware
 
         let(:user) { create(:user) }
         let(:patient) { build(:hd_patient, local_patient_id: "KCH123", nhs_number: "0123456789") }
-        let(:treatment_node) { nil }
         let(:xml_filepath) { file_fixture("diaverum_example.xml.erb") }
         let(:patient_node) { Nodes::Patient.new(doc) }
         let(:doc) do
@@ -50,8 +49,17 @@ module Renalware
               user: user,
               patient_node: patient_node
             )
+            document = session.document
 
             expect(session.class.name).to eq("Renalware::HD::Session::Closed")
+
+            # Notes are a combination of Treatment/Notes and JournalEntries/JournalEntry
+            # matching that date
+            expected_notes = "Some session notes"
+            expected_notes += "\n#{treatment_node.Date} Daily Notes/General: "\
+                              "Fistula cannulated with no complaints"
+            expected_notes += "\n#{treatment_node.Date} Treatment Notes/XYZ: "\
+                              "Some treatment notes"
 
             expect(session).to have_attributes(
               patient: patient,
@@ -63,24 +71,15 @@ module Renalware
               updated_by: user,
               signed_on_by: user,
               signed_off_by: user,
-              signed_off_at: Time.zone.parse("#{treatment_node.Date} #{treatment_node.EndTime}")
+              signed_off_at: Time.zone.parse("#{treatment_node.Date} #{treatment_node.EndTime}"),
+              notes: expected_notes
             )
 
-            # Notes are a combination of Treatment/Notes and JournalEntries/JournalEntry
-            # matching that date
-            expected_notes = "Some session notes"
-            expected_notes += "\n#{treatment_node.Date} Daily Notes/General: "\
-                              "Fistula cannulated with no complaints"
-            expected_notes += "\n#{treatment_node.Date} Treatment Notes/XYZ: "\
-                              "Some treatment notes"
-
-            expect(session.notes).to eq(expected_notes)
             expect(session.start_time.to_s).to include(treatment_node.StartTime)
             expect(session.end_time.to_s).to include(treatment_node.EndTime)
             expect(session.dry_weight).to be_present
 
-            info = session.document.info
-            expect(info).to have_attributes(
+            expect(document.info).to have_attributes(
               hd_type: "hd",
               machine_no: treatment_node.MachineIdentifier,
               access_confirmed: true,
@@ -89,17 +88,19 @@ module Renalware
               access_side: "left"
             )
 
-            dialysis = session.document.dialysis
-            expect(dialysis.arterial_pressure.to_s).to eq(treatment_node.ArterialPressure)
-            expect(dialysis.venous_pressure.to_s).to eq(treatment_node.VenousPressure)
-            expect(dialysis.fluid_removed.to_s).to eq(treatment_node.RemovedVolume)
-            expect(dialysis.blood_flow.to_s).to eq(treatment_node.Bloodflow)
-            expect(dialysis.flow_rate.to_s).to eq(treatment_node.DialysateFlow)
-            expect(dialysis.machine_urr).to be_nil
-            expect(dialysis.machine_ktv.to_s).to eq(treatment_node.KTV)
-            expect(dialysis.litres_processed.to_s).to eq(treatment_node.TreatedBloodVolume)
+            dialysis = document.dialysis
+            expect(dialysis).to have_attributes(
+              arterial_pressure: treatment_node.ArterialPressure.to_i,
+              venous_pressure: treatment_node.VenousPressure.to_i,
+              fluid_removed: treatment_node.RemovedVolume.to_f,
+              blood_flow: treatment_node.Bloodflow.to_i,
+              flow_rate: treatment_node.DialysateFlow.to_i,
+              machine_urr: nil,
+              machine_ktv: treatment_node.KTV,
+              litres_processed: treatment_node.TreatedBloodVolume.to_f
+            )
 
-            pre = session.document.observations_before
+            pre = document.observations_before
             expect(pre.pulse.to_s).to eq(treatment_node.PulsePre)
             expect(pre.blood_pressure.systolic.to_s)
               .to eq(treatment_node.SystolicBloodPressurePre)
@@ -110,7 +111,7 @@ module Renalware
             expect(pre.temperature_measured).to eq(:yes)
             expect(pre.temperature).to eq(35.6)
 
-            post = session.document.observations_after
+            post = document.observations_after
             expect(post.pulse.to_s).to eq(treatment_node.PulsePost)
             expect(post.blood_pressure.systolic.to_s)
               .to eq(treatment_node.SystolicBloodPressurePost)
@@ -122,11 +123,9 @@ module Renalware
             expect(post.temperature_measured).to eq(:yes)
             expect(post.temperature).to eq(35.4)
 
-            hdf = session.document.hdf
-            expect(hdf.subs_volume).to eq(124.0)
-
-            complications = session.document.complications
-            expect(complications.line_exit_site_status).to eq("99") # n/a
+            expect(document.hdf.subs_volume).to eq(124.0)
+            expect(document.complications.line_exit_site_status).to eq("99") # n/a
+            expect(document.avf_avg_assessment.score).to eq("99") # n/a
           end
         end
       end
