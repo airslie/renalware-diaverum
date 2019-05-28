@@ -7,6 +7,13 @@ This project adheres to Semantic Versioning.
 ## Unreleased
 31-10-2018
 
+## 1.0.4
+### Added
+### Changed
+- Set AVF/AVG assessment to 'Not Applicable' in HD Session
+- Set MR VICTOR assessment to 'Not Applicable' in HD Session
+### Fixed
+
 ## 1.0.3
 ### Added
 - Added seed data to make development easier
