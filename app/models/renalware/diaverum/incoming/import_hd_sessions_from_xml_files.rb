@@ -24,8 +24,8 @@ module Renalware
               transmission_log = create_transmission_log(filepath: filepath, uuid: uuid)
               SaveSessions.call(path_to_xml: filepath, log: transmission_log)
               log_msg += "DONE"
-            rescue StandardError => ex
-              handle_ingest_error(filepath, ex, transmission_log)
+            rescue StandardError => e
+              handle_ingest_error(filepath, e, transmission_log)
               log_msg += "FAIL"
               # raise(ex) if Rails.env.development?
               next
@@ -34,8 +34,8 @@ module Renalware
               logger.info log_msg
             end
           end
-        rescue StandardError => exception
-          raise exception
+        rescue StandardError => e
+          raise e
         end
         # rubocop:enable Metrics/MethodLength
 

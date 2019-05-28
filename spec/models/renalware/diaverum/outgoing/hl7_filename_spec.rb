@@ -18,7 +18,7 @@ module Renalware
 
         it {
           travel_to(time) do
-            is_expected.to eq("20001211010203000_0123456789_KCH1_20001201.hl7")
+            expect(subject).to eq("20001211010203000_0123456789_KCH1_20001201.hl7")
           end
         }
       end

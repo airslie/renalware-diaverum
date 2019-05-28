@@ -9,10 +9,10 @@ module Renalware
     subject(:config) { Diaverum.config }
 
     describe "#diaverum_incoming_skip_session_save" do
-      subject{ config.diaverum_incoming_skip_session_save }
+      subject { config.diaverum_incoming_skip_session_save }
 
       context "when it is any value other than 'false' in ENV" do
-        it "it defaults to true" do
+        it "defaults to true" do
           %w(true x 123).each do |value|
             with_modified_env(DIAVERUM_INCOMING_SKIP_SESSION_SAVE: value) do
               expect(Diaverum.config.diaverum_incoming_skip_session_save).to eq(true)
@@ -32,7 +32,7 @@ module Renalware
 
     describe "#diaverum_go_live_date" do
       it "raises an error if the date is invalid" do
-        expect{
+        expect {
           with_modified_env(DIAVERUM_GO_LIVE_DATE: "baddate") {}
         }.to raise_error(ArgumentError)
       end

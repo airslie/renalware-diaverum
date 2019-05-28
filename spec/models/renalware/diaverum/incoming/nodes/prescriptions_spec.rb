@@ -30,7 +30,7 @@ module Renalware
             end
 
             describe "#children" do
-              it "should have the correct number of child prescription" do
+              it "has the correct number of child prescription" do
                 expect(prescriptions.children.count).to eq(3)
               end
 

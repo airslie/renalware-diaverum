@@ -469,6 +469,43 @@ CREATE FUNCTION import_practices_csv(file text) RETURNS void
 
 
 --
+-- Name: new_hl7_message(text); Type: FUNCTION; Schema: renalware; Owner: -
+--
+
+CREATE FUNCTION new_hl7_message(message text) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+/*
+  This fn is called by the Mirth integration engine to add an HL7 message to Renalware.
+  Mirth used to insert data directly into the delayed_jobs table but we are moving away from
+  that approach as it tightly couples Mirth to our internal implementation and prevents us
+  from easily moving to another background processing library eg que.
+
+  When using delayed_jobs
+  -----------------------
+  1. We craft a yml string and translate line endings.
+  2. The trigger function preprocess_hl7_message fires when a row is added to delayed_jobs.
+     It handles escaping odd characters eg 10^12 in the message. See that function for details.
+     Once we have migrated Mirth to use this function and are happy it is working we can
+     move that logic from preprocess_hl7_message into here and drop that function and its trigger.
+
+  When using que
+  ------------------
+  # TODO: psuedo SQL
+*/
+insert into renalware.delayed_jobs(handler, run_at, created_at, updated_at)
+values(
+  E'--- !ruby/struct:FeedJob\nraw_message: |\n  ' || REPLACE(message, E'\r', E'\n  '),
+  NOW() AT TIME ZONE 'UTC',
+  NOW() AT TIME ZONE 'UTC',
+  NOW() AT TIME ZONE 'UTC'
+);
+END;
+$$;
+
+
+--
 -- Name: preprocess_hl7_message(); Type: FUNCTION; Schema: renalware; Owner: -
 --
 
@@ -1867,7 +1904,9 @@ CREATE TABLE event_types (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     event_class_name character varying,
-    slug character varying
+    slug character varying,
+    save_pdf_to_electronic_public_register boolean DEFAULT false NOT NULL,
+    title character varying
 );
 
 
@@ -2829,7 +2868,10 @@ CREATE TABLE hospital_centres (
     active boolean,
     is_transplant_site boolean DEFAULT false,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    info text,
+    trust_name character varying,
+    trust_caption character varying
 );
 
 
@@ -3701,6 +3743,72 @@ ALTER SEQUENCE modality_reasons_id_seq OWNED BY modality_reasons.id;
 
 
 --
+-- Name: pathology_code_group_memberships; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE pathology_code_group_memberships (
+    id bigint NOT NULL,
+    code_group_id bigint NOT NULL,
+    observation_description_id bigint NOT NULL,
+    subgroup integer DEFAULT 1 NOT NULL,
+    position_within_subgroup integer DEFAULT 1 NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: pathology_code_group_memberships_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE pathology_code_group_memberships_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: pathology_code_group_memberships_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE pathology_code_group_memberships_id_seq OWNED BY pathology_code_group_memberships.id;
+
+
+--
+-- Name: pathology_code_groups; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE pathology_code_groups (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    description text,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: pathology_code_groups_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE pathology_code_groups_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: pathology_code_groups_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE pathology_code_groups_id_seq OWNED BY pathology_code_groups.id;
+
+
+--
 -- Name: pathology_current_observation_sets; Type: TABLE; Schema: renalware; Owner: -
 --
 
@@ -3745,7 +3853,9 @@ CREATE TABLE pathology_observation_descriptions (
     display_group integer,
     display_order integer,
     letter_group integer,
-    letter_order integer
+    letter_order integer,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone
 );
 
 
@@ -3948,7 +4058,9 @@ CREATE TABLE pathology_request_descriptions (
     required_observation_description_id integer,
     expiration_days integer DEFAULT 0 NOT NULL,
     lab_id integer NOT NULL,
-    bottle_type character varying
+    bottle_type character varying,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone
 );
 
 
@@ -5143,7 +5255,8 @@ CREATE TABLE pd_pet_adequacy_results (
     created_by_id integer NOT NULL,
     updated_by_id integer NOT NULL,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    dietry_protein_intake numeric(8,2)
 );
 
 
@@ -5904,19 +6017,7 @@ CREATE VIEW reporting_daily_pathology AS
            FROM ( SELECT delayed_jobs.attempts,
                     count(*) AS count
                    FROM delayed_jobs
-                  GROUP BY delayed_jobs.attempts) query) AS delayed_jobs_attempts_counts,
-    ( SELECT count(*) AS count
-           FROM feed_messages) AS feed_messages_total,
-    ( SELECT count(*) AS count
-           FROM feed_messages
-          WHERE (feed_messages.created_at >= (now())::date)) AS feed_messages_added_today,
-    ( SELECT max(feed_messages.created_at) AS max
-           FROM feed_messages) AS feed_messages_added_latest_entry,
-    ( SELECT count(*) AS count
-           FROM pathology_observations
-          WHERE ((pathology_observations.created_at)::date >= (now())::date)) AS pathology_observations_added_today,
-    ( SELECT max(pathology_observations.observed_at) AS max
-           FROM pathology_observations) AS pathology_observations_latest_observed_at;
+                  GROUP BY delayed_jobs.attempts) query) AS delayed_jobs_attempts_counts;
 
 
 --
@@ -6426,6 +6527,42 @@ CREATE SEQUENCE system_countries_id_seq
 --
 
 ALTER SEQUENCE system_countries_id_seq OWNED BY system_countries.id;
+
+
+--
+-- Name: system_downloads; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE system_downloads (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    description character varying,
+    deleted_at timestamp without time zone,
+    updated_by_id bigint NOT NULL,
+    created_by_id bigint NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    view_count integer DEFAULT 0 NOT NULL
+);
+
+
+--
+-- Name: system_downloads_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE system_downloads_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: system_downloads_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE system_downloads_id_seq OWNED BY system_downloads.id;
 
 
 --
@@ -6950,7 +7087,8 @@ CREATE TABLE transplant_recipient_followups (
     transplant_failure_notes text,
     document jsonb,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    graft_nephrectomy_on date
 );
 
 
@@ -7208,6 +7346,39 @@ ALTER SEQUENCE ukrdc_batch_numbers_id_seq OWNED BY ukrdc_batch_numbers.id;
 
 
 --
+-- Name: ukrdc_modality_codes; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE ukrdc_modality_codes (
+    id bigint NOT NULL,
+    qbl_code character varying,
+    txt_code character varying,
+    description text,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: ukrdc_modality_codes_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE ukrdc_modality_codes_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: ukrdc_modality_codes_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE ukrdc_modality_codes_id_seq OWNED BY ukrdc_modality_codes.id;
+
+
+--
 -- Name: ukrdc_transmission_logs; Type: TABLE; Schema: renalware; Owner: -
 --
 
@@ -7219,7 +7390,7 @@ CREATE TABLE ukrdc_transmission_logs (
     request_uuid uuid NOT NULL,
     payload_hash text,
     payload xml,
-    error text,
+    error text[] DEFAULT '{}'::text[],
     file_path character varying,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL
@@ -7400,6 +7571,74 @@ CREATE SEQUENCE access_maps_id_seq
 --
 
 ALTER SEQUENCE access_maps_id_seq OWNED BY access_maps.id;
+
+
+--
+-- Name: active_storage_attachments; Type: TABLE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE TABLE active_storage_attachments (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    record_type character varying NOT NULL,
+    record_id bigint NOT NULL,
+    blob_id bigint NOT NULL,
+    created_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: active_storage_attachments_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE SEQUENCE active_storage_attachments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: active_storage_attachments_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER SEQUENCE active_storage_attachments_id_seq OWNED BY active_storage_attachments.id;
+
+
+--
+-- Name: active_storage_blobs; Type: TABLE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE TABLE active_storage_blobs (
+    id bigint NOT NULL,
+    key character varying NOT NULL,
+    filename character varying NOT NULL,
+    content_type character varying,
+    metadata text,
+    byte_size bigint NOT NULL,
+    checksum character varying NOT NULL,
+    created_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: active_storage_blobs_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE SEQUENCE active_storage_blobs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: active_storage_blobs_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER SEQUENCE active_storage_blobs_id_seq OWNED BY active_storage_blobs.id;
 
 
 --
@@ -7962,6 +8201,20 @@ ALTER TABLE ONLY modality_reasons ALTER COLUMN id SET DEFAULT nextval('modality_
 
 
 --
+-- Name: pathology_code_group_memberships id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY pathology_code_group_memberships ALTER COLUMN id SET DEFAULT nextval('pathology_code_group_memberships_id_seq'::regclass);
+
+
+--
+-- Name: pathology_code_groups id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY pathology_code_groups ALTER COLUMN id SET DEFAULT nextval('pathology_code_groups_id_seq'::regclass);
+
+
+--
 -- Name: pathology_current_observation_sets id; Type: DEFAULT; Schema: renalware; Owner: -
 --
 
@@ -8368,6 +8621,13 @@ ALTER TABLE ONLY system_countries ALTER COLUMN id SET DEFAULT nextval('system_co
 
 
 --
+-- Name: system_downloads id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY system_downloads ALTER COLUMN id SET DEFAULT nextval('system_downloads_id_seq'::regclass);
+
+
+--
 -- Name: system_events id; Type: DEFAULT; Schema: renalware; Owner: -
 --
 
@@ -8522,6 +8782,13 @@ ALTER TABLE ONLY ukrdc_batch_numbers ALTER COLUMN id SET DEFAULT nextval('ukrdc_
 
 
 --
+-- Name: ukrdc_modality_codes id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY ukrdc_modality_codes ALTER COLUMN id SET DEFAULT nextval('ukrdc_modality_codes_id_seq'::regclass);
+
+
+--
 -- Name: ukrdc_transmission_logs id; Type: DEFAULT; Schema: renalware; Owner: -
 --
 
@@ -8563,6 +8830,20 @@ SET search_path = renalware_diaverum, pg_catalog;
 --
 
 ALTER TABLE ONLY access_maps ALTER COLUMN id SET DEFAULT nextval('access_maps_id_seq'::regclass);
+
+
+--
+-- Name: active_storage_attachments id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY active_storage_attachments ALTER COLUMN id SET DEFAULT nextval('active_storage_attachments_id_seq'::regclass);
+
+
+--
+-- Name: active_storage_blobs id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY active_storage_blobs ALTER COLUMN id SET DEFAULT nextval('active_storage_blobs_id_seq'::regclass);
 
 
 --
@@ -9201,6 +9482,22 @@ ALTER TABLE ONLY modality_reasons
 
 
 --
+-- Name: pathology_code_group_memberships pathology_code_group_memberships_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY pathology_code_group_memberships
+    ADD CONSTRAINT pathology_code_group_memberships_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pathology_code_groups pathology_code_groups_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY pathology_code_groups
+    ADD CONSTRAINT pathology_code_groups_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: pathology_current_observation_sets pathology_current_observation_sets_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -9665,6 +9962,14 @@ ALTER TABLE ONLY system_countries
 
 
 --
+-- Name: system_downloads system_downloads_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY system_downloads
+    ADD CONSTRAINT system_downloads_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: system_events system_events_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -9841,6 +10146,14 @@ ALTER TABLE ONLY ukrdc_batch_numbers
 
 
 --
+-- Name: ukrdc_modality_codes ukrdc_modality_codes_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY ukrdc_modality_codes
+    ADD CONSTRAINT ukrdc_modality_codes_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: ukrdc_transmission_logs ukrdc_transmission_logs_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -9888,6 +10201,22 @@ SET search_path = renalware_diaverum, pg_catalog;
 
 ALTER TABLE ONLY access_maps
     ADD CONSTRAINT access_maps_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: active_storage_attachments active_storage_attachments_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY active_storage_attachments
+    ADD CONSTRAINT active_storage_attachments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: active_storage_blobs active_storage_blobs_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY active_storage_blobs
+    ADD CONSTRAINT active_storage_blobs_pkey PRIMARY KEY (id);
 
 
 --
@@ -11686,6 +12015,27 @@ CREATE INDEX index_modality_reasons_on_id_and_type ON modality_reasons USING btr
 
 
 --
+-- Name: index_pathology_code_group_memberships_on_code_group_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_pathology_code_group_memberships_on_code_group_id ON pathology_code_group_memberships USING btree (code_group_id);
+
+
+--
+-- Name: index_pathology_code_group_memberships_uniq; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_pathology_code_group_memberships_uniq ON pathology_code_group_memberships USING btree (code_group_id, observation_description_id);
+
+
+--
+-- Name: index_pathology_code_groups_on_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_pathology_code_groups_on_name ON pathology_code_groups USING btree (name);
+
+
+--
 -- Name: index_pathology_current_observation_sets_on_patient_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -12750,6 +13100,34 @@ CREATE INDEX index_system_countries_on_position ON system_countries USING btree 
 
 
 --
+-- Name: index_system_downloads_on_created_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_system_downloads_on_created_by_id ON system_downloads USING btree (created_by_id);
+
+
+--
+-- Name: index_system_downloads_on_deleted_at; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_system_downloads_on_deleted_at ON system_downloads USING btree (deleted_at);
+
+
+--
+-- Name: index_system_downloads_on_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_system_downloads_on_name ON system_downloads USING btree (name);
+
+
+--
+-- Name: index_system_downloads_on_updated_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_system_downloads_on_updated_by_id ON system_downloads USING btree (updated_by_id);
+
+
+--
 -- Name: index_system_events_on_name_and_time; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -13051,6 +13429,20 @@ CREATE INDEX index_transplant_registrations_on_patient_id ON transplant_registra
 
 
 --
+-- Name: index_ukrdc_modality_codes_on_qbl_code; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_ukrdc_modality_codes_on_qbl_code ON ukrdc_modality_codes USING btree (qbl_code);
+
+
+--
+-- Name: index_ukrdc_modality_codes_on_txt_code; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_ukrdc_modality_codes_on_txt_code ON ukrdc_modality_codes USING btree (txt_code);
+
+
+--
 -- Name: index_ukrdc_transmission_logs_on_patient_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -13198,6 +13590,13 @@ CREATE INDEX obx_unique_letter_grouping ON pathology_observation_descriptions US
 
 
 --
+-- Name: pathology_code_group_membership_obx; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX pathology_code_group_membership_obx ON pathology_code_group_memberships USING btree (observation_description_id);
+
+
+--
 -- Name: patient_bookmarks_uniqueness; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -13303,6 +13702,27 @@ CREATE UNIQUE INDEX unique_study_participants ON research_study_participants USI
 
 
 SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: index_active_storage_attachments_on_blob_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE INDEX index_active_storage_attachments_on_blob_id ON active_storage_attachments USING btree (blob_id);
+
+
+--
+-- Name: index_active_storage_attachments_uniqueness; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_attachments_uniqueness ON active_storage_attachments USING btree (record_type, record_id, name, blob_id);
+
+
+--
+-- Name: index_active_storage_blobs_on_key; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_blobs_on_key ON active_storage_blobs USING btree (key);
+
 
 --
 -- Name: index_renalware_diaverum.hd_type_maps_on_diaverum_type_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
@@ -13942,6 +14362,14 @@ ALTER TABLE ONLY admission_admissions
 
 
 --
+-- Name: system_downloads fk_rails_42cdf8956b; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY system_downloads
+    ADD CONSTRAINT fk_rails_42cdf8956b FOREIGN KEY (created_by_id) REFERENCES users(id);
+
+
+--
 -- Name: system_user_feedback fk_rails_4cc9cf2dca; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -14243,6 +14671,14 @@ ALTER TABLE ONLY letter_archives
 
 ALTER TABLE ONLY research_study_participants
     ADD CONSTRAINT fk_rails_8039d07f46 FOREIGN KEY (study_id) REFERENCES research_studies(id);
+
+
+--
+-- Name: system_downloads fk_rails_8344ecfc27; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY system_downloads
+    ADD CONSTRAINT fk_rails_8344ecfc27 FOREIGN KEY (updated_by_id) REFERENCES users(id);
 
 
 --
@@ -14630,6 +15066,14 @@ ALTER TABLE ONLY hd_stations
 
 
 --
+-- Name: pathology_code_group_memberships fk_rails_aff8ecb964; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY pathology_code_group_memberships
+    ADD CONSTRAINT fk_rails_aff8ecb964 FOREIGN KEY (code_group_id) REFERENCES pathology_code_groups(id);
+
+
+--
 -- Name: pathology_requests_patient_rules fk_rails_b13e09c8a3; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -14803,6 +15247,14 @@ ALTER TABLE ONLY transplant_donor_followups
 
 ALTER TABLE ONLY medication_prescriptions
     ADD CONSTRAINT fk_rails_c7b1e35b07 FOREIGN KEY (created_by_id) REFERENCES users(id);
+
+
+--
+-- Name: pathology_code_group_memberships fk_rails_c80615a8fc; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY pathology_code_group_memberships
+    ADD CONSTRAINT fk_rails_c80615a8fc FOREIGN KEY (observation_description_id) REFERENCES pathology_observation_descriptions(id);
 
 
 --
@@ -15509,6 +15961,16 @@ ALTER TABLE ONLY transplant_registration_statuses
     ADD CONSTRAINT transplant_registration_statuses_updated_by_id_fk FOREIGN KEY (updated_by_id) REFERENCES users(id);
 
 
+SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: active_storage_attachments fk_rails_c3b3935057; Type: FK CONSTRAINT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY active_storage_attachments
+    ADD CONSTRAINT fk_rails_c3b3935057 FOREIGN KEY (blob_id) REFERENCES active_storage_blobs(id);
+
+
 --
 -- PostgreSQL database dump complete
 --
@@ -15932,6 +16394,19 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20181109110616'),
 ('20181121150007'),
 ('20181126090401'),
-('20181126123745');
+('20181126123745'),
+('20181217124025'),
+('20190104095254'),
+('20190218142207'),
+('20190225103005'),
+('20190315125638'),
+('20190401105149'),
+('20190422095620'),
+('20190424101709'),
+('20190511164137'),
+('20190512155900'),
+('20190513131826'),
+('20190513135312'),
+('20190516093707');
 
 

@@ -19,6 +19,8 @@ module Renalware
             build_observations_before
             build_observations_after
             build_hdf
+            build_complications
+            build_avf_avg_assessment
             build_notes
             session
           end
@@ -116,6 +118,15 @@ module Renalware
           def build_hdf
             hdf = session.document.hdf
             hdf.subs_volume = treatment_node.InfusionVolume
+          end
+
+          def build_complications
+            complications = session.document.complications
+            complications.line_exit_site_status = 99 # Not Applicable
+          end
+
+          def build_avf_avg_assessment
+            session.document.avf_avg_assessment.score = 99 # Not Applicable
           end
         end
       end

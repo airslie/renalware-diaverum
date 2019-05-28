@@ -36,7 +36,7 @@ module Renalware
                   patient_node: instance_double(Nodes::Patient, journal_entries_on: [])
                 )
 
-                expect{
+                expect {
                   service.call
                 }.not_to change(existing_session, :updated_at)
 

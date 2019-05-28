@@ -9,8 +9,8 @@ module Renalware
         include DiaverumHelpers
         let(:patient) { create(:hd_patient, local_patient_id: "KCH123", nhs_number: "0123456789") }
 
-        around(:each) do |example|
-          using_a_tmp_diaverum_path{ example.run }
+        around do |example|
+          using_a_tmp_diaverum_path { example.run }
         end
 
         it "preloads the Rails environment" do
@@ -70,7 +70,7 @@ module Renalware
               expect(Dir.glob(Paths.outgoing.join("*_err.txt")).count).to eq(1)
 
               err_file_content = Dir.glob(Paths.outgoing.join("*_err.txt"))
-                .map{ |p| File.read(p) }.join("")
+                .map { |p| File.read(p) }.join("")
               expect(err_file_content)
                 .to match(/Couldn't find Renalware::HD::Dialysate Fresenius A7/)
             end
