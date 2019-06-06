@@ -20,12 +20,16 @@ gem "trix",
     git: "https://github.com/airslie/trix.git",
     branch: "master"
 
+gem "nhs_api_client",
+    require: false,
+    git: "https://github.com/airslie/nhs_api_client.git"
+
 # devise_security_extension
 # Because we can't include git reference in the gemspec in renalware, for now include it here
 # (its also in the renalware Gemfile which applies only to running renalware tests or running
 # up the spec/dummy app)
 gem "devise_security_extension",
-    git: "https://github.com/phatworx/devise_security_extension.git"
+  git: "https://github.com/phatworx/devise_security_extension.git"
 
 group :development, :test do
   gem "awesome_print"

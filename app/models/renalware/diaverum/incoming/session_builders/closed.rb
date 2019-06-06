@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+# rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/ClassLength
 require "attr_extras"
 
 module Renalware
@@ -102,6 +102,8 @@ module Renalware
             pre.weight = treatment_node.WeightPre
             pre.temperature_measured = treatment_node.TemperaturePre.present? ? :yes : :no
             pre.temperature = treatment_node.TemperaturePre
+            # Diaverum does not yet pass in respitory_rate so always set measured to no
+            pre.respiratory_rate_measured = :no
           end
 
           def build_observations_after
@@ -113,6 +115,8 @@ module Renalware
             post.weight = treatment_node.WeightPost
             post.temperature_measured = treatment_node.TemperaturePost.present? ? :yes : :no
             post.temperature = treatment_node.TemperaturePost
+            # Diaverum does not yet pass in respitory_rate so always set measured to no
+            post.respiratory_rate_measured = :no
           end
 
           def build_hdf
@@ -133,4 +137,4 @@ module Renalware
     end
   end
 end
-# rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+# rubocop:enable Metrics/MethodLength, Metrics/AbcSize, Metrics/ClassLength

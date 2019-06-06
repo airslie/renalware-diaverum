@@ -1,9 +1,17 @@
 GIT
+  remote: https://github.com/airslie/nhs_api_client.git
+  revision: 28a33ff5c4001b626617967171e43a9cec5616a0
+  specs:
+    nhs_api_client (0.1.0)
+      httparty (~> 0.16.4)
+      rails (>= 5.2.3)
+
+GIT
   remote: https://github.com/airslie/renalware-core.git
-  revision: 2e0ac85453bbcb062ca9c0ec401c8ce7bdb46c67
+  revision: a5e79b6d3cdf34c880b5853cfefbaffbfaa49e1a
   branch: master
   specs:
-    renalware-core (2.0.77)
+    renalware-core (2.0.79)
       active_type (~> 0.7.1)
       activerecord-import (~> 0.28.0)
       ahoy_matey (~> 2.1)
@@ -168,7 +176,7 @@ GEM
       descendants_tracker (~> 0.0.4)
       ice_nine (~> 0.11.0)
       thread_safe (~> 0.3, >= 0.3.1)
-    bcrypt (3.1.12)
+    bcrypt (3.1.13)
     bootsnap (1.4.4)
       msgpack (~> 1.0)
     browser (2.5.3)
@@ -266,7 +274,7 @@ GEM
       activesupport (>= 4.2.0)
     hashdiff (0.3.9)
     hashery (2.1.2)
-    httparty (0.17.0)
+    httparty (0.16.4)
       mime-types (~> 3.0)
       multi_xml (>= 0.5.2)
     i18n (1.5.3)
@@ -549,6 +557,7 @@ DEPENDENCIES
   factory_bot_rails
   faker
   fuubar
+  nhs_api_client!
   renalware-core!
   renalware-diaverum!
   rspec-rails
