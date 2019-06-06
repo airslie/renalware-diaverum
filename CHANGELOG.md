@@ -5,7 +5,14 @@ this [changelog](http://keepachangelog.com/en/0.3.0/).
 This project adheres to Semantic Versioning.
 
 ## Unreleased
-31-10-2018
+
+## 1.0.5
+06-06-2019
+### Added
+### Changed
+- Set respiratory_rate_measured to :no in HD::Session #48
+### Fixed
+
 
 ## 1.0.4
 ### Added
