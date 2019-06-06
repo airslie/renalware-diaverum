@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# rubocop:disable RSpec/ExampleLength, RSpec/MultipleExpectations
 require "rails_helper"
 
 # we want to test that
@@ -110,6 +111,7 @@ module Renalware
             expect(pre.weight).to eq(84.5)
             expect(pre.temperature_measured).to eq(:yes)
             expect(pre.temperature).to eq(35.6)
+            expect(pre.respiratory_rate_measured).to eq(:no)
 
             post = document.observations_after
             expect(post.pulse.to_s).to eq(treatment_node.PulsePost)
@@ -122,6 +124,8 @@ module Renalware
             expect(post.weight).to eq(83.6)
             expect(post.temperature_measured).to eq(:yes)
             expect(post.temperature).to eq(35.4)
+            expect(post.temperature).to eq(35.4)
+            expect(post.respiratory_rate_measured).to eq(:no)
 
             expect(document.hdf.subs_volume).to eq(124.0)
             expect(document.complications.line_exit_site_status).to eq("99") # n/a
@@ -132,3 +136,4 @@ module Renalware
     end
   end
 end
+# rubocop:enable RSpec/ExampleLength, RSpec/MultipleExpectations
