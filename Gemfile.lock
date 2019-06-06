@@ -98,7 +98,7 @@ GIT
 PATH
   remote: .
   specs:
-    renalware-diaverum (1.0.4)
+    renalware-diaverum (1.0.5)
       dotenv-rails
       pg (~> 1.0)
       rails (>= 5.1)
