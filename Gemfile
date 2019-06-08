@@ -29,7 +29,7 @@ gem "nhs_api_client",
 # (its also in the renalware Gemfile which applies only to running renalware tests or running
 # up the spec/dummy app)
 gem "devise_security_extension",
-  git: "https://github.com/phatworx/devise_security_extension.git"
+    git: "https://github.com/phatworx/devise_security_extension.git"
 
 group :development, :test do
   gem "awesome_print"
@@ -45,6 +45,7 @@ group :development, :test do
   gem "rspec_junit_formatter", "~> 0.3"
   gem "rubocop"
   gem "rubocop-performance", require: false
+  gem "rubocop-rails", require: false
   gem "rubocop-rspec", require: false
   gem "shoulda-matchers"
   gem "webmock", require: false
