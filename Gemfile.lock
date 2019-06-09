@@ -1,4 +1,12 @@
 GIT
+  remote: https://github.com/airslie/devise_security_extension.git
+  revision: b2ee978af7d49f0fb0e7271c6ac074dfb4d39353
+  specs:
+    devise_security_extension (0.10.0)
+      devise (>= 3.0.0, < 5.0)
+      railties (>= 3.2.6, < 6.0)
+
+GIT
   remote: https://github.com/airslie/nhs_api_client.git
   revision: 28a33ff5c4001b626617967171e43a9cec5616a0
   specs:
@@ -9,7 +17,6 @@ GIT
 GIT
   remote: https://github.com/airslie/renalware-core.git
   revision: a5e79b6d3cdf34c880b5853cfefbaffbfaa49e1a
-  branch: master
   specs:
     renalware-core (2.0.79)
       active_type (~> 0.7.1)
@@ -82,18 +89,9 @@ GIT
 GIT
   remote: https://github.com/airslie/trix.git
   revision: 56d84ae42e34488b0bb301bd9bd0f54fac7fc811
-  branch: master
   specs:
     trix (0.11.1)
       rails (> 4.1, <= 6.0)
-
-GIT
-  remote: https://github.com/phatworx/devise_security_extension.git
-  revision: b2ee978af7d49f0fb0e7271c6ac074dfb4d39353
-  specs:
-    devise_security_extension (0.10.0)
-      devise (>= 3.0.0, < 5.0)
-      railties (>= 3.2.6, < 6.0)
 
 PATH
   remote: .
