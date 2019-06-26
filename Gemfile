@@ -9,8 +9,6 @@ ruby "~> 2.6.3"
 
 gemspec
 
-gem "devise_security_extension", github: "airslie/devise_security_extension"
-gem "dotenv-rails", "~> 2.5.0"
 gem "nhs_api_client", github: "airslie/nhs_api_client", require: false
 gem "renalware-core", github: "airslie/renalware-core"
 gem "trix", github: "airslie/trix"

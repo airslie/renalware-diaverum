@@ -1029,6 +1029,74 @@ ALTER SEQUENCE access_versions_id_seq OWNED BY access_versions.id;
 
 
 --
+-- Name: active_storage_attachments; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE active_storage_attachments (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    record_type character varying NOT NULL,
+    record_id bigint NOT NULL,
+    blob_id bigint NOT NULL,
+    created_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: active_storage_attachments_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE active_storage_attachments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: active_storage_attachments_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE active_storage_attachments_id_seq OWNED BY active_storage_attachments.id;
+
+
+--
+-- Name: active_storage_blobs; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE active_storage_blobs (
+    id bigint NOT NULL,
+    key character varying NOT NULL,
+    filename character varying NOT NULL,
+    content_type character varying,
+    metadata text,
+    byte_size bigint NOT NULL,
+    checksum character varying NOT NULL,
+    created_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: active_storage_blobs_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE active_storage_blobs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: active_storage_blobs_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE active_storage_blobs_id_seq OWNED BY active_storage_blobs.id;
+
+
+--
 -- Name: addresses; Type: TABLE; Schema: renalware; Owner: -
 --
 
@@ -3540,7 +3608,8 @@ CREATE TABLE modality_descriptions (
     deleted_at timestamp without time zone,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    hidden boolean DEFAULT false NOT NULL
+    hidden boolean DEFAULT false NOT NULL,
+    ukrdc_modality_code_id bigint
 );
 
 
@@ -7028,7 +7097,10 @@ CREATE TABLE transplant_recipient_followups (
     document jsonb,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    graft_nephrectomy_on date
+    graft_nephrectomy_on date,
+    graft_function_onset character varying,
+    last_post_transplant_dialysis_on date,
+    return_to_regular_dialysis_on date
 );
 
 
@@ -7220,6 +7292,74 @@ ALTER SEQUENCE transplant_registrations_id_seq OWNED BY transplant_registrations
 
 
 --
+-- Name: transplant_rejection_episodes; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE transplant_rejection_episodes (
+    id bigint NOT NULL,
+    recorded_on date NOT NULL,
+    notes text,
+    followup_id bigint NOT NULL,
+    updated_by_id bigint NOT NULL,
+    created_by_id bigint NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    treatment_id bigint
+);
+
+
+--
+-- Name: transplant_rejection_episodes_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE transplant_rejection_episodes_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: transplant_rejection_episodes_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE transplant_rejection_episodes_id_seq OWNED BY transplant_rejection_episodes.id;
+
+
+--
+-- Name: transplant_rejection_treatments; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE transplant_rejection_treatments (
+    id bigint NOT NULL,
+    name text NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: transplant_rejection_treatments_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE transplant_rejection_treatments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: transplant_rejection_treatments_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE transplant_rejection_treatments_id_seq OWNED BY transplant_rejection_treatments.id;
+
+
+--
 -- Name: transplant_versions; Type: TABLE; Schema: renalware; Owner: -
 --
 
@@ -7354,6 +7494,45 @@ CREATE SEQUENCE ukrdc_transmission_logs_id_seq
 --
 
 ALTER SEQUENCE ukrdc_transmission_logs_id_seq OWNED BY ukrdc_transmission_logs.id;
+
+
+--
+-- Name: ukrdc_treatments; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE ukrdc_treatments (
+    id bigint NOT NULL,
+    patient_id bigint NOT NULL,
+    clinician_id bigint,
+    modality_code_id bigint NOT NULL,
+    modality_id bigint,
+    modality_description_id bigint,
+    hospital_centre_id bigint,
+    hospital_unit_id bigint,
+    started_on date NOT NULL,
+    ended_on date,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: ukrdc_treatments_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE ukrdc_treatments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: ukrdc_treatments_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE ukrdc_treatments_id_seq OWNED BY ukrdc_treatments.id;
 
 
 --
@@ -7514,74 +7693,6 @@ ALTER SEQUENCE access_maps_id_seq OWNED BY access_maps.id;
 
 
 --
--- Name: active_storage_attachments; Type: TABLE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE TABLE active_storage_attachments (
-    id bigint NOT NULL,
-    name character varying NOT NULL,
-    record_type character varying NOT NULL,
-    record_id bigint NOT NULL,
-    blob_id bigint NOT NULL,
-    created_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: active_storage_attachments_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE SEQUENCE active_storage_attachments_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: active_storage_attachments_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
---
-
-ALTER SEQUENCE active_storage_attachments_id_seq OWNED BY active_storage_attachments.id;
-
-
---
--- Name: active_storage_blobs; Type: TABLE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE TABLE active_storage_blobs (
-    id bigint NOT NULL,
-    key character varying NOT NULL,
-    filename character varying NOT NULL,
-    content_type character varying,
-    metadata text,
-    byte_size bigint NOT NULL,
-    checksum character varying NOT NULL,
-    created_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: active_storage_blobs_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE SEQUENCE active_storage_blobs_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: active_storage_blobs_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
---
-
-ALTER SEQUENCE active_storage_blobs_id_seq OWNED BY active_storage_blobs.id;
-
-
---
 -- Name: hd_type_maps; Type: TABLE; Schema: renalware_diaverum; Owner: -
 --
 
@@ -7676,6 +7787,20 @@ ALTER TABLE ONLY access_types ALTER COLUMN id SET DEFAULT nextval('access_types_
 --
 
 ALTER TABLE ONLY access_versions ALTER COLUMN id SET DEFAULT nextval('access_versions_id_seq'::regclass);
+
+
+--
+-- Name: active_storage_attachments id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY active_storage_attachments ALTER COLUMN id SET DEFAULT nextval('active_storage_attachments_id_seq'::regclass);
+
+
+--
+-- Name: active_storage_blobs id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY active_storage_blobs ALTER COLUMN id SET DEFAULT nextval('active_storage_blobs_id_seq'::regclass);
 
 
 --
@@ -8715,6 +8840,20 @@ ALTER TABLE ONLY transplant_registrations ALTER COLUMN id SET DEFAULT nextval('t
 
 
 --
+-- Name: transplant_rejection_episodes id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY transplant_rejection_episodes ALTER COLUMN id SET DEFAULT nextval('transplant_rejection_episodes_id_seq'::regclass);
+
+
+--
+-- Name: transplant_rejection_treatments id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY transplant_rejection_treatments ALTER COLUMN id SET DEFAULT nextval('transplant_rejection_treatments_id_seq'::regclass);
+
+
+--
 -- Name: transplant_versions id; Type: DEFAULT; Schema: renalware; Owner: -
 --
 
@@ -8740,6 +8879,13 @@ ALTER TABLE ONLY ukrdc_modality_codes ALTER COLUMN id SET DEFAULT nextval('ukrdc
 --
 
 ALTER TABLE ONLY ukrdc_transmission_logs ALTER COLUMN id SET DEFAULT nextval('ukrdc_transmission_logs_id_seq'::regclass);
+
+
+--
+-- Name: ukrdc_treatments id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY ukrdc_treatments ALTER COLUMN id SET DEFAULT nextval('ukrdc_treatments_id_seq'::regclass);
 
 
 --
@@ -8777,20 +8923,6 @@ SET search_path = renalware_diaverum, pg_catalog;
 --
 
 ALTER TABLE ONLY access_maps ALTER COLUMN id SET DEFAULT nextval('access_maps_id_seq'::regclass);
-
-
---
--- Name: active_storage_attachments id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY active_storage_attachments ALTER COLUMN id SET DEFAULT nextval('active_storage_attachments_id_seq'::regclass);
-
-
---
--- Name: active_storage_blobs id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY active_storage_blobs ALTER COLUMN id SET DEFAULT nextval('active_storage_blobs_id_seq'::regclass);
 
 
 --
@@ -8890,6 +9022,22 @@ ALTER TABLE ONLY access_types
 
 ALTER TABLE ONLY access_versions
     ADD CONSTRAINT access_versions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: active_storage_attachments active_storage_attachments_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY active_storage_attachments
+    ADD CONSTRAINT active_storage_attachments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: active_storage_blobs active_storage_blobs_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY active_storage_blobs
+    ADD CONSTRAINT active_storage_blobs_pkey PRIMARY KEY (id);
 
 
 --
@@ -10085,6 +10233,22 @@ ALTER TABLE ONLY transplant_registrations
 
 
 --
+-- Name: transplant_rejection_episodes transplant_rejection_episodes_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY transplant_rejection_episodes
+    ADD CONSTRAINT transplant_rejection_episodes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: transplant_rejection_treatments transplant_rejection_treatments_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY transplant_rejection_treatments
+    ADD CONSTRAINT transplant_rejection_treatments_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: transplant_versions transplant_versions_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -10114,6 +10278,14 @@ ALTER TABLE ONLY ukrdc_modality_codes
 
 ALTER TABLE ONLY ukrdc_transmission_logs
     ADD CONSTRAINT ukrdc_transmission_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ukrdc_treatments ukrdc_treatments_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY ukrdc_treatments
+    ADD CONSTRAINT ukrdc_treatments_pkey PRIMARY KEY (id);
 
 
 --
@@ -10156,22 +10328,6 @@ SET search_path = renalware_diaverum, pg_catalog;
 
 ALTER TABLE ONLY access_maps
     ADD CONSTRAINT access_maps_pkey PRIMARY KEY (id);
-
-
---
--- Name: active_storage_attachments active_storage_attachments_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY active_storage_attachments
-    ADD CONSTRAINT active_storage_attachments_pkey PRIMARY KEY (id);
-
-
---
--- Name: active_storage_blobs active_storage_blobs_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY active_storage_blobs
-    ADD CONSTRAINT active_storage_blobs_pkey PRIMARY KEY (id);
 
 
 --
@@ -10448,6 +10604,27 @@ CREATE INDEX index_access_profiles_on_type_id ON access_profiles USING btree (ty
 --
 
 CREATE INDEX index_access_profiles_on_updated_by_id ON access_profiles USING btree (updated_by_id);
+
+
+--
+-- Name: index_active_storage_attachments_on_blob_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_active_storage_attachments_on_blob_id ON active_storage_attachments USING btree (blob_id);
+
+
+--
+-- Name: index_active_storage_attachments_uniqueness; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_attachments_uniqueness ON active_storage_attachments USING btree (record_type, record_id, name, blob_id);
+
+
+--
+-- Name: index_active_storage_blobs_on_key; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_blobs_on_key ON active_storage_blobs USING btree (key);
 
 
 --
@@ -11904,6 +12081,13 @@ CREATE INDEX index_modality_descriptions_on_id_and_type ON modality_descriptions
 --
 
 CREATE INDEX index_modality_descriptions_on_name ON modality_descriptions USING btree (name);
+
+
+--
+-- Name: index_modality_descriptions_on_ukrdc_modality_code_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_modality_descriptions_on_ukrdc_modality_code_id ON modality_descriptions USING btree (ukrdc_modality_code_id);
 
 
 --
@@ -13391,6 +13575,48 @@ CREATE INDEX index_transplant_registrations_on_patient_id ON transplant_registra
 
 
 --
+-- Name: index_transplant_rejection_episodes_on_created_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_transplant_rejection_episodes_on_created_by_id ON transplant_rejection_episodes USING btree (created_by_id);
+
+
+--
+-- Name: index_transplant_rejection_episodes_on_followup_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_transplant_rejection_episodes_on_followup_id ON transplant_rejection_episodes USING btree (followup_id);
+
+
+--
+-- Name: index_transplant_rejection_episodes_on_treatment_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_transplant_rejection_episodes_on_treatment_id ON transplant_rejection_episodes USING btree (treatment_id);
+
+
+--
+-- Name: index_transplant_rejection_episodes_on_updated_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_transplant_rejection_episodes_on_updated_by_id ON transplant_rejection_episodes USING btree (updated_by_id);
+
+
+--
+-- Name: index_transplant_rejection_treatments_on_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_transplant_rejection_treatments_on_name ON transplant_rejection_treatments USING btree (name);
+
+
+--
+-- Name: index_transplant_rejection_treatments_on_position; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_transplant_rejection_treatments_on_position ON transplant_rejection_treatments USING btree ("position");
+
+
+--
 -- Name: index_ukrdc_modality_codes_on_qbl_code; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -13416,6 +13642,55 @@ CREATE INDEX index_ukrdc_transmission_logs_on_patient_id ON ukrdc_transmission_l
 --
 
 CREATE INDEX index_ukrdc_transmission_logs_on_request_uuid ON ukrdc_transmission_logs USING btree (request_uuid);
+
+
+--
+-- Name: index_ukrdc_treatments_on_clinician_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_ukrdc_treatments_on_clinician_id ON ukrdc_treatments USING btree (clinician_id);
+
+
+--
+-- Name: index_ukrdc_treatments_on_hospital_centre_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_ukrdc_treatments_on_hospital_centre_id ON ukrdc_treatments USING btree (hospital_centre_id);
+
+
+--
+-- Name: index_ukrdc_treatments_on_hospital_unit_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_ukrdc_treatments_on_hospital_unit_id ON ukrdc_treatments USING btree (hospital_unit_id);
+
+
+--
+-- Name: index_ukrdc_treatments_on_modality_code_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_ukrdc_treatments_on_modality_code_id ON ukrdc_treatments USING btree (modality_code_id);
+
+
+--
+-- Name: index_ukrdc_treatments_on_modality_description_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_ukrdc_treatments_on_modality_description_id ON ukrdc_treatments USING btree (modality_description_id);
+
+
+--
+-- Name: index_ukrdc_treatments_on_modality_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_ukrdc_treatments_on_modality_id ON ukrdc_treatments USING btree (modality_id);
+
+
+--
+-- Name: index_ukrdc_treatments_on_patient_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_ukrdc_treatments_on_patient_id ON ukrdc_treatments USING btree (patient_id);
 
 
 --
@@ -13666,27 +13941,6 @@ CREATE UNIQUE INDEX unique_study_participants ON research_study_participants USI
 SET search_path = renalware_diaverum, pg_catalog;
 
 --
--- Name: index_active_storage_attachments_on_blob_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX index_active_storage_attachments_on_blob_id ON active_storage_attachments USING btree (blob_id);
-
-
---
--- Name: index_active_storage_attachments_uniqueness; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE UNIQUE INDEX index_active_storage_attachments_uniqueness ON active_storage_attachments USING btree (record_type, record_id, name, blob_id);
-
-
---
--- Name: index_active_storage_blobs_on_key; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE UNIQUE INDEX index_active_storage_blobs_on_key ON active_storage_blobs USING btree (key);
-
-
---
 -- Name: index_renalware_diaverum.hd_type_maps_on_diaverum_type_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
 --
 
@@ -13900,6 +14154,14 @@ ALTER TABLE ONLY hd_profiles
 
 
 --
+-- Name: transplant_rejection_episodes fk_rails_0b121fa111; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY transplant_rejection_episodes
+    ADD CONSTRAINT fk_rails_0b121fa111 FOREIGN KEY (created_by_id) REFERENCES users(id);
+
+
+--
 -- Name: transplant_donations fk_rails_0b66891291; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -14060,6 +14322,14 @@ ALTER TABLE ONLY admission_consults
 
 
 --
+-- Name: ukrdc_treatments fk_rails_2a03129a59; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY ukrdc_treatments
+    ADD CONSTRAINT fk_rails_2a03129a59 FOREIGN KEY (modality_code_id) REFERENCES ukrdc_modality_codes(id);
+
+
+--
 -- Name: medication_prescriptions fk_rails_2ae6a3ad59; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -14073,6 +14343,14 @@ ALTER TABLE ONLY medication_prescriptions
 
 ALTER TABLE ONLY medication_prescription_terminations
     ADD CONSTRAINT fk_rails_2bd34b98f9 FOREIGN KEY (created_by_id) REFERENCES users(id);
+
+
+--
+-- Name: ukrdc_treatments fk_rails_2bf0a6c5e9; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY ukrdc_treatments
+    ADD CONSTRAINT fk_rails_2bf0a6c5e9 FOREIGN KEY (clinician_id) REFERENCES users(id);
 
 
 --
@@ -14460,6 +14738,14 @@ ALTER TABLE ONLY patient_practice_memberships
 
 
 --
+-- Name: transplant_rejection_episodes fk_rails_5eed551513; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY transplant_rejection_episodes
+    ADD CONSTRAINT fk_rails_5eed551513 FOREIGN KEY (followup_id) REFERENCES transplant_recipient_followups(id);
+
+
+--
 -- Name: pd_regime_terminations fk_rails_6021bed852; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -14604,11 +14890,27 @@ ALTER TABLE ONLY hd_profiles
 
 
 --
+-- Name: ukrdc_treatments fk_rails_7d0d8e5131; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY ukrdc_treatments
+    ADD CONSTRAINT fk_rails_7d0d8e5131 FOREIGN KEY (modality_description_id) REFERENCES modality_descriptions(id);
+
+
+--
 -- Name: pd_regime_terminations fk_rails_7d318fdf1a; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
 ALTER TABLE ONLY pd_regime_terminations
     ADD CONSTRAINT fk_rails_7d318fdf1a FOREIGN KEY (regime_id) REFERENCES pd_regimes(id);
+
+
+--
+-- Name: ukrdc_treatments fk_rails_7d4def4f31; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY ukrdc_treatments
+    ADD CONSTRAINT fk_rails_7d4def4f31 FOREIGN KEY (hospital_centre_id) REFERENCES hospital_centres(id);
 
 
 --
@@ -14788,6 +15090,14 @@ ALTER TABLE ONLY clinical_allergies
 
 
 --
+-- Name: transplant_rejection_episodes fk_rails_93bb09b431; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY transplant_rejection_episodes
+    ADD CONSTRAINT fk_rails_93bb09b431 FOREIGN KEY (updated_by_id) REFERENCES users(id);
+
+
+--
 -- Name: transplant_donor_workups fk_rails_93dc1108f3; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -14825,6 +15135,14 @@ ALTER TABLE ONLY patients
 
 ALTER TABLE ONLY research_study_participants
     ADD CONSTRAINT fk_rails_980af0ec33 FOREIGN KEY (participant_id) REFERENCES patients(id);
+
+
+--
+-- Name: transplant_rejection_episodes fk_rails_98de4be6aa; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY transplant_rejection_episodes
+    ADD CONSTRAINT fk_rails_98de4be6aa FOREIGN KEY (treatment_id) REFERENCES transplant_rejection_treatments(id);
 
 
 --
@@ -14929,6 +15247,14 @@ ALTER TABLE ONLY letter_contacts
 
 ALTER TABLE ONLY hd_patient_statistics
     ADD CONSTRAINT fk_rails_a654a17f8d FOREIGN KEY (hospital_unit_id) REFERENCES hospital_units(id);
+
+
+--
+-- Name: modality_descriptions fk_rails_a6efc804a5; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY modality_descriptions
+    ADD CONSTRAINT fk_rails_a6efc804a5 FOREIGN KEY (ukrdc_modality_code_id) REFERENCES ukrdc_modality_codes(id);
 
 
 --
@@ -15172,11 +15498,27 @@ ALTER TABLE ONLY modality_modalities
 
 
 --
+-- Name: ukrdc_treatments fk_rails_c35a48f8d3; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY ukrdc_treatments
+    ADD CONSTRAINT fk_rails_c35a48f8d3 FOREIGN KEY (patient_id) REFERENCES patients(id);
+
+
+--
 -- Name: patient_alerts fk_rails_c37cc03264; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
 ALTER TABLE ONLY patient_alerts
     ADD CONSTRAINT fk_rails_c37cc03264 FOREIGN KEY (created_by_id) REFERENCES users(id);
+
+
+--
+-- Name: active_storage_attachments fk_rails_c3b3935057; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY active_storage_attachments
+    ADD CONSTRAINT fk_rails_c3b3935057 FOREIGN KEY (blob_id) REFERENCES active_storage_blobs(id);
 
 
 --
@@ -15281,6 +15623,14 @@ ALTER TABLE ONLY admission_requests
 
 ALTER TABLE ONLY letter_signatures
     ADD CONSTRAINT fk_rails_d4aaa80dee FOREIGN KEY (letter_id) REFERENCES letter_letters(id);
+
+
+--
+-- Name: ukrdc_treatments fk_rails_d5e9d1f118; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY ukrdc_treatments
+    ADD CONSTRAINT fk_rails_d5e9d1f118 FOREIGN KEY (hospital_unit_id) REFERENCES hospital_units(id);
 
 
 --
@@ -15923,16 +16273,6 @@ ALTER TABLE ONLY transplant_registration_statuses
     ADD CONSTRAINT transplant_registration_statuses_updated_by_id_fk FOREIGN KEY (updated_by_id) REFERENCES users(id);
 
 
-SET search_path = renalware_diaverum, pg_catalog;
-
---
--- Name: active_storage_attachments fk_rails_c3b3935057; Type: FK CONSTRAINT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY active_storage_attachments
-    ADD CONSTRAINT fk_rails_c3b3935057 FOREIGN KEY (blob_id) REFERENCES active_storage_blobs(id);
-
-
 --
 -- PostgreSQL database dump complete
 --
@@ -16370,11 +16710,16 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190513131826'),
 ('20190513135312'),
 ('20190516093707'),
+('20190520091324'),
 ('20190531172829'),
 ('20190602114659'),
 ('20190603084428'),
 ('20190603135247'),
 ('20190603143834'),
-('20190603165812');
+('20190603165812'),
+('20190607134717'),
+('20190611152859'),
+('20190612124015'),
+('20190617121528');
 
 
