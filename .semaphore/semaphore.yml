@@ -1,0 +1,43 @@
+# Use the latest stable version of Semaphore 2.0 YML syntax:
+version: v1.0
+name: renalware-diaverum
+
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+
+blocks:
+  - name: Test setup
+    task:
+      jobs:
+        - name: bundle
+          commands:
+            - checkout
+            - cache restore gems-$SEMAPHORE_GIT_BRANCH-$(checksum Gemfile.lock),gems-$SEMAPHORE_GIT_BRANCH-,gems-master-
+            - sem-version ruby 2.6.3
+            - bundle install --deployment -j 4 --path vendor/bundle
+            - cache store gems-$SEMAPHORE_GIT_BRANCH-$(checksum Gemfile.lock) vendor/bundle
+
+  - name: Tests
+    task:
+      env_vars:
+        - name: RAILS_ENV
+          value: test
+
+      prologue:
+        commands:
+          - checkout
+          - cache restore gems-$SEMAPHORE_GIT_BRANCH-$(checksum Gemfile.lock),gems-$SEMAPHORE_GIT_BRANCH-,gems-master-
+          - git submodule sync ; git submodule update --init
+          - sem-service start postgres 10.8
+          - sem-version ruby 2.6.3
+          - bundle install --deployment --path vendor/bundle
+          - cp ./.semaphore/database.yml ./spec/dummy/config/database.yml
+          - bundle exec rake db:create
+          - bundle exec rake db:migrate
+
+      jobs:
+        - name: RSpec tests
+          commands:
+            - bundle exec rspec --format progress

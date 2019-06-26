@@ -1,0 +1,8 @@
+test:
+  adapter: postgresql
+  encoding: unicode
+  pool: 100
+  schema_search_path: "renalware_diaverum,renalware,public"
+  host: localhost
+  username: postgres
+  database: renalware_diaverum_test
