@@ -7,6 +7,14 @@ This project adheres to Semantic Versioning.
 ## Unreleased
 
 ## 1.0.5
+27-08-2019
+### Added
+- Housekeeping rake task
+### Changed
+### Fixed
+
+
+## 1.0.5
 06-06-2019
 ### Added
 ### Changed
