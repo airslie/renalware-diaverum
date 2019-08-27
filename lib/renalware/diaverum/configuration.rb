@@ -36,6 +36,10 @@ module Renalware
       config_accessor(:diaverum_reporting_email_addresses) do
         ENV.fetch("DIAVERUM_REPORTING_EMAIL_ADDRESSES", "dev@airslie.com").split(",")
       end
+
+      config_accessor(:diaverum_num_days_to_keep_archives) do
+        ENV.fetch("DIAVERUM_NUM_DAYS_TO_KEEP_ARCHIVES", "3")
+      end
     end
 
     def self.config

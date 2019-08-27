@@ -8,4 +8,12 @@ namespace :diaverum do
   task ingest: :environment do
     Renalware::Diaverum::Incoming::Ingestor.new.call
   end
+
+  task housekeeping: :environment do
+    logger           = ActiveSupport::TaggedLogging.new(Logger.new(STDOUT))
+    logger.level     = Logger::INFO
+    Rails.logger     = logger
+    logger.info "Diaverum housekeeping"
+    Renalware::Diaverum::Housekeeping::RemoveOldArchives.new.call
+  end
 end
