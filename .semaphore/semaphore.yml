@@ -21,6 +21,9 @@ blocks:
 
   - name: Tests
     task:
+      secrets:
+        - name: renalware-diaverum-env
+
       env_vars:
         - name: RAILS_ENV
           value: test
@@ -30,6 +33,12 @@ blocks:
           - checkout
           - cache restore gems-$SEMAPHORE_GIT_BRANCH-$(checksum Gemfile.lock),gems-$SEMAPHORE_GIT_BRANCH-,gems-master-
           - git submodule sync ; git submodule update --init
+
+          # codeclimate setup - see https://docs.semaphoreci.com/article/148-configuring-parallel-tests-with-code-climate
+          - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+          - chmod +x ./cc-test-reporter
+          - ./cc-test-reporter before-build
+
           - sem-service start postgres 10.8
           - sem-version ruby 2.6.3
           - bundle install --deployment --path vendor/bundle
@@ -41,3 +50,8 @@ blocks:
         - name: RSpec tests
           commands:
             - bundle exec rspec --format progress
+
+      epilogue:
+        on_pass:
+          commands:
+            - ./cc-test-reporter after-build
