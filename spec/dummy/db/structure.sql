@@ -1167,7 +1167,8 @@ CREATE TABLE admission_admissions (
     created_by_id bigint NOT NULL,
     deleted_at timestamp without time zone,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    feed_id character varying
 );
 
 
@@ -1244,7 +1245,8 @@ CREATE TABLE admission_consults (
     updated_at timestamp without time zone NOT NULL,
     other_site_or_ward character varying,
     consult_site_id bigint,
-    rrt boolean DEFAULT false NOT NULL
+    rrt boolean DEFAULT false NOT NULL,
+    priority integer
 );
 
 
@@ -1346,9 +1348,15 @@ CREATE TABLE clinic_appointments (
     id integer NOT NULL,
     starts_at timestamp without time zone NOT NULL,
     patient_id integer NOT NULL,
-    user_id integer NOT NULL,
     clinic_id integer NOT NULL,
-    becomes_visit_id integer
+    becomes_visit_id integer,
+    outcome_notes text,
+    dna_notes text,
+    feed_id character varying,
+    consultant_id bigint,
+    clinic_description text,
+    updated_by_id bigint,
+    created_by_id bigint
 );
 
 
@@ -1872,7 +1880,8 @@ CREATE TABLE event_types (
     event_class_name character varying,
     slug character varying,
     save_pdf_to_electronic_public_register boolean DEFAULT false NOT NULL,
-    title character varying
+    title character varying,
+    hidden boolean DEFAULT false NOT NULL
 );
 
 
@@ -2445,6 +2454,37 @@ ALTER SEQUENCE hd_preference_sets_id_seq OWNED BY hd_preference_sets.id;
 
 
 --
+-- Name: hd_prescription_administration_reasons; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE hd_prescription_administration_reasons (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: hd_prescription_administration_reasons_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE hd_prescription_administration_reasons_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: hd_prescription_administration_reasons_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE hd_prescription_administration_reasons_id_seq OWNED BY hd_prescription_administration_reasons.id;
+
+
+--
 -- Name: hd_prescription_administrations; Type: TABLE; Schema: renalware; Owner: -
 --
 
@@ -2457,7 +2497,12 @@ CREATE TABLE hd_prescription_administrations (
     created_by_id integer NOT NULL,
     updated_by_id integer NOT NULL,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    administered_by_id bigint,
+    witnessed_by_id bigint,
+    administrator_authorised boolean DEFAULT false NOT NULL,
+    witness_authorised boolean DEFAULT false NOT NULL,
+    reason_id bigint
 );
 
 
@@ -2505,6 +2550,81 @@ CREATE TABLE hd_profiles (
     schedule_definition_id integer,
     dialysate_id bigint
 );
+
+
+--
+-- Name: modality_descriptions; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE modality_descriptions (
+    id integer NOT NULL,
+    name character varying NOT NULL,
+    type character varying,
+    deleted_at timestamp without time zone,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    hidden boolean DEFAULT false NOT NULL,
+    ukrdc_modality_code_id bigint,
+    code character varying
+);
+
+
+--
+-- Name: modality_modalities; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE modality_modalities (
+    id integer NOT NULL,
+    patient_id integer NOT NULL,
+    description_id integer NOT NULL,
+    reason_id integer,
+    modal_change_type character varying,
+    notes text,
+    started_on date NOT NULL,
+    ended_on date,
+    state character varying DEFAULT 'current'::character varying NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    created_by_id integer NOT NULL,
+    updated_by_id integer NOT NULL
+);
+
+
+--
+-- Name: hd_profile_for_modalities; Type: VIEW; Schema: renalware; Owner: -
+--
+
+CREATE VIEW hd_profile_for_modalities AS
+ WITH hd_modalities AS (
+         SELECT m_1.patient_id,
+            m_1.id AS modality_id,
+            m_1.started_on,
+            m_1.ended_on
+           FROM (modality_modalities m_1
+             JOIN modality_descriptions md ON ((md.id = m_1.description_id)))
+          WHERE ((md.name)::text = 'HD'::text)
+        ), distinct_hd_profiles AS (
+         SELECT DISTINCT ON (hd_profiles.patient_id, ((hd_profiles.created_at)::date)) hd_profiles.id AS hd_profile_id,
+            hd_profiles.patient_id,
+            (COALESCE((hd_profiles.prescribed_on)::timestamp without time zone, hd_profiles.created_at))::date AS effective_prescribed_on,
+            hd_profiles.prescribed_on,
+            (hd_profiles.created_at)::date AS created_on,
+            hd_profiles.created_at,
+            hd_profiles.deactivated_at,
+            hd_profiles.active
+           FROM hd_profiles
+          ORDER BY hd_profiles.patient_id, ((hd_profiles.created_at)::date), hd_profiles.created_at DESC
+        )
+ SELECT m.patient_id,
+    m.modality_id,
+    m.started_on,
+    m.ended_on,
+    ( SELECT hp.hd_profile_id
+           FROM distinct_hd_profiles hp
+          WHERE ((hp.patient_id = m.patient_id) AND ((hp.deactivated_at IS NULL) OR (hp.deactivated_at > m.started_on)))
+          ORDER BY hp.created_at
+         LIMIT 1) AS hd_profile_id
+   FROM hd_modalities m;
 
 
 --
@@ -2647,6 +2767,74 @@ CREATE SEQUENCE hd_schedule_definitions_id_seq
 --
 
 ALTER SEQUENCE hd_schedule_definitions_id_seq OWNED BY hd_schedule_definitions.id;
+
+
+--
+-- Name: hd_session_form_batch_items; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE hd_session_form_batch_items (
+    id bigint NOT NULL,
+    batch_id bigint NOT NULL,
+    printable_id integer NOT NULL,
+    status smallint DEFAULT 0 NOT NULL
+);
+
+
+--
+-- Name: hd_session_form_batch_items_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE hd_session_form_batch_items_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: hd_session_form_batch_items_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE hd_session_form_batch_items_id_seq OWNED BY hd_session_form_batch_items.id;
+
+
+--
+-- Name: hd_session_form_batches; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE hd_session_form_batches (
+    id bigint NOT NULL,
+    status integer DEFAULT 0 NOT NULL,
+    query_params jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_by_id bigint NOT NULL,
+    updated_by_id bigint NOT NULL,
+    filepath character varying,
+    last_error character varying,
+    batch_items_count integer,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: hd_session_form_batches_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE hd_session_form_batches_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: hd_session_form_batches_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE hd_session_form_batches_id_seq OWNED BY hd_session_form_batches.id;
 
 
 --
@@ -2966,6 +3154,73 @@ CREATE SEQUENCE letter_archives_id_seq
 --
 
 ALTER SEQUENCE letter_archives_id_seq OWNED BY letter_archives.id;
+
+
+--
+-- Name: letter_batch_items; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE letter_batch_items (
+    id bigint NOT NULL,
+    letter_id bigint NOT NULL,
+    batch_id bigint NOT NULL,
+    status smallint DEFAULT 0 NOT NULL
+);
+
+
+--
+-- Name: letter_batch_items_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE letter_batch_items_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: letter_batch_items_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE letter_batch_items_id_seq OWNED BY letter_batch_items.id;
+
+
+--
+-- Name: letter_batches; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE letter_batches (
+    id bigint NOT NULL,
+    status integer DEFAULT 0 NOT NULL,
+    query_params jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_by_id bigint NOT NULL,
+    updated_by_id bigint NOT NULL,
+    batch_items_count integer,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    filepath character varying
+);
+
+
+--
+-- Name: letter_batches_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE letter_batches_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: letter_batches_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE letter_batches_id_seq OWNED BY letter_batches.id;
 
 
 --
@@ -3598,22 +3853,6 @@ ALTER SEQUENCE messaging_receipts_id_seq OWNED BY messaging_receipts.id;
 
 
 --
--- Name: modality_descriptions; Type: TABLE; Schema: renalware; Owner: -
---
-
-CREATE TABLE modality_descriptions (
-    id integer NOT NULL,
-    name character varying NOT NULL,
-    type character varying,
-    deleted_at timestamp without time zone,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    hidden boolean DEFAULT false NOT NULL,
-    ukrdc_modality_code_id bigint
-);
-
-
---
 -- Name: modality_descriptions_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
 --
 
@@ -3631,27 +3870,6 @@ CREATE SEQUENCE modality_descriptions_id_seq
 --
 
 ALTER SEQUENCE modality_descriptions_id_seq OWNED BY modality_descriptions.id;
-
-
---
--- Name: modality_modalities; Type: TABLE; Schema: renalware; Owner: -
---
-
-CREATE TABLE modality_modalities (
-    id integer NOT NULL,
-    patient_id integer NOT NULL,
-    description_id integer NOT NULL,
-    reason_id integer,
-    modal_change_type character varying,
-    notes text,
-    started_on date NOT NULL,
-    ended_on date,
-    state character varying DEFAULT 'current'::character varying NOT NULL,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    created_by_id integer NOT NULL,
-    updated_by_id integer NOT NULL
-);
 
 
 --
@@ -3822,7 +4040,10 @@ CREATE TABLE pathology_observation_descriptions (
     letter_group integer,
     letter_order integer,
     created_at timestamp without time zone,
-    updated_at timestamp without time zone
+    updated_at timestamp without time zone,
+    rr_type integer DEFAULT 0 NOT NULL,
+    rr_coding_standard integer DEFAULT 0 NOT NULL,
+    legacy_code character varying
 );
 
 
@@ -4286,14 +4507,14 @@ CREATE TABLE pathology_requests_requests (
     id integer NOT NULL,
     patient_id integer NOT NULL,
     clinic_id integer NOT NULL,
-    consultant_id integer NOT NULL,
     telephone character varying NOT NULL,
     created_by_id integer NOT NULL,
     updated_by_id integer NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     template character varying NOT NULL,
-    high_risk boolean NOT NULL
+    high_risk boolean NOT NULL,
+    consultant_id bigint
 );
 
 
@@ -4315,6 +4536,38 @@ CREATE SEQUENCE pathology_requests_requests_id_seq
 --
 
 ALTER SEQUENCE pathology_requests_requests_id_seq OWNED BY pathology_requests_requests.id;
+
+
+--
+-- Name: pathology_requests_sample_types; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE pathology_requests_sample_types (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    code character varying NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: pathology_requests_sample_types_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE pathology_requests_sample_types_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: pathology_requests_sample_types_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE pathology_requests_sample_types_id_seq OWNED BY pathology_requests_sample_types.id;
 
 
 --
@@ -4440,7 +4693,7 @@ CREATE TABLE patients (
     rpv_decision_on date,
     renalreg_recorded_by character varying,
     rpv_recorded_by character varying,
-    ukrdc_external_id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    ukrdc_external_id text DEFAULT public.uuid_generate_v4(),
     country_of_birth_id integer,
     legacy_patient_id integer,
     secure_id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
@@ -5297,41 +5550,6 @@ ALTER SEQUENCE pd_regime_bags_id_seq OWNED BY pd_regime_bags.id;
 
 
 --
--- Name: pd_regime_terminations; Type: TABLE; Schema: renalware; Owner: -
---
-
-CREATE TABLE pd_regime_terminations (
-    id integer NOT NULL,
-    terminated_on date NOT NULL,
-    regime_id integer NOT NULL,
-    created_by_id integer NOT NULL,
-    updated_by_id integer NOT NULL,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: pd_regime_terminations_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
---
-
-CREATE SEQUENCE pd_regime_terminations_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: pd_regime_terminations_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
---
-
-ALTER SEQUENCE pd_regime_terminations_id_seq OWNED BY pd_regime_terminations.id;
-
-
---
 -- Name: pd_regimes; Type: TABLE; Schema: renalware; Owner: -
 --
 
@@ -5364,8 +5582,81 @@ CREATE TABLE pd_regimes (
     tidal_full_drain_every_three_cycles boolean DEFAULT true,
     daily_volume integer,
     assistance_type character varying,
-    dwell_time integer
+    dwell_time integer,
+    exchanges_done_by character varying,
+    exchanges_done_by_if_other character varying,
+    exchanges_done_by_notes text
 );
+
+
+--
+-- Name: pd_regime_for_modalities; Type: VIEW; Schema: renalware; Owner: -
+--
+
+CREATE VIEW pd_regime_for_modalities AS
+ WITH pd_modalities AS (
+         SELECT m_1.patient_id,
+            m_1.id AS modality_id,
+            m_1.started_on,
+            m_1.ended_on
+           FROM (modality_modalities m_1
+             JOIN modality_descriptions md ON ((md.id = m_1.description_id)))
+          WHERE ((md.name)::text = 'PD'::text)
+        ), distinct_pd_regimes AS (
+         SELECT DISTINCT ON (pd_regimes.patient_id, pd_regimes.start_date) pd_regimes.id AS pd_regime_id,
+            pd_regimes.patient_id,
+            pd_regimes.start_date,
+            pd_regimes.end_date,
+            pd_regimes.created_at
+           FROM pd_regimes
+          ORDER BY pd_regimes.patient_id, pd_regimes.start_date, pd_regimes.created_at DESC
+        )
+ SELECT m.patient_id,
+    m.modality_id,
+    m.started_on,
+    m.ended_on,
+    ( SELECT pdr.pd_regime_id
+           FROM distinct_pd_regimes pdr
+          WHERE ((pdr.patient_id = m.patient_id) AND ((pdr.end_date IS NULL) OR (pdr.end_date > m.started_on)))
+          ORDER BY pdr.created_at
+         LIMIT 1) AS pd_regime_id
+   FROM pd_modalities m
+  ORDER BY m.patient_id;
+
+
+--
+-- Name: pd_regime_terminations; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE pd_regime_terminations (
+    id integer NOT NULL,
+    terminated_on date NOT NULL,
+    regime_id integer NOT NULL,
+    created_by_id integer NOT NULL,
+    updated_by_id integer NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: pd_regime_terminations_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE pd_regime_terminations_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: pd_regime_terminations_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE pd_regime_terminations_id_seq OWNED BY pd_regime_terminations.id;
 
 
 --
@@ -5689,6 +5980,37 @@ CREATE SEQUENCE renal_aki_alerts_id_seq
 --
 
 ALTER SEQUENCE renal_aki_alerts_id_seq OWNED BY renal_aki_alerts.id;
+
+
+--
+-- Name: renal_consultants; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE renal_consultants (
+    id bigint NOT NULL,
+    code character varying,
+    name character varying,
+    telephone character varying
+);
+
+
+--
+-- Name: renal_consultants_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE renal_consultants_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: renal_consultants_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE renal_consultants_id_seq OWNED BY renal_consultants.id;
 
 
 --
@@ -6117,7 +6439,8 @@ CREATE TABLE users (
     created_at timestamp without time zone,
     updated_at timestamp without time zone,
     telephone character varying,
-    authentication_token character varying
+    authentication_token character varying,
+    asked_for_write_access boolean DEFAULT false NOT NULL
 );
 
 
@@ -7512,7 +7835,12 @@ CREATE TABLE ukrdc_treatments (
     started_on date NOT NULL,
     ended_on date,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    hd_profile_id bigint,
+    pd_regime_id bigint,
+    discharge_reason_code integer,
+    discharge_reason_comment character varying,
+    hd_type character varying
 );
 
 
@@ -8035,6 +8363,13 @@ ALTER TABLE ONLY hd_preference_sets ALTER COLUMN id SET DEFAULT nextval('hd_pref
 
 
 --
+-- Name: hd_prescription_administration_reasons id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_prescription_administration_reasons ALTER COLUMN id SET DEFAULT nextval('hd_prescription_administration_reasons_id_seq'::regclass);
+
+
+--
 -- Name: hd_prescription_administrations id; Type: DEFAULT; Schema: renalware; Owner: -
 --
 
@@ -8067,6 +8402,20 @@ ALTER TABLE ONLY hd_providers ALTER COLUMN id SET DEFAULT nextval('hd_providers_
 --
 
 ALTER TABLE ONLY hd_schedule_definitions ALTER COLUMN id SET DEFAULT nextval('hd_schedule_definitions_id_seq'::regclass);
+
+
+--
+-- Name: hd_session_form_batch_items id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_session_form_batch_items ALTER COLUMN id SET DEFAULT nextval('hd_session_form_batch_items_id_seq'::regclass);
+
+
+--
+-- Name: hd_session_form_batches id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_session_form_batches ALTER COLUMN id SET DEFAULT nextval('hd_session_form_batches_id_seq'::regclass);
 
 
 --
@@ -8130,6 +8479,20 @@ ALTER TABLE ONLY hospital_wards ALTER COLUMN id SET DEFAULT nextval('hospital_wa
 --
 
 ALTER TABLE ONLY letter_archives ALTER COLUMN id SET DEFAULT nextval('letter_archives_id_seq'::regclass);
+
+
+--
+-- Name: letter_batch_items id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY letter_batch_items ALTER COLUMN id SET DEFAULT nextval('letter_batch_items_id_seq'::regclass);
+
+
+--
+-- Name: letter_batches id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY letter_batches ALTER COLUMN id SET DEFAULT nextval('letter_batches_id_seq'::regclass);
 
 
 --
@@ -8385,6 +8748,13 @@ ALTER TABLE ONLY pathology_requests_requests ALTER COLUMN id SET DEFAULT nextval
 
 
 --
+-- Name: pathology_requests_sample_types id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY pathology_requests_sample_types ALTER COLUMN id SET DEFAULT nextval('pathology_requests_sample_types_id_seq'::regclass);
+
+
+--
 -- Name: patient_alerts id; Type: DEFAULT; Schema: renalware; Owner: -
 --
 
@@ -8613,6 +8983,13 @@ ALTER TABLE ONLY renal_aki_alert_actions ALTER COLUMN id SET DEFAULT nextval('re
 --
 
 ALTER TABLE ONLY renal_aki_alerts ALTER COLUMN id SET DEFAULT nextval('renal_aki_alerts_id_seq'::regclass);
+
+
+--
+-- Name: renal_consultants id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renal_consultants ALTER COLUMN id SET DEFAULT nextval('renal_consultants_id_seq'::regclass);
 
 
 --
@@ -9313,6 +9690,14 @@ ALTER TABLE ONLY hd_preference_sets
 
 
 --
+-- Name: hd_prescription_administration_reasons hd_prescription_administration_reasons_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_prescription_administration_reasons
+    ADD CONSTRAINT hd_prescription_administration_reasons_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: hd_prescription_administrations hd_prescription_administrations_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -9350,6 +9735,22 @@ ALTER TABLE ONLY hd_providers
 
 ALTER TABLE ONLY hd_schedule_definitions
     ADD CONSTRAINT hd_schedule_definitions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hd_session_form_batch_items hd_session_form_batch_items_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_session_form_batch_items
+    ADD CONSTRAINT hd_session_form_batch_items_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hd_session_form_batches hd_session_form_batches_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_session_form_batches
+    ADD CONSTRAINT hd_session_form_batches_pkey PRIMARY KEY (id);
 
 
 --
@@ -9422,6 +9823,22 @@ ALTER TABLE ONLY hospital_wards
 
 ALTER TABLE ONLY letter_archives
     ADD CONSTRAINT letter_archives_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: letter_batch_items letter_batch_items_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY letter_batch_items
+    ADD CONSTRAINT letter_batch_items_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: letter_batches letter_batches_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY letter_batches
+    ADD CONSTRAINT letter_batches_pkey PRIMARY KEY (id);
 
 
 --
@@ -9713,6 +10130,14 @@ ALTER TABLE ONLY pathology_requests_requests
 
 
 --
+-- Name: pathology_requests_sample_types pathology_requests_sample_types_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY pathology_requests_sample_types
+    ADD CONSTRAINT pathology_requests_sample_types_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: patient_alerts patient_alerts_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -9974,6 +10399,14 @@ ALTER TABLE ONLY renal_aki_alert_actions
 
 ALTER TABLE ONLY renal_aki_alerts
     ADD CONSTRAINT renal_aki_alerts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: renal_consultants renal_consultants_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renal_consultants
+    ADD CONSTRAINT renal_consultants_pkey PRIMARY KEY (id);
 
 
 --
@@ -10593,6 +11026,20 @@ CREATE INDEX index_access_profiles_on_patient_id ON access_profiles USING btree 
 
 
 --
+-- Name: index_access_profiles_on_started_on; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_access_profiles_on_started_on ON access_profiles USING btree (started_on);
+
+
+--
+-- Name: index_access_profiles_on_terminated_on; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_access_profiles_on_terminated_on ON access_profiles USING btree (terminated_on);
+
+
+--
 -- Name: index_access_profiles_on_type_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -10625,6 +11072,13 @@ CREATE UNIQUE INDEX index_active_storage_attachments_uniqueness ON active_storag
 --
 
 CREATE UNIQUE INDEX index_active_storage_blobs_on_key ON active_storage_blobs USING btree (key);
+
+
+--
+-- Name: index_addresses_on_addressable_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_addresses_on_addressable_id ON addresses USING btree (addressable_id);
 
 
 --
@@ -10740,6 +11194,13 @@ CREATE INDEX index_admission_consults_on_patient_id ON admission_consults USING 
 
 
 --
+-- Name: index_admission_consults_on_priority; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_admission_consults_on_priority ON admission_consults USING btree (priority);
+
+
+--
 -- Name: index_admission_consults_on_seen_by_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -10824,6 +11285,20 @@ CREATE INDEX index_clinic_appointments_on_clinic_id ON clinic_appointments USING
 
 
 --
+-- Name: index_clinic_appointments_on_consultant_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_clinic_appointments_on_consultant_id ON clinic_appointments USING btree (consultant_id);
+
+
+--
+-- Name: index_clinic_appointments_on_created_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_clinic_appointments_on_created_by_id ON clinic_appointments USING btree (created_by_id);
+
+
+--
 -- Name: index_clinic_appointments_on_patient_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -10831,10 +11306,10 @@ CREATE INDEX index_clinic_appointments_on_patient_id ON clinic_appointments USIN
 
 
 --
--- Name: index_clinic_appointments_on_user_id; Type: INDEX; Schema: renalware; Owner: -
+-- Name: index_clinic_appointments_on_updated_by_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
-CREATE INDEX index_clinic_appointments_on_user_id ON clinic_appointments USING btree (user_id);
+CREATE INDEX index_clinic_appointments_on_updated_by_id ON clinic_appointments USING btree (updated_by_id);
 
 
 --
@@ -11010,6 +11485,13 @@ CREATE INDEX index_drugs_on_deleted_at ON drugs USING btree (deleted_at);
 --
 
 CREATE INDEX index_event_types_on_deleted_at ON event_types USING btree (deleted_at);
+
+
+--
+-- Name: index_event_types_on_hidden; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_event_types_on_hidden ON event_types USING btree (hidden);
 
 
 --
@@ -11328,6 +11810,20 @@ CREATE INDEX index_hd_preference_sets_on_updated_by_id ON hd_preference_sets USI
 
 
 --
+-- Name: index_hd_prescription_administration_reasons_on_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_hd_prescription_administration_reasons_on_name ON hd_prescription_administration_reasons USING btree (name);
+
+
+--
+-- Name: index_hd_prescription_administrations_on_administered_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_hd_prescription_administrations_on_administered_by_id ON hd_prescription_administrations USING btree (administered_by_id);
+
+
+--
 -- Name: index_hd_prescription_administrations_on_created_by_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -11349,10 +11845,24 @@ CREATE INDEX index_hd_prescription_administrations_on_prescription_id ON hd_pres
 
 
 --
+-- Name: index_hd_prescription_administrations_on_reason_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_hd_prescription_administrations_on_reason_id ON hd_prescription_administrations USING btree (reason_id);
+
+
+--
 -- Name: index_hd_prescription_administrations_on_updated_by_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
 CREATE INDEX index_hd_prescription_administrations_on_updated_by_id ON hd_prescription_administrations USING btree (updated_by_id);
+
+
+--
+-- Name: index_hd_prescription_administrations_on_witnessed_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_hd_prescription_administrations_on_witnessed_by_id ON hd_prescription_administrations USING btree (witnessed_by_id);
 
 
 --
@@ -11458,6 +11968,41 @@ CREATE INDEX index_hd_schedule_definitions_on_days ON hd_schedule_definitions US
 --
 
 CREATE INDEX index_hd_schedule_definitions_on_diurnal_period_id ON hd_schedule_definitions USING btree (diurnal_period_id);
+
+
+--
+-- Name: index_hd_session_form_batch_items_on_batch_id_and_printable_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_hd_session_form_batch_items_on_batch_id_and_printable_id ON hd_session_form_batch_items USING btree (batch_id, printable_id);
+
+
+--
+-- Name: index_hd_session_form_batch_items_on_status; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_hd_session_form_batch_items_on_status ON hd_session_form_batch_items USING btree (status);
+
+
+--
+-- Name: index_hd_session_form_batches_on_created_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_hd_session_form_batches_on_created_by_id ON hd_session_form_batches USING btree (created_by_id);
+
+
+--
+-- Name: index_hd_session_form_batches_on_status; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_hd_session_form_batches_on_status ON hd_session_form_batches USING btree (status);
+
+
+--
+-- Name: index_hd_session_form_batches_on_updated_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_hd_session_form_batches_on_updated_by_id ON hd_session_form_batches USING btree (updated_by_id);
 
 
 --
@@ -11650,6 +12195,13 @@ CREATE INDEX index_hospital_units_on_hospital_centre_id ON hospital_units USING 
 
 
 --
+-- Name: index_hospital_units_on_is_hd_site; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_hospital_units_on_is_hd_site ON hospital_units USING btree (is_hd_site);
+
+
+--
 -- Name: index_hospital_wards_on_code; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -11689,6 +12241,41 @@ CREATE INDEX index_letter_archives_on_letter_id ON letter_archives USING btree (
 --
 
 CREATE INDEX index_letter_archives_on_updated_by_id ON letter_archives USING btree (updated_by_id);
+
+
+--
+-- Name: index_letter_batch_items_on_batch_id_and_status; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_letter_batch_items_on_batch_id_and_status ON letter_batch_items USING btree (batch_id, status);
+
+
+--
+-- Name: index_letter_batch_items_on_letter_id_and_batch_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_letter_batch_items_on_letter_id_and_batch_id ON letter_batch_items USING btree (letter_id, batch_id);
+
+
+--
+-- Name: index_letter_batches_on_created_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_letter_batches_on_created_by_id ON letter_batches USING btree (created_by_id);
+
+
+--
+-- Name: index_letter_batches_on_status; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_letter_batches_on_status ON letter_batches USING btree (status);
+
+
+--
+-- Name: index_letter_batches_on_updated_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_letter_batches_on_updated_by_id ON letter_batches USING btree (updated_by_id);
 
 
 --
@@ -11846,6 +12433,13 @@ CREATE INDEX index_letter_letters_on_submitted_for_approval_by_id ON letter_lett
 
 
 --
+-- Name: index_letter_letters_on_type; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_letter_letters_on_type ON letter_letters USING btree (type);
+
+
+--
 -- Name: index_letter_letters_on_updated_by_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -11885,6 +12479,13 @@ CREATE INDEX index_letter_recipients_on_letter_id ON letter_recipients USING btr
 --
 
 CREATE INDEX index_letter_recipients_on_printed_at ON letter_recipients USING btree (printed_at);
+
+
+--
+-- Name: index_letter_recipients_on_role; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_letter_recipients_on_role ON letter_recipients USING btree (role);
 
 
 --
@@ -12007,6 +12608,20 @@ CREATE INDEX index_medication_prescriptions_on_updated_by_id ON medication_presc
 
 
 --
+-- Name: index_medication_routes_on_code; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_medication_routes_on_code ON medication_routes USING btree (code);
+
+
+--
+-- Name: index_medication_routes_on_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_medication_routes_on_name ON medication_routes USING btree (name);
+
+
+--
 -- Name: index_messaging_messages_on_author_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -12063,6 +12678,13 @@ CREATE INDEX index_messaging_receipts_on_recipient_id ON messaging_receipts USIN
 
 
 --
+-- Name: index_modality_descriptions_on_code; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_modality_descriptions_on_code ON modality_descriptions USING btree (code);
+
+
+--
 -- Name: index_modality_descriptions_on_deleted_at; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -12081,6 +12703,13 @@ CREATE INDEX index_modality_descriptions_on_id_and_type ON modality_descriptions
 --
 
 CREATE INDEX index_modality_descriptions_on_name ON modality_descriptions USING btree (name);
+
+
+--
+-- Name: index_modality_descriptions_on_type; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_modality_descriptions_on_type ON modality_descriptions USING btree (type);
 
 
 --
@@ -12301,6 +12930,13 @@ CREATE INDEX index_pathology_requests_global_rules_on_id_and_type ON pathology_r
 
 
 --
+-- Name: index_pathology_requests_global_rules_on_rule_set_type; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_pathology_requests_global_rules_on_rule_set_type ON pathology_requests_global_rules USING btree (rule_set_type);
+
+
+--
 -- Name: index_pathology_requests_patient_rules_on_lab_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -12354,6 +12990,20 @@ CREATE INDEX index_pathology_requests_requests_on_patient_id ON pathology_reques
 --
 
 CREATE INDEX index_pathology_requests_requests_on_updated_by_id ON pathology_requests_requests USING btree (updated_by_id);
+
+
+--
+-- Name: index_pathology_requests_sample_types_on_code; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_pathology_requests_sample_types_on_code ON pathology_requests_sample_types USING btree (code);
+
+
+--
+-- Name: index_pathology_requests_sample_types_on_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_pathology_requests_sample_types_on_name ON pathology_requests_sample_types USING btree (name);
 
 
 --
@@ -12647,7 +13297,7 @@ CREATE INDEX index_patients_on_sent_to_ukrdc_at ON patients USING btree (sent_to
 -- Name: index_patients_on_ukrdc_external_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
-CREATE INDEX index_patients_on_ukrdc_external_id ON patients USING btree (ukrdc_external_id);
+CREATE UNIQUE INDEX index_patients_on_ukrdc_external_id ON patients USING btree (ukrdc_external_id);
 
 
 --
@@ -12970,6 +13620,13 @@ CREATE INDEX index_renal_aki_alerts_on_patient_id ON renal_aki_alerts USING btre
 --
 
 CREATE INDEX index_renal_aki_alerts_on_updated_by_id ON renal_aki_alerts USING btree (updated_by_id);
+
+
+--
+-- Name: index_renal_consultants_on_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_renal_consultants_on_name ON renal_consultants USING btree (name);
 
 
 --
@@ -13519,6 +14176,13 @@ CREATE INDEX index_transplant_registration_status_descriptions_on_code ON transp
 
 
 --
+-- Name: index_transplant_registration_status_descriptions_on_position; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_transplant_registration_status_descriptions_on_position ON transplant_registration_status_descriptions USING btree ("position");
+
+
+--
 -- Name: index_transplant_registration_statuses_on_created_by_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -13617,6 +14281,13 @@ CREATE INDEX index_transplant_rejection_treatments_on_position ON transplant_rej
 
 
 --
+-- Name: index_transplant_versions_on_item_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_transplant_versions_on_item_id ON transplant_versions USING btree (item_id);
+
+
+--
 -- Name: index_ukrdc_modality_codes_on_qbl_code; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -13649,6 +14320,13 @@ CREATE INDEX index_ukrdc_transmission_logs_on_request_uuid ON ukrdc_transmission
 --
 
 CREATE INDEX index_ukrdc_treatments_on_clinician_id ON ukrdc_treatments USING btree (clinician_id);
+
+
+--
+-- Name: index_ukrdc_treatments_on_hd_profile_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_ukrdc_treatments_on_hd_profile_id ON ukrdc_treatments USING btree (hd_profile_id);
 
 
 --
@@ -13691,6 +14369,13 @@ CREATE INDEX index_ukrdc_treatments_on_modality_id ON ukrdc_treatments USING btr
 --
 
 CREATE INDEX index_ukrdc_treatments_on_patient_id ON ukrdc_treatments USING btree (patient_id);
+
+
+--
+-- Name: index_ukrdc_treatments_on_pd_regime_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_ukrdc_treatments_on_pd_regime_id ON ukrdc_treatments USING btree (pd_regime_id);
 
 
 --
@@ -14146,6 +14831,14 @@ ALTER TABLE ONLY hd_schedule_definitions
 
 
 --
+-- Name: hd_prescription_administrations fk_rails_09b9e3828d; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_prescription_administrations
+    ADD CONSTRAINT fk_rails_09b9e3828d FOREIGN KEY (administered_by_id) REFERENCES users(id);
+
+
+--
 -- Name: hd_profiles fk_rails_0aab25a07c; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -14319,6 +15012,14 @@ ALTER TABLE ONLY medication_prescriptions
 
 ALTER TABLE ONLY admission_consults
     ADD CONSTRAINT fk_rails_2805127005 FOREIGN KEY (patient_id) REFERENCES patients(id);
+
+
+--
+-- Name: hd_session_form_batch_items fk_rails_282567e56b; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_session_form_batch_items
+    ADD CONSTRAINT fk_rails_282567e56b FOREIGN KEY (batch_id) REFERENCES hd_session_form_batches(id);
 
 
 --
@@ -14578,6 +15279,14 @@ ALTER TABLE ONLY patient_bookmarks
 
 
 --
+-- Name: ukrdc_treatments fk_rails_4011924f9c; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY ukrdc_treatments
+    ADD CONSTRAINT fk_rails_4011924f9c FOREIGN KEY (hd_profile_id) REFERENCES hd_profiles(id);
+
+
+--
 -- Name: pd_assessments fk_rails_408dde93e5; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -14642,6 +15351,14 @@ ALTER TABLE ONLY messaging_receipts
 
 
 --
+-- Name: hd_prescription_administrations fk_rails_51e9a49d43; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_prescription_administrations
+    ADD CONSTRAINT fk_rails_51e9a49d43 FOREIGN KEY (witnessed_by_id) REFERENCES users(id);
+
+
+--
 -- Name: patients fk_rails_53c392b502; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -14695,6 +15412,14 @@ ALTER TABLE ONLY renal_profiles
 
 ALTER TABLE ONLY transplant_recipient_workups
     ADD CONSTRAINT fk_rails_571a3cadda FOREIGN KEY (patient_id) REFERENCES patients(id);
+
+
+--
+-- Name: clinic_appointments fk_rails_57295b1aa7; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY clinic_appointments
+    ADD CONSTRAINT fk_rails_57295b1aa7 FOREIGN KEY (updated_by_id) REFERENCES users(id);
 
 
 --
@@ -14774,7 +15499,7 @@ ALTER TABLE ONLY letter_signatures
 --
 
 ALTER TABLE ONLY pathology_requests_requests
-    ADD CONSTRAINT fk_rails_617c726b94 FOREIGN KEY (consultant_id) REFERENCES users(id);
+    ADD CONSTRAINT fk_rails_617c726b94 FOREIGN KEY (consultant_id) REFERENCES renal_consultants(id);
 
 
 --
@@ -14783,6 +15508,22 @@ ALTER TABLE ONLY pathology_requests_requests
 
 ALTER TABLE ONLY letter_letters
     ADD CONSTRAINT fk_rails_6191e75b3b FOREIGN KEY (author_id) REFERENCES users(id);
+
+
+--
+-- Name: ukrdc_treatments fk_rails_63f35ffdfe; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY ukrdc_treatments
+    ADD CONSTRAINT fk_rails_63f35ffdfe FOREIGN KEY (pd_regime_id) REFERENCES pd_regimes(id);
+
+
+--
+-- Name: letter_batch_items fk_rails_65e38cb9dc; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY letter_batch_items
+    ADD CONSTRAINT fk_rails_65e38cb9dc FOREIGN KEY (batch_id) REFERENCES letter_batches(id);
 
 
 --
@@ -14967,6 +15708,14 @@ ALTER TABLE ONLY patient_worries
 
 ALTER TABLE ONLY hd_prescription_administrations
     ADD CONSTRAINT fk_rails_885e37560e FOREIGN KEY (prescription_id) REFERENCES medication_prescriptions(id);
+
+
+--
+-- Name: letter_batches fk_rails_88dce46ac4; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY letter_batches
+    ADD CONSTRAINT fk_rails_88dce46ac4 FOREIGN KEY (created_by_id) REFERENCES users(id);
 
 
 --
@@ -15202,6 +15951,14 @@ ALTER TABLE ONLY patient_alerts
 
 
 --
+-- Name: letter_batch_items fk_rails_a02ff59ff6; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY letter_batch_items
+    ADD CONSTRAINT fk_rails_a02ff59ff6 FOREIGN KEY (letter_id) REFERENCES letter_letters(id);
+
+
+--
 -- Name: pathology_request_descriptions fk_rails_a0b9cd97fe; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -15303,6 +16060,14 @@ ALTER TABLE ONLY pathology_requests_drugs_drug_categories
 
 ALTER TABLE ONLY pathology_requests_requests
     ADD CONSTRAINT fk_rails_a8d58d31e6 FOREIGN KEY (clinic_id) REFERENCES clinic_clinics(id);
+
+
+--
+-- Name: hd_prescription_administrations fk_rails_a9d677a6f8; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_prescription_administrations
+    ADD CONSTRAINT fk_rails_a9d677a6f8 FOREIGN KEY (reason_id) REFERENCES hd_prescription_administration_reasons(id);
 
 
 --
@@ -15754,14 +16519,6 @@ ALTER TABLE ONLY pd_infection_organisms
 
 
 --
--- Name: clinic_appointments fk_rails_e03d4a27ce; Type: FK CONSTRAINT; Schema: renalware; Owner: -
---
-
-ALTER TABLE ONLY clinic_appointments
-    ADD CONSTRAINT fk_rails_e03d4a27ce FOREIGN KEY (user_id) REFERENCES users(id);
-
-
---
 -- Name: admission_requests fk_rails_e0d84c3803; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -15807,6 +16564,14 @@ ALTER TABLE ONLY hd_diary_slots
 
 ALTER TABLE ONLY hd_sessions
     ADD CONSTRAINT fk_rails_e32b0e0494 FOREIGN KEY (signed_off_by_id) REFERENCES users(id);
+
+
+--
+-- Name: hd_session_form_batches fk_rails_e3cb548b22; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_session_form_batches
+    ADD CONSTRAINT fk_rails_e3cb548b22 FOREIGN KEY (created_by_id) REFERENCES users(id);
 
 
 --
@@ -15906,6 +16671,14 @@ ALTER TABLE ONLY pd_peritonitis_episodes
 
 
 --
+-- Name: clinic_appointments fk_rails_f37cb95f48; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY clinic_appointments
+    ADD CONSTRAINT fk_rails_f37cb95f48 FOREIGN KEY (consultant_id) REFERENCES renal_consultants(id);
+
+
+--
 -- Name: hd_stations fk_rails_f4cc4cd5c4; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -15927,6 +16700,22 @@ ALTER TABLE ONLY hd_prescription_administrations
 
 ALTER TABLE ONLY admission_consults
     ADD CONSTRAINT fk_rails_f5abb5bad4 FOREIGN KEY (created_by_id) REFERENCES users(id);
+
+
+--
+-- Name: hd_session_form_batches fk_rails_f68439991d; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY hd_session_form_batches
+    ADD CONSTRAINT fk_rails_f68439991d FOREIGN KEY (updated_by_id) REFERENCES users(id);
+
+
+--
+-- Name: clinic_appointments fk_rails_f6f9057d90; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY clinic_appointments
+    ADD CONSTRAINT fk_rails_f6f9057d90 FOREIGN KEY (created_by_id) REFERENCES users(id);
 
 
 --
@@ -15975,6 +16764,14 @@ ALTER TABLE ONLY clinical_allergies
 
 ALTER TABLE ONLY pd_training_sessions
     ADD CONSTRAINT fk_rails_fa412bd095 FOREIGN KEY (patient_id) REFERENCES patients(id);
+
+
+--
+-- Name: letter_batches fk_rails_fa73ef427b; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY letter_batches
+    ADD CONSTRAINT fk_rails_fa73ef427b FOREIGN KEY (updated_by_id) REFERENCES users(id);
 
 
 --
@@ -16720,6 +17517,38 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190607134717'),
 ('20190611152859'),
 ('20190612124015'),
-('20190617121528');
+('20190617121528'),
+('20190624130020'),
+('20190627141751'),
+('20190705083727'),
+('20190705105921'),
+('20190709101610'),
+('20190716125837'),
+('20190718091430'),
+('20190718095851'),
+('20190722145936'),
+('20190723150737'),
+('20190822175644'),
+('20190822180201'),
+('20190823044107'),
+('20190823051014'),
+('20190823105642'),
+('20190830082736'),
+('20190830153416'),
+('20190902085216'),
+('20190909084425'),
+('20190915071451'),
+('20190915083424'),
+('20190916160231'),
+('20190917124204'),
+('20190919073410'),
+('20190920063447'),
+('20190925104902'),
+('20190925130052'),
+('20190925161724'),
+('20190925173849'),
+('20190927124840'),
+('20190927130911'),
+('20190928131032');
 
 
