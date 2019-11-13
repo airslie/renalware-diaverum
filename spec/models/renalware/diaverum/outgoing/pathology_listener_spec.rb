@@ -5,11 +5,13 @@ require "rails_helper"
 module Renalware
   module Diaverum
     RSpec.describe Outgoing::PathologyListener do
+      subject(:listener) { described_class }
+
       it "does nothing if feed_message local_patient_id is blank" do
         feed_message = double(:feed_message, body: "123", patient_identifier: nil)
         allow(Outgoing::ForwardHl7Job).to receive(:perform_later)
 
-        subject.message_processed(feed_message: feed_message)
+        listener.oru_message_processed(feed_message: feed_message)
 
         expect(Outgoing::ForwardHl7Job).not_to have_received(:perform_later)
       end
@@ -18,7 +20,7 @@ module Renalware
         feed_message = double(:feed_message, body: "123", patient_identifier: "XYZ")
         allow(Outgoing::ForwardHl7Job).to receive(:perform_later)
 
-        subject.message_processed(feed_message: feed_message)
+        listener.oru_message_processed(feed_message: feed_message)
 
         expect(Outgoing::ForwardHl7Job).not_to have_received(:perform_later)
       end
@@ -30,7 +32,7 @@ module Renalware
 
         allow(Outgoing::ForwardHl7Job).to receive(:perform_later)
 
-        subject.message_processed(feed_message: feed_message)
+        listener.oru_message_processed(feed_message: feed_message)
 
         expect(Outgoing::ForwardHl7Job).to have_received(:perform_later) do |args|
           expect(args[:transmission].class).to eq(Renalware::HD::TransmissionLog)

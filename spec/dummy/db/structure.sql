@@ -159,6 +159,52 @@ $$;
 
 
 --
+-- Name: hd_diary_archive_elapsed_master_slots(); Type: FUNCTION; Schema: renalware; Owner: -
+--
+
+CREATE FUNCTION hd_diary_archive_elapsed_master_slots() RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+  BEGIN
+
+INSERT into hd_diary_slots
+(
+    diary_id,
+    station_id,
+    day_of_week,
+    diurnal_period_code_id,
+    patient_id,
+    created_by_id,
+    updated_by_id,
+    created_at,
+    updated_at,
+    deleted_at
+)
+(
+    select
+        weekly_diary_id,
+        station_id,
+        day_of_week,
+        diurnal_period_code_id,
+        patient_id,
+        master_slot_created_by_id,
+        master_slot_updated_by_id,
+        master_slot_created_at,
+        master_slot_updated_at,
+        deleted_at
+    from renalware.hd_diary_matrix -- a SQL view
+    where
+        weekly_slot_id is null
+        and master_slot_id is not null
+        and master_slot_created_at <= slot_date
+        and slot_date >= now() - interval '3 months'
+);
+
+END;
+$$;
+
+
+--
 -- Name: import_gps_csv(text); Type: FUNCTION; Schema: renalware; Owner: -
 --
 
@@ -2023,6 +2069,39 @@ ALTER SEQUENCE feed_files_id_seq OWNED BY feed_files.id;
 
 
 --
+-- Name: feed_hl7_test_messages; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE feed_hl7_test_messages (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    description character varying,
+    body text NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: feed_hl7_test_messages_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE feed_hl7_test_messages_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: feed_hl7_test_messages_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE feed_hl7_test_messages_id_seq OWNED BY feed_hl7_test_messages.id;
+
+
+--
 -- Name: feed_messages; Type: TABLE; Schema: renalware; Owner: -
 --
 
@@ -2034,7 +2113,8 @@ CREATE TABLE feed_messages (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     body_hash text,
-    patient_identifier character varying
+    patient_identifier character varying,
+    processed boolean DEFAULT false
 );
 
 
@@ -2234,6 +2314,97 @@ CREATE TABLE hd_diary_slots (
 
 
 --
+-- Name: hd_diurnal_period_codes; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE hd_diurnal_period_codes (
+    id bigint NOT NULL,
+    code character varying NOT NULL,
+    description text,
+    sort_order integer DEFAULT 0 NOT NULL
+);
+
+
+--
+-- Name: hd_stations; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE hd_stations (
+    id bigint NOT NULL,
+    hospital_unit_id bigint NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    name character varying,
+    updated_by_id integer NOT NULL,
+    created_by_id integer NOT NULL,
+    deleted_at timestamp without time zone,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    location_id integer
+);
+
+
+--
+-- Name: hospital_units; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE hospital_units (
+    id integer NOT NULL,
+    hospital_centre_id integer NOT NULL,
+    name character varying NOT NULL,
+    unit_code character varying NOT NULL,
+    renal_registry_code character varying NOT NULL,
+    unit_type character varying NOT NULL,
+    is_hd_site boolean DEFAULT false,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: hd_diary_matrix; Type: VIEW; Schema: renalware; Owner: -
+--
+
+CREATE VIEW hd_diary_matrix AS
+ WITH hd_empty_diary_matrix AS (
+         SELECT date_part('year'::text, the_date.the_date) AS year,
+            date_part('week'::text, the_date.the_date) AS week_number,
+            h.id AS hospital_unit_id,
+            s.id AS station_id,
+            a.day_of_week,
+            period.id AS diurnal_period_code_id
+           FROM ((((generate_series((now() - '1 year'::interval), (now() - '7 days'::interval), '7 days'::interval) the_date(the_date)
+             CROSS JOIN hospital_units h)
+             CROSS JOIN hd_stations s)
+             CROSS JOIN ( SELECT generate_series(1, 7) AS day_of_week) a)
+             CROSS JOIN hd_diurnal_period_codes period)
+          WHERE (h.is_hd_site = true)
+          ORDER BY (date_part('year'::text, the_date.the_date)), (date_part('week'::text, the_date.the_date)), h.id, s.id, a.day_of_week, period.id
+        )
+ SELECT m.year,
+    m.week_number,
+    m.hospital_unit_id,
+    m.station_id,
+    m.day_of_week,
+    m.diurnal_period_code_id,
+    wd.id AS weekly_diary_id,
+    md.id AS master_diary_id,
+    ws.id AS weekly_slot_id,
+    ms.id AS master_slot_id,
+    COALESCE(ws.patient_id, ms.patient_id) AS patient_id,
+    ms.deleted_at,
+    ms.created_by_id AS master_slot_created_by_id,
+    ms.updated_by_id AS master_slot_updated_by_id,
+    (ms.created_at)::date AS master_slot_created_at,
+    (ms.updated_at)::date AS master_slot_updated_at,
+    to_date((((((wd.year)::text || '-'::text) || (wd.week_number)::text) || '-'::text) || (ms.day_of_week)::text), 'iyyy-iw-ID'::text) AS slot_date
+   FROM ((((hd_empty_diary_matrix m
+     LEFT JOIN hd_diaries wd ON (((wd.hospital_unit_id = m.hospital_unit_id) AND ((wd.year)::double precision = m.year) AND ((wd.week_number)::double precision = m.week_number) AND (wd.master = false))))
+     LEFT JOIN hd_diaries md ON (((md.hospital_unit_id = m.hospital_unit_id) AND (md.master = true))))
+     LEFT JOIN hd_diary_slots ws ON (((ws.diary_id = wd.id) AND (ws.station_id = m.station_id) AND (ws.day_of_week = m.day_of_week) AND (ws.diurnal_period_code_id = m.diurnal_period_code_id))))
+     LEFT JOIN hd_diary_slots ms ON (((ms.diary_id = md.id) AND (ms.station_id = m.station_id) AND (ms.day_of_week = m.day_of_week) AND (ms.diurnal_period_code_id = m.diurnal_period_code_id))));
+
+
+--
 -- Name: hd_diary_slots_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
 --
 
@@ -2250,18 +2421,6 @@ CREATE SEQUENCE hd_diary_slots_id_seq
 --
 
 ALTER SEQUENCE hd_diary_slots_id_seq OWNED BY hd_diary_slots.id;
-
-
---
--- Name: hd_diurnal_period_codes; Type: TABLE; Schema: renalware; Owner: -
---
-
-CREATE TABLE hd_diurnal_period_codes (
-    id bigint NOT NULL,
-    code character varying NOT NULL,
-    description text,
-    sort_order integer DEFAULT 0 NOT NULL
-);
 
 
 --
@@ -2502,7 +2661,8 @@ CREATE TABLE hd_prescription_administrations (
     witnessed_by_id bigint,
     administrator_authorised boolean DEFAULT false NOT NULL,
     witness_authorised boolean DEFAULT false NOT NULL,
-    reason_id bigint
+    reason_id bigint,
+    deleted_at timestamp without time zone
 );
 
 
@@ -2864,7 +3024,8 @@ CREATE TABLE hd_sessions (
     dry_weight_id integer,
     dialysate_id bigint,
     uuid uuid DEFAULT public.uuid_generate_v4() NOT NULL,
-    external_id bigint
+    external_id bigint,
+    deleted_at timestamp without time zone
 );
 
 
@@ -2916,24 +3077,6 @@ CREATE SEQUENCE hd_station_locations_id_seq
 --
 
 ALTER SEQUENCE hd_station_locations_id_seq OWNED BY hd_station_locations.id;
-
-
---
--- Name: hd_stations; Type: TABLE; Schema: renalware; Owner: -
---
-
-CREATE TABLE hd_stations (
-    id bigint NOT NULL,
-    hospital_unit_id bigint NOT NULL,
-    "position" integer DEFAULT 0 NOT NULL,
-    name character varying,
-    updated_by_id integer NOT NULL,
-    created_by_id integer NOT NULL,
-    deleted_at timestamp without time zone,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    location_id integer
-);
 
 
 --
@@ -3047,23 +3190,6 @@ CREATE SEQUENCE hospital_centres_id_seq
 --
 
 ALTER SEQUENCE hospital_centres_id_seq OWNED BY hospital_centres.id;
-
-
---
--- Name: hospital_units; Type: TABLE; Schema: renalware; Owner: -
---
-
-CREATE TABLE hospital_units (
-    id integer NOT NULL,
-    hospital_centre_id integer NOT NULL,
-    name character varying NOT NULL,
-    unit_code character varying NOT NULL,
-    renal_registry_code character varying NOT NULL,
-    unit_type character varying NOT NULL,
-    is_hd_site boolean DEFAULT false,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
 
 
 --
@@ -4698,7 +4824,8 @@ CREATE TABLE patients (
     legacy_patient_id integer,
     secure_id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
     sent_to_ukrdc_at timestamp without time zone,
-    checked_for_ukrdc_changes_at timestamp without time zone
+    checked_for_ukrdc_changes_at timestamp without time zone,
+    named_consultant_id bigint
 );
 
 
@@ -5828,7 +5955,8 @@ CREATE TABLE problem_notes (
     created_by_id integer NOT NULL,
     updated_by_id integer NOT NULL,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    deleted_at timestamp without time zone
 );
 
 
@@ -6339,7 +6467,7 @@ CREATE MATERIALIZED VIEW reporting_hd_blood_pressures_audit AS
             (((hd_sessions.document -> 'observations_after'::text) -> 'blood_pressure'::text) ->> 'diastolic'::text) AS diastolic_post
            FROM (hd_sessions
              JOIN patients ON ((patients.id = hd_sessions.patient_id)))
-          WHERE (hd_sessions.signed_off_at IS NOT NULL)
+          WHERE ((hd_sessions.signed_off_at IS NOT NULL) AND (hd_sessions.deleted_at IS NULL))
         ), some_other_derived_table_variable AS (
          SELECT 1
            FROM blood_pressures blood_pressures_1
@@ -6440,7 +6568,8 @@ CREATE TABLE users (
     updated_at timestamp without time zone,
     telephone character varying,
     authentication_token character varying,
-    asked_for_write_access boolean DEFAULT false NOT NULL
+    asked_for_write_access boolean DEFAULT false NOT NULL,
+    consultant boolean DEFAULT false NOT NULL
 );
 
 
@@ -6790,6 +6919,281 @@ CREATE SEQUENCE snippets_snippets_id_seq
 --
 
 ALTER SEQUENCE snippets_snippets_id_seq OWNED BY snippets_snippets.id;
+
+
+--
+-- Name: survey_questions; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE survey_questions (
+    id bigint NOT NULL,
+    survey_id bigint NOT NULL,
+    code character varying NOT NULL,
+    label character varying,
+    "position" integer DEFAULT 0 NOT NULL,
+    deleted_at timestamp without time zone,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    validation_regex text
+);
+
+
+--
+-- Name: survey_responses; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE survey_responses (
+    id bigint NOT NULL,
+    answered_on date NOT NULL,
+    patient_id bigint NOT NULL,
+    question_id bigint NOT NULL,
+    value character varying,
+    reference character varying,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: survey_surveys; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE survey_surveys (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    code character varying NOT NULL,
+    description character varying,
+    deleted_at timestamp without time zone,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: survey_eq5d_pivoted_responses; Type: VIEW; Schema: renalware; Owner: -
+--
+
+CREATE VIEW survey_eq5d_pivoted_responses AS
+ SELECT r.answered_on,
+    r.patient_id,
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YOHQ1'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YOHQ1",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YOHQ2'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YOHQ2",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YOHQ3'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YOHQ3",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YOHQ4'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YOHQ4",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YOHQ5'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YOHQ5",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YOHQ6'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YOHQ6"
+   FROM ((survey_responses r
+     JOIN survey_questions q ON ((q.id = r.question_id)))
+     JOIN survey_surveys s ON ((s.id = q.survey_id)))
+  WHERE ((s.code)::text = 'eq5d'::text)
+  GROUP BY r.answered_on, r.patient_id
+  ORDER BY r.answered_on DESC;
+
+
+--
+-- Name: survey_pos_s_pivoted_responses; Type: VIEW; Schema: renalware; Owner: -
+--
+
+CREATE VIEW survey_pos_s_pivoted_responses AS
+ SELECT r.answered_on,
+    r.patient_id,
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ1'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ1",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ2'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ2",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ3'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ3",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ4'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ4",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ5'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ5",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ6'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ6",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ7'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ7",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ8'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ8",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ9'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ9",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ10'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ10",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ11'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ11",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ12'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ12",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ13'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ13",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ14'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ14",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ15'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ15",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ16'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ16",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ17'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ17",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ18'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ18",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ19'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ19",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ20'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ20",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ21'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ21",
+    max((
+        CASE
+            WHEN ((q.code)::text = 'YSQ22'::text) THEN r.value
+            ELSE NULL::character varying
+        END)::text) AS "YSQ22"
+   FROM ((survey_responses r
+     JOIN survey_questions q ON ((q.id = r.question_id)))
+     JOIN survey_surveys s ON ((s.id = q.survey_id)))
+  WHERE ((s.code)::text = 'prom'::text)
+  GROUP BY r.answered_on, r.patient_id
+  ORDER BY r.answered_on DESC;
+
+
+--
+-- Name: survey_questions_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE survey_questions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: survey_questions_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE survey_questions_id_seq OWNED BY survey_questions.id;
+
+
+--
+-- Name: survey_responses_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE survey_responses_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: survey_responses_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE survey_responses_id_seq OWNED BY survey_responses.id;
+
+
+--
+-- Name: survey_surveys_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE survey_surveys_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: survey_surveys_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE survey_surveys_id_seq OWNED BY survey_surveys.id;
 
 
 --
@@ -7787,7 +8191,7 @@ ALTER SEQUENCE ukrdc_modality_codes_id_seq OWNED BY ukrdc_modality_codes.id;
 
 CREATE TABLE ukrdc_transmission_logs (
     id bigint NOT NULL,
-    patient_id bigint NOT NULL,
+    patient_id bigint,
     sent_at timestamp without time zone NOT NULL,
     status integer NOT NULL,
     request_uuid uuid NOT NULL,
@@ -7796,7 +8200,8 @@ CREATE TABLE ukrdc_transmission_logs (
     error text[] DEFAULT '{}'::text[],
     file_path character varying,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    direction integer DEFAULT 0 NOT NULL
 );
 
 
@@ -8052,6 +8457,50 @@ CREATE SEQUENCE hd_type_maps_id_seq
 ALTER SEQUENCE hd_type_maps_id_seq OWNED BY hd_type_maps.id;
 
 
+--
+-- Name: patient_master_index; Type: TABLE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE TABLE patient_master_index (
+    id bigint NOT NULL,
+    patient_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    nhs_number character varying,
+    hospital_number character varying,
+    title character varying,
+    family_name character varying,
+    middle_name character varying,
+    given_name character varying,
+    suffix character varying,
+    sex character varying,
+    born_on date,
+    died_at timestamp without time zone,
+    ethnicity character varying,
+    practice_code character varying,
+    gp_code character varying
+);
+
+
+--
+-- Name: patient_master_index_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE SEQUENCE patient_master_index_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: patient_master_index_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER SEQUENCE patient_master_index_id_seq OWNED BY patient_master_index.id;
+
+
 SET search_path = renalware, pg_catalog;
 
 --
@@ -8297,6 +8746,13 @@ ALTER TABLE ONLY feed_file_types ALTER COLUMN id SET DEFAULT nextval('feed_file_
 --
 
 ALTER TABLE ONLY feed_files ALTER COLUMN id SET DEFAULT nextval('feed_files_id_seq'::regclass);
+
+
+--
+-- Name: feed_hl7_test_messages id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY feed_hl7_test_messages ALTER COLUMN id SET DEFAULT nextval('feed_hl7_test_messages_id_seq'::regclass);
 
 
 --
@@ -9056,6 +9512,27 @@ ALTER TABLE ONLY snippets_snippets ALTER COLUMN id SET DEFAULT nextval('snippets
 
 
 --
+-- Name: survey_questions id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY survey_questions ALTER COLUMN id SET DEFAULT nextval('survey_questions_id_seq'::regclass);
+
+
+--
+-- Name: survey_responses id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY survey_responses ALTER COLUMN id SET DEFAULT nextval('survey_responses_id_seq'::regclass);
+
+
+--
+-- Name: survey_surveys id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY survey_surveys ALTER COLUMN id SET DEFAULT nextval('survey_surveys_id_seq'::regclass);
+
+
+--
 -- Name: system_api_logs id; Type: DEFAULT; Schema: renalware; Owner: -
 --
 
@@ -9307,6 +9784,13 @@ ALTER TABLE ONLY access_maps ALTER COLUMN id SET DEFAULT nextval('access_maps_id
 --
 
 ALTER TABLE ONLY hd_type_maps ALTER COLUMN id SET DEFAULT nextval('hd_type_maps_id_seq'::regclass);
+
+
+--
+-- Name: patient_master_index id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY patient_master_index ALTER COLUMN id SET DEFAULT nextval('patient_master_index_id_seq'::regclass);
 
 
 SET search_path = public, pg_catalog;
@@ -9615,6 +10099,14 @@ ALTER TABLE ONLY feed_file_types
 
 ALTER TABLE ONLY feed_files
     ADD CONSTRAINT feed_files_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: feed_hl7_test_messages feed_hl7_test_messages_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY feed_hl7_test_messages
+    ADD CONSTRAINT feed_hl7_test_messages_pkey PRIMARY KEY (id);
 
 
 --
@@ -10482,6 +10974,30 @@ ALTER TABLE ONLY snippets_snippets
 
 
 --
+-- Name: survey_questions survey_questions_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY survey_questions
+    ADD CONSTRAINT survey_questions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: survey_responses survey_responses_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY survey_responses
+    ADD CONSTRAINT survey_responses_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: survey_surveys survey_surveys_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY survey_surveys
+    ADD CONSTRAINT survey_surveys_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: system_api_logs system_api_logs_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -10769,6 +11285,14 @@ ALTER TABLE ONLY access_maps
 
 ALTER TABLE ONLY hd_type_maps
     ADD CONSTRAINT hd_type_maps_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: patient_master_index patient_master_index_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY patient_master_index
+    ADD CONSTRAINT patient_master_index_pkey PRIMARY KEY (id);
 
 
 SET search_path = renalware, pg_catalog;
@@ -11565,6 +12089,13 @@ CREATE INDEX index_feed_files_on_updated_by_id ON feed_files USING btree (update
 
 
 --
+-- Name: index_feed_hl7_test_messages_on_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_feed_hl7_test_messages_on_name ON feed_hl7_test_messages USING btree (name);
+
+
+--
 -- Name: index_feed_messages_on_body_hash; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -11831,6 +12362,13 @@ CREATE INDEX index_hd_prescription_administrations_on_created_by_id ON hd_prescr
 
 
 --
+-- Name: index_hd_prescription_administrations_on_deleted_at; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_hd_prescription_administrations_on_deleted_at ON hd_prescription_administrations USING btree (deleted_at);
+
+
+--
 -- Name: index_hd_prescription_administrations_on_hd_session_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -12010,6 +12548,13 @@ CREATE INDEX index_hd_session_form_batches_on_updated_by_id ON hd_session_form_b
 --
 
 CREATE INDEX index_hd_sessions_on_created_by_id ON hd_sessions USING btree (created_by_id);
+
+
+--
+-- Name: index_hd_sessions_on_deleted_at; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_hd_sessions_on_deleted_at ON hd_sessions USING btree (deleted_at);
 
 
 --
@@ -13238,6 +13783,13 @@ CREATE INDEX index_patients_on_local_patient_id_5 ON patients USING btree (local
 
 
 --
+-- Name: index_patients_on_named_consultant_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_patients_on_named_consultant_id ON patients USING btree (named_consultant_id);
+
+
+--
 -- Name: index_patients_on_practice_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -13508,6 +14060,13 @@ CREATE INDEX index_pd_training_sessions_on_updated_by_id ON pd_training_sessions
 --
 
 CREATE INDEX index_problem_notes_on_created_by_id ON problem_notes USING btree (created_by_id);
+
+
+--
+-- Name: index_problem_notes_on_deleted_at; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_problem_notes_on_deleted_at ON problem_notes USING btree (deleted_at);
 
 
 --
@@ -13858,6 +14417,76 @@ CREATE INDEX index_snippets_snippets_on_author_id ON snippets_snippets USING btr
 --
 
 CREATE INDEX index_snippets_snippets_on_title ON snippets_snippets USING btree (title);
+
+
+--
+-- Name: index_survey_questions_on_code_and_survey_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_survey_questions_on_code_and_survey_id ON survey_questions USING btree (code, survey_id) WHERE (deleted_at IS NULL);
+
+
+--
+-- Name: index_survey_questions_on_deleted_at; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_survey_questions_on_deleted_at ON survey_questions USING btree (deleted_at);
+
+
+--
+-- Name: index_survey_questions_on_position; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_survey_questions_on_position ON survey_questions USING btree ("position");
+
+
+--
+-- Name: index_survey_questions_on_survey_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_survey_questions_on_survey_id ON survey_questions USING btree (survey_id);
+
+
+--
+-- Name: index_survey_responses_on_answered_on; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_survey_responses_on_answered_on ON survey_responses USING btree (answered_on);
+
+
+--
+-- Name: index_survey_responses_on_patient_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_survey_responses_on_patient_id ON survey_responses USING btree (patient_id);
+
+
+--
+-- Name: index_survey_responses_on_question_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_survey_responses_on_question_id ON survey_responses USING btree (question_id);
+
+
+--
+-- Name: index_survey_surveys_on_code; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_survey_surveys_on_code ON survey_surveys USING btree (code) WHERE (deleted_at IS NULL);
+
+
+--
+-- Name: index_survey_surveys_on_deleted_at; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_survey_surveys_on_deleted_at ON survey_surveys USING btree (deleted_at);
+
+
+--
+-- Name: index_survey_surveys_on_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_survey_surveys_on_name ON survey_surveys USING btree (name) WHERE (deleted_at IS NULL);
 
 
 --
@@ -14589,6 +15218,13 @@ CREATE INDEX prprr_patient_rule_id_idx ON pathology_requests_patient_rules_reque
 
 
 --
+-- Name: survey_responses_compound_index; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX survey_responses_compound_index ON survey_responses USING btree (answered_on, patient_id, question_id);
+
+
+--
 -- Name: tx_donor_stage_position_idx; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -14624,6 +15260,34 @@ CREATE UNIQUE INDEX unique_study_participants ON research_study_participants USI
 
 
 SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: index_patient_master_index_on_family_name_and_given_name; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE INDEX index_patient_master_index_on_family_name_and_given_name ON patient_master_index USING btree (family_name, given_name);
+
+
+--
+-- Name: index_patient_master_index_on_hospital_number; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE INDEX index_patient_master_index_on_hospital_number ON patient_master_index USING btree (hospital_number);
+
+
+--
+-- Name: index_patient_master_index_on_nhs_number; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE INDEX index_patient_master_index_on_nhs_number ON patient_master_index USING btree (nhs_number);
+
+
+--
+-- Name: index_patient_master_index_on_patient_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
+--
+
+CREATE INDEX index_patient_master_index_on_patient_id ON patient_master_index USING btree (patient_id);
+
 
 --
 -- Name: index_renalware_diaverum.hd_type_maps_on_diaverum_type_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
@@ -14991,6 +15655,14 @@ ALTER TABLE ONLY medication_prescriptions
 
 
 --
+-- Name: survey_responses fk_rails_26b13a300f; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY survey_responses
+    ADD CONSTRAINT fk_rails_26b13a300f FOREIGN KEY (question_id) REFERENCES survey_questions(id);
+
+
+--
 -- Name: patient_worries fk_rails_27dc6e2dc8; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -15164,6 +15836,14 @@ ALTER TABLE ONLY hd_diary_slots
 
 ALTER TABLE ONLY transplant_registration_statuses
     ADD CONSTRAINT fk_rails_36cb307ab5 FOREIGN KEY (description_id) REFERENCES transplant_registration_status_descriptions(id);
+
+
+--
+-- Name: patients fk_rails_3848395513; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY patients
+    ADD CONSTRAINT fk_rails_3848395513 FOREIGN KEY (named_consultant_id) REFERENCES users(id);
 
 
 --
@@ -16359,6 +17039,14 @@ ALTER TABLE ONLY access_profiles
 
 
 --
+-- Name: survey_questions fk_rails_d0558bfd89; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY survey_questions
+    ADD CONSTRAINT fk_rails_d0558bfd89 FOREIGN KEY (survey_id) REFERENCES survey_surveys(id);
+
+
+--
 -- Name: transplant_donor_stages fk_rails_d05e755f4a; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -17070,6 +17758,16 @@ ALTER TABLE ONLY transplant_registration_statuses
     ADD CONSTRAINT transplant_registration_statuses_updated_by_id_fk FOREIGN KEY (updated_by_id) REFERENCES users(id);
 
 
+SET search_path = renalware_diaverum, pg_catalog;
+
+--
+-- Name: patient_master_index fk_rails_37b31022ff; Type: FK CONSTRAINT; Schema: renalware_diaverum; Owner: -
+--
+
+ALTER TABLE ONLY patient_master_index
+    ADD CONSTRAINT fk_rails_37b31022ff FOREIGN KEY (patient_id) REFERENCES renalware.patients(id);
+
+
 --
 -- PostgreSQL database dump complete
 --
@@ -17499,6 +18197,9 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190218142207'),
 ('20190225103005'),
 ('20190315125638'),
+('20190322120025'),
+('20190325134823'),
+('20190327100851'),
 ('20190401105149'),
 ('20190422095620'),
 ('20190424101709'),
@@ -17549,6 +18250,17 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190925173849'),
 ('20190927124840'),
 ('20190927130911'),
-('20190928131032');
+('20190928131032'),
+('20191008010839'),
+('20191008024636'),
+('20191008030154'),
+('20191008045159'),
+('20191012121433'),
+('20191018143635'),
+('20191018144917'),
+('20191026120029'),
+('20191029095202'),
+('20191105095304'),
+('20191108105923');
 
 
