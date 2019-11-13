@@ -12,6 +12,7 @@ gemspec
 gem "nhs_api_client", github: "airslie/nhs_api_client", require: false
 gem "renalware-core", github: "airslie/renalware-core"
 gem "trix", github: "airslie/trix"
+gem "webpacker"
 
 group :development, :test do
   gem "awesome_print"
@@ -36,4 +37,5 @@ end
 group :test do
   gem "capybara"
   gem "capybara-screenshot"
+  gem "capybara-select-2"
 end

@@ -6,6 +6,13 @@ This project adheres to Semantic Versioning.
 
 ## Unreleased
 
+## 1.0.7
+13-11-2019
+### Added
+### Changed
+### Fixed
+- Prefix message_processed event handler with oru_
+
 ## 1.0.5
 27-08-2019
 ### Added
@@ -13,14 +20,12 @@ This project adheres to Semantic Versioning.
 ### Changed
 ### Fixed
 
-
 ## 1.0.5
 06-06-2019
 ### Added
 ### Changed
 - Set respiratory_rate_measured to :no in HD::Session #48
 ### Fixed
-
 
 ## 1.0.4
 ### Added

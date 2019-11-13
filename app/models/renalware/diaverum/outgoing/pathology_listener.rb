@@ -12,11 +12,11 @@ module Renalware
         # This method intercepts the event raised when an HL7 message has been
         # successfully processed. If the HL7 messages concerns a patient having dialysis at
         # a Diaverum unit, we forward the HL7 message on to Diaverum using a background job
-        def self.message_processed(**args)
-          new.message_processed(**args)
+        def self.oru_message_processed(**args)
+          new.oru_message_processed(**args)
         end
 
-        def message_processed(feed_message:, **)
+        def oru_message_processed(feed_message:, **)
           local_patient_id = feed_message.patient_identifier
           return if local_patient_id.blank?
 
