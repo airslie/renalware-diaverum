@@ -6,6 +6,13 @@ This project adheres to Semantic Versioning.
 
 ## Unreleased
 
+## 1.0.8
+18-11-2019
+### Added
+- Add a rake task to recreate missing .hl7 path results files
+### Changed
+### Fixed
+
 ## 1.0.7
 13-11-2019
 ### Added
