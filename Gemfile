@@ -9,6 +9,7 @@ ruby "~> 2.6.3"
 
 gemspec
 
+gem "babel-transpiler"
 gem "nhs_api_client", github: "airslie/nhs_api_client", require: false
 gem "renalware-core", github: "airslie/renalware-core"
 gem "trix", github: "airslie/trix"
