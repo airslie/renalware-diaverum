@@ -5,6 +5,16 @@ this [changelog](http://keepachangelog.com/en/0.3.0/).
 This project adheres to Semantic Versioning.
 
 ## Unreleased
+### Added
+### Changed
+### Fixed
+
+## 1.0.8
+19-11-2019
+### Added
+### Changed
+- Remove webpacker depdendency
+### Fixed
 
 ## 1.0.8
 18-11-2019
