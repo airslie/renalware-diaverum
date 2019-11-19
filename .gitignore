@@ -43,3 +43,4 @@ key.gpg
 /spec/dummy/bla2.xml
 /spec/dummy/bla1.xml
 /bla.xml
+/node_modules
