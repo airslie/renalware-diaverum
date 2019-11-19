@@ -11,9 +11,8 @@ gemspec
 
 gem "babel-transpiler"
 gem "nhs_api_client", github: "airslie/nhs_api_client", require: false
-gem "renalware-core", github: "airslie/renalware-core"
+gem "renalware-core", github: "airslie/renalware-core", submodules: true
 gem "trix", github: "airslie/trix"
-gem "webpacker"
 
 group :development, :test do
   gem "awesome_print"

@@ -42,6 +42,7 @@ blocks:
           - sem-service start postgres 10.8
           - sem-version ruby 2.6.3
           - bundle install --deployment --path vendor/bundle
+          - bundle exec rails app:yarn:install
           - cp ./.semaphore/database.yml ./spec/dummy/config/database.yml
           - bundle exec rake db:create
           - bundle exec rake db:migrate
