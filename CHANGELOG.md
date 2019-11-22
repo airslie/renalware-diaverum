@@ -9,7 +9,14 @@ This project adheres to Semantic Versioning.
 ### Changed
 ### Fixed
 
-## 1.0.8
+## 1.0.10
+22-11-2019
+### Added
+### Changed
+- Add ability to recreate missing .hl7 path results files for one specific patient
+### Fixed
+
+## 1.0.9
 19-11-2019
 ### Added
 ### Changed
