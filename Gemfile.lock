@@ -514,7 +514,7 @@ GEM
       execjs (>= 0.3.0, < 3)
     unicode (0.4.4.4)
     unicode-display_width (1.6.0)
-    user_agent_parser (2.5.2)
+    user_agent_parser (2.6.0)
     validates_timeliness (4.1.1)
       timeliness (>= 0.3.10, < 1)
     virtus (1.0.5)
