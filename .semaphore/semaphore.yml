@@ -39,10 +39,17 @@ blocks:
           - chmod +x ./cc-test-reporter
           - ./cc-test-reporter before-build
 
-          - sem-service start postgres 10.8
+          - sem-service start postgres 12.1
           - sem-version ruby 2.6.3
           - bundle install --deployment --path vendor/bundle
           - bundle exec rails app:yarn:install
+
+          # postgres client update so pg_dump resolves to 12.x
+          - wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          - echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee  /etc/apt/sources.list.d/pgdg.list
+          - sudo apt update
+          - sudo apt-get install -qq -y postgresql-client-12
+
           - cp ./.semaphore/database.yml ./spec/dummy/config/database.yml
           - bundle exec rake db:create
           - bundle exec rake db:migrate
