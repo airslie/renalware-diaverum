@@ -87,7 +87,7 @@ module Renalware
                   :hd_closed_session,
                   patient: patient,
                   by: system_user,
-                  end_time: nil
+                  stopped_at: nil
                 )
                 builder = instance_double(SessionBuilders::Closed, call: closed_session)
                 allow(SessionBuilders::Factory).to receive(:builder_for).and_return(builder)
@@ -112,7 +112,7 @@ module Renalware
                 child_logs = parent_log.children
                 expect(child_logs.length).to eq(2)
                 expect(child_logs.map(&:error_messages).flatten.uniq)
-                  .to eq(["Session End Time can't be blank"])
+                  .to eq(["Stopped at can't be blank"])
               end
 
               context "when config.diaverum_incoming_skip_session_save is true" do
@@ -131,7 +131,7 @@ module Renalware
                   child_logs = parent_log.children
                   expect(child_logs.length).to eq(2)
                   expect(child_logs.map(&:error_messages).flatten.uniq)
-                    .to eq(["Session End Time can't be blank"])
+                    .to eq(["Stopped at can't be blank"])
                 end
               end
             end

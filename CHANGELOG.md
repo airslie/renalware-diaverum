@@ -9,6 +9,14 @@ This project adheres to Semantic Versioning.
 ### Changed
 ### Fixed
 
+## 1.0.11
+03-02-2022
+### Added
+### Changed
+- Ruby 3 compatibility
+- Use started_at and stopped_at rather than  performed_on + start_time + end_time
+### Fixed
+
 ## 1.0.10
 22-11-2019
 ### Added

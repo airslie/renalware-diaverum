@@ -4,12 +4,18 @@ default: &default
   schema_search_path: "renalware_diaverum,renalware,public"
   pool: <%= ENV["DB_POOL"] || ENV['RAILS_MAX_THREADS'] || 5 %>
 
+default_credentials: &default_credentials
+  username: renalware
+  password: renalware
+
 development:
   <<: *default
+  <<: *default_credentials
   database: renalware_diaverum_development
 
 test:
   <<: *default
+  <<: *default_credentials
   database: renalware_diaverum_test
 
 production:

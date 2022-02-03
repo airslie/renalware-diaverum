@@ -35,9 +35,8 @@ module Renalware
             session.assign_attributes(
               patient: patient,
               hospital_unit: hospital_unit,
-              performed_on: treatment_node.Date,
-              start_time: treatment_node.StartTime,
-              end_time: treatment_node.EndTime,
+              started_at: Time.zone.parse("#{treatment_node.Date} #{treatment_node.StartTime}"),
+              stopped_at: Time.zone.parse("#{treatment_node.Date} #{treatment_node.EndTime}"),
               notes: treatment_node.Notes,
               created_by: user,
               updated_by: user,

@@ -26,7 +26,7 @@ module Renalware
             session.assign_attributes(
               patient: patient,
               hospital_unit: hospital_unit,
-              performed_on: treatment_node.Date,
+              started_at: treatment_node.Date,
               notes: treatment_node.Notes,
               created_by: user,
               updated_by: user,

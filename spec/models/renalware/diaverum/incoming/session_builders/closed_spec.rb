@@ -65,7 +65,8 @@ module Renalware
             expect(session).to have_attributes(
               patient: patient,
               hospital_unit: hospital_unit,
-              performed_on: treatment_node.Date,
+              started_at: Time.zone.parse("#{treatment_node.Date} #{treatment_node.StartTime}"),
+              stopped_at: Time.zone.parse("#{treatment_node.Date} #{treatment_node.EndTime}"),
               dialysate: dialysate,
               external_id: treatment_node.TreatmentId.to_i,
               created_by: user,
