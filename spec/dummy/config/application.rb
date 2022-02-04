@@ -2,19 +2,16 @@
 
 require_relative "boot"
 
-# Pick the frameworks you want:
-require "active_record/railtie"
-require "action_controller/railtie"
-require "action_view/railtie"
-require "action_mailer/railtie"
-require "active_job/railtie"
 require "sprockets/railtie"
+require "rails/all"
 
 Bundler.require(*Rails.groups)
 require "renalware/diaverum"
 
 module Dummy
   class Application < Rails::Application
+    # config.load_defaults 6.0
+    config.autoloader = :classic
     # Initialize configuration defaults for originally generated Rails version.
     # config.load_defaults 5.1
 

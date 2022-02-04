@@ -5,14 +5,35 @@ source "https://rails-assets.org"
 
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby "~> 2.6.3"
+ruby "~> 3.0.3"
 
 gemspec
 
+gem "activerecord-import"
 gem "babel-transpiler"
+gem "daemons", "1.2.5", require: false
+gem "data_migrate"
+gem "devise", "~> 4.7"
+gem "dotenv-rails", "~>2.7.2" # allows us to load ENV vars from a .env file
+gem "email_validator", "2.0.1"
+gem "faker"
+gem "loofah", "~> 2.3.1"
+gem "nokogiri", "~> 1.11"
+gem "party_foul", github: "airslie/party_foul" # sends errors to renalware-kch/issues on GH
+gem "pg", "1.2.3"
+gem "puma", "~> 4.0" # The web server which serves out content under nginx
+gem "rails", "~>6.0.0"
+gem "redis"
+gem "ruby-hl7", "1.2.3"
+gem "sassc-rails", "~> 2.1.0"
+gem "uglifier", "~> 4.2"
+gem "tailwindcss-rails", "~> 0.5.1"
+gem "terminal-table", require: false
+gem "turnout", "~> 2.5.0"
+gem "whenever", "~> 1.0.0"
+
 gem "nhs_api_client", github: "airslie/nhs_api_client", require: false
-gem "renalware-core", github: "airslie/renalware-core", submodules: true
-gem "trix", github: "airslie/trix"
+gem "renalware-core", github: "airslie/renalware-core", branch: "master", submodules: true
 
 group :development, :test do
   gem "awesome_print"

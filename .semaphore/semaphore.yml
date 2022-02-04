@@ -15,7 +15,7 @@ blocks:
           commands:
             - checkout
             - cache restore gems-$SEMAPHORE_GIT_BRANCH-$(checksum Gemfile.lock),gems-$SEMAPHORE_GIT_BRANCH-,gems-master-
-            - sem-version ruby 2.6.3
+            - sem-version ruby 3.0.3
             - bundle install --deployment -j 4 --path vendor/bundle
             - cache store gems-$SEMAPHORE_GIT_BRANCH-$(checksum Gemfile.lock) vendor/bundle
 
@@ -40,7 +40,7 @@ blocks:
           - ./cc-test-reporter before-build
 
           - sem-service start postgres 12.1
-          - sem-version ruby 2.6.3
+          - sem-version ruby 3.0.3
           - bundle install --deployment --path vendor/bundle
           - bundle exec rails app:yarn:install
 
