@@ -9,12 +9,19 @@ This project adheres to Semantic Versioning.
 ### Changed
 ### Fixed
 
+## 1.0.12
+07-02-2022
+### Added
+### Changed
+- Switch to using nhs_number for locating Diaverum HD Patients #87
+### Fixed
+
 ## 1.0.11
 03-02-2022
 ### Added
 ### Changed
-- Ruby 3 compatibility
-- Use started_at and stopped_at rather than  performed_on + start_time + end_time
+- Ruby 3 compatibility #87
+- Use started_at and stopped_at rather than  performed_on + start_time + end_time #87
 ### Fixed
 
 ## 1.0.10
