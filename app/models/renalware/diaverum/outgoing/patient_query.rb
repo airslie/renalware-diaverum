@@ -7,7 +7,7 @@ module Renalware
     module Outgoing
       # Find HD Patients dialysing at a particular hospital unit.
       class PatientQuery
-        pattr_initialize [:local_patient_id!]
+        pattr_initialize [:nhs_number!]
 
         def self.call(*args)
           new(*args).call
@@ -21,7 +21,7 @@ module Renalware
             .where("hd_profiles.hospital_unit_id in (?)", diaverum_hospital_unit_ids)
             .extending(Renalware::ModalityScopes)
             .with_current_modality_matching("HD")
-            .find_by(local_patient_id: local_patient_id)
+            .find_by(nhs_number: nhs_number)
         end
 
         private

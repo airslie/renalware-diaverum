@@ -6,27 +6,27 @@ module Renalware
   module Diaverum
     RSpec.describe Outgoing::PatientQuery do
       include PatientsSpecHelper
-      subject(:query) { described_class.new(local_patient_id: local_hospital_id).call }
+      subject(:query) { described_class.new(nhs_number: nhs_number).call }
 
       let(:provider) { HD::Provider.new(name: "Diaverum") }
 
-      context "when a nil local_patient_id argument is passed" do
-        let(:local_hospital_id) { nil }
+      context "when a nil nhs_number argument is passed" do
+        let(:nhs_number) { nil }
 
         it { is_expected.to be_nil }
       end
 
-      context "when a local_patient_id is passed" do
+      context "when a nhs_number is passed" do
         context "when the patient is not found" do
-          let(:local_hospital_id) { "hosp id of patient not on the system" }
+          let(:nhs_number) { "nhs_number_for_pd_patient" }
 
           it { is_expected.to be_nil }
         end
 
         context "when patient is found" do
-          let(:local_hospital_id) { "123" }
+          let(:nhs_number) { "1741581516" }
           let!(:patient) do
-            create(:hd_patient, local_patient_id: local_hospital_id) do |pat|
+            create(:hd_patient, nhs_number: nhs_number) do |pat|
               set_modality(
                 patient: pat,
                 modality_description: create(:hd_modality_description)

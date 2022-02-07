@@ -7,7 +7,7 @@ module Renalware
     RSpec.describe Outgoing::PathologyListener do
       subject(:listener) { described_class }
 
-      it "does nothing if feed_message local_patient_id is blank" do
+      it "does nothing if feed_message patient_identifier is blank" do
         feed_message = double(:feed_message, body: "123", patient_identifier: nil)
         allow(Outgoing::ForwardHl7Job).to receive(:perform_later)
 
@@ -26,8 +26,8 @@ module Renalware
       end
 
       it "calls ForwardHl7Job if patient found" do
-        patient = Patient.new(local_patient_id: "XYZ")
-        feed_message = double(:feed_message, body: "123", patient_identifier: "XYZ")
+        patient = Patient.new(nhs_number: "9338503739")
+        feed_message = double(:feed_message, body: "123", patient_identifier: "9338503739")
         allow_any_instance_of(Outgoing::PatientQuery).to receive(:call).and_return(patient)
 
         allow(Outgoing::ForwardHl7Job).to receive(:perform_later)
