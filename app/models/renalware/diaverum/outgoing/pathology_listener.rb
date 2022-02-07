@@ -18,10 +18,10 @@ module Renalware
 
         def oru_message_processed(args)
           feed_message = args[:feed_message]
-          local_patient_id = feed_message.patient_identifier
-          return if local_patient_id.blank?
+          nhs_number = feed_message.patient_identifier
+          return if nhs_number.blank?
 
-          patient = find_diaverum_patient(local_patient_id)
+          patient = find_diaverum_patient(nhs_number)
           return if patient.blank?
 
           ForwardHl7Job.perform_later(
@@ -31,8 +31,8 @@ module Renalware
 
         private
 
-        def find_diaverum_patient(local_patient_id)
-          PatientQuery.new(local_patient_id: local_patient_id).call
+        def find_diaverum_patient(nhs_number)
+          PatientQuery.new(nhs_number: nhs_number).call
         end
 
         def transmission_log_for(patient, feed_message)
