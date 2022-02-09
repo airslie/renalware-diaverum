@@ -9,6 +9,13 @@ This project adheres to Semantic Versioning.
 ### Changed
 ### Fixed
 
+## 1.0.13
+09-02-2022
+### Added
+### Changed
+- Use nhs_number or local_patient_id for locating Diaverum HD Patients #88
+### Fixed
+
 ## 1.0.12
 07-02-2022
 ### Added
