@@ -21,7 +21,7 @@ gem "loofah", "~> 2.3.1"
 gem "nokogiri", "~> 1.11"
 gem "party_foul", github: "airslie/party_foul" # sends errors to renalware-kch/issues on GH
 gem "pg", "1.2.3"
-gem "puma", "~> 4.0" # The web server which serves out content under nginx
+gem "puma", "~> 5.6" # The web server which serves out content under nginx
 gem "rails", "~>6.0.0"
 gem "redis"
 gem "ruby-hl7", "1.2.3"
