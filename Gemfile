@@ -18,7 +18,7 @@ gem "dotenv-rails", "~>2.7.2" # allows us to load ENV vars from a .env file
 gem "email_validator", "2.0.1"
 gem "faker"
 gem "loofah", "~> 2.3.1"
-gem "nokogiri", "~> 1.11"
+gem "nokogiri", "~> 1.13"
 gem "party_foul", github: "airslie/party_foul" # sends errors to renalware-kch/issues on GH
 gem "pg", "1.2.3"
 gem "puma", "~> 4.0" # The web server which serves out content under nginx
