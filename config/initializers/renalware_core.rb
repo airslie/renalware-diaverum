@@ -11,8 +11,13 @@ Renalware.configure do |config|
   # defaults.
   map = config.broadcast_subscription_map
   subscribers = map["Renalware::Feeds::MessageProcessor"] ||= []
-  subscribers << Renalware::Broadcasting::Subscriber.new(
-    "Renalware::Diaverum::Outgoing::PathologyListener",
-    async: true
-  )
+
+  # Because of an AJ Serialisation error (serialing HL7Message) its probably simpler if we process
+  # this message inline rather than via Wisper/AJ, and there is no significant performance 
+  # impact.
+  # Renalware::Broadcasting::Subscriber.new(
+  #   "Renalware::Diaverum::Outgoing::PathologyListener",
+  #   async: true
+  # )
+  subscribers << "Renalware::Diaverum::Outgoing::PathologyListener"
 end

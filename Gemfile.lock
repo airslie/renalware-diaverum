@@ -94,9 +94,9 @@ GIT
 PATH
   remote: .
   specs:
-    renalware-diaverum (1.0.13)
-      dotenv-rails (~> 2.5)
-      pg (~> 1.0)
+    renalware-diaverum (1.0.14)
+      dotenv-rails
+      pg
       rails (>= 5.1)
 
 GEM
@@ -689,4 +689,4 @@ RUBY VERSION
    ruby 3.0.3p157
 
 BUNDLED WITH
-   2.3.5
+   2.3.15

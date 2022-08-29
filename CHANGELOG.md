@@ -9,6 +9,13 @@ This project adheres to Semantic Versioning.
 ### Changed
 ### Fixed
 
+## 1.0.14
+29-08-2022
+### Added
+### Changed
+- No longer use async (AJ/Wisper) when subscribing to events
+### Fixed
+
 ## 1.0.13
 09-02-2022
 ### Added
