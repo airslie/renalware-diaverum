@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 source "https://rubygems.org"
-source "https://rails-assets.org"
 
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
@@ -33,7 +32,7 @@ gem "turnout", "~> 2.5.0"
 gem "whenever", "~> 1.0.0"
 
 gem "nhs_api_client", github: "airslie/nhs_api_client", require: false
-gem "renalware-core", github: "airslie/renalware-core", branch: "master", submodules: true
+gem "renalware-core", github: "airslie/renalware-core", submodules: true
 
 group :development, :test do
   gem "awesome_print"
@@ -43,7 +42,6 @@ group :development, :test do
   gem "climate_control"
   gem "equivalent-xml"
   gem "factory_bot_rails", require: false
-  gem "faker"
   gem "fuubar"
   gem "rspec-rails"
   gem "rspec_junit_formatter", "~> 0.3"

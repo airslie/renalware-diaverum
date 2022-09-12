@@ -18,7 +18,6 @@ spec/dummy/tmp/
 /.overcommit.yml
 /.git-hooks
 /.byebug_history
-/.ruby-version
 *.swp
 /public/system
 /public/assets
