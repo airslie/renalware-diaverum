@@ -364,7 +364,7 @@ GEM
       activesupport (>= 4)
       railties (>= 4)
       request_store (~> 1.0)
-    loofah (2.3.1)
+    loofah (2.19.1)
       crass (~> 1.0.2)
       nokogiri (>= 1.5.9)
     mail (2.7.1)
@@ -422,7 +422,7 @@ GEM
       nio4r (~> 2.0)
     pundit (2.1.1)
       activesupport (>= 3.0.0)
-    racc (1.6.0)
+    racc (1.6.1)
     rack (2.2.3)
     rack-accept (0.4.5)
       rack (>= 0.4)
@@ -659,7 +659,7 @@ DEPENDENCIES
   factory_bot_rails
   faker
   fuubar
-  loofah (~> 2.3.1)
+  loofah (~> 2.19.1)
   nhs_api_client!
   nokogiri (~> 1.13)
   party_foul!
