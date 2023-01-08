@@ -30,7 +30,7 @@ module Renalware
           patient = PatientQuery.new(nhs_number: nhs_number, hosp_no: hosp_no).call
           return if patient.blank?
 
-          ForwardHl7Job.perform_later(transmission: transmission_log_for(patient, feed_message))
+          ForwardHL7Job.perform_later(transmission: transmission_log_for(patient, feed_message))
         end
 
         private

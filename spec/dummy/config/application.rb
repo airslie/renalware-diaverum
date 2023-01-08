@@ -11,7 +11,7 @@ require "renalware/diaverum"
 module Dummy
   class Application < Rails::Application
     # config.load_defaults 6.0
-    config.autoloader = :classic
+    config.autoloader = :zeitwerk
     # Initialize configuration defaults for originally generated Rails version.
     # config.load_defaults 5.1
 

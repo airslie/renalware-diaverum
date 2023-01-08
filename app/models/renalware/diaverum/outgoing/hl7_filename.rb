@@ -5,7 +5,7 @@ require "attr_extras"
 module Renalware
   module Diaverum
     module Outgoing
-      class Hl7Filename
+      class HL7Filename
         pattr_initialize [:patient!]
 
         def to_s

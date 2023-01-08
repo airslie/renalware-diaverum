@@ -6,13 +6,13 @@ module Renalware
   module Diaverum
     module Outgoing
       # Forward an HL7 pathology message to Diaverum
-      class ForwardHl7Job < ::ApplicationJob
+      class ForwardHL7Job < ::ApplicationJob
         queue_as :diaverum_outgoing
         queue_with_priority 7 # will wait for any HL7 messages to be processed first
 
         def perform(transmission:)
           # Could use another forwarding method eg Mirth in the future but for now its just SFTP
-          ForwardHl7ToDiaverumViaSftp.call(transmission)
+          ForwardHL7ToDiaverumViaSftp.call(transmission)
         end
 
         def max_attempts

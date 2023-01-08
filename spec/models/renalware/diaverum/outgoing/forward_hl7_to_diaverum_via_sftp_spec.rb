@@ -4,7 +4,7 @@ require "rails_helper"
 
 module Renalware
   module Diaverum
-    RSpec.describe Outgoing::ForwardHl7ToDiaverumViaSftp do
+    RSpec.describe Outgoing::ForwardHL7ToDiaverumViaSftp do
       subject(:service) { described_class.new(transmission) }
 
       let(:time) { "2018-01-01 01:01:01" }
@@ -32,7 +32,7 @@ module Renalware
       end
 
       it "creates HL7 files in the diaverum 'out' and 'out archive' folders" do
-        allow_any_instance_of(Outgoing::Hl7Filename).to receive(:to_s).and_return("example.hl7")
+        allow_any_instance_of(Outgoing::HL7Filename).to receive(:to_s).and_return("example.hl7")
 
         travel_to(time) do
           allow(File).to receive(:write).twice
