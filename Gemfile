@@ -26,6 +26,7 @@ gem "rails", "~>6.0.0"
 gem "redis"
 gem "ruby-hl7", "1.2.3"
 gem "sassc-rails", "~> 2.1.0"
+gem "strong_migrations"
 gem "uglifier", "~> 4.2"
 gem "tailwindcss-rails", "~> 0.5.1"
 gem "terminal-table", require: false
@@ -33,7 +34,8 @@ gem "turnout", "~> 2.5.0"
 gem "whenever", "~> 1.0.0"
 
 gem "nhs_api_client", github: "airslie/nhs_api_client", require: false
-gem "renalware-core", github: "airslie/renalware-core", branch: "master", submodules: true
+gem "renalware-core", github: "airslie/renalware-core", branch: "main", submodules: true
+gem "renalware-forms", github: "airslie/renalware-forms"
 
 group :development, :test do
   gem "awesome_print"

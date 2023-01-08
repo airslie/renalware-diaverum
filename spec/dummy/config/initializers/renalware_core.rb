@@ -12,6 +12,3 @@ Renalware.configure do |config|
   }
   config.display_feedback_banner = false
 end
-
-Renalware::Patients.configure
-Renalware::Pathology.configure

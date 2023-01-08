@@ -41,7 +41,7 @@ COMMENT ON EXTENSION btree_gist IS 'support for indexing common datatypes in GiS
 -- Name: hstore; Type: EXTENSION; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS hstore WITH SCHEMA renalware_diaverum;
+CREATE EXTENSION IF NOT EXISTS hstore WITH SCHEMA renalware;
 
 
 --
@@ -69,7 +69,7 @@ COMMENT ON EXTENSION intarray IS 'functions, operators, and index support for 1-
 -- Name: pg_stat_statements; Type: EXTENSION; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA renalware_diaverum;
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA renalware;
 
 
 --
@@ -197,6 +197,29 @@ CREATE TYPE renalware.problem_date_display_style_enum AS ENUM (
 
 
 --
+-- Name: system_log_group; Type: TYPE; Schema: renalware; Owner: -
+--
+
+CREATE TYPE renalware.system_log_group AS ENUM (
+    'users',
+    'admin',
+    'superadmin',
+    'developer'
+);
+
+
+--
+-- Name: system_log_severity; Type: TYPE; Schema: renalware; Owner: -
+--
+
+CREATE TYPE renalware.system_log_severity AS ENUM (
+    'info',
+    'warning',
+    'error'
+);
+
+
+--
 -- Name: system_nag_definition_scope; Type: TYPE; Schema: renalware; Owner: -
 --
 
@@ -246,29 +269,6 @@ CREATE TYPE renalware.tristate_type AS ENUM (
     'unknown',
     'no',
     'yes'
-);
-
-
---
--- Name: system_log_group; Type: TYPE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE TYPE renalware_diaverum.system_log_group AS ENUM (
-    'users',
-    'admin',
-    'superadmin',
-    'developer'
-);
-
-
---
--- Name: system_log_severity; Type: TYPE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE TYPE renalware_diaverum.system_log_severity AS ENUM (
-    'info',
-    'warning',
-    'error'
 );
 
 
@@ -1041,7 +1041,9 @@ begin
         ,document ->> 'score'
     from events e
     inner join event_types et on et.id = e.event_type_id
-    where e.patient_id  = p_id and et.slug = 'clinical_frailty_score'
+    where e.patient_id = p_id 
+      and e.deleted_at is null
+      and et.slug = 'clinical_frailty_score'
     order by e.date_time desc
     limit 1;
 
@@ -2188,6 +2190,8 @@ CREATE TABLE renalware.clinic_visits (
     temperature numeric(3,1),
     standing_systolic_bp integer,
     standing_diastolic_bp integer,
+    document jsonb DEFAULT '{}'::jsonb NOT NULL,
+    type character varying,
     body_surface_area numeric(8,2),
     total_body_water numeric(8,2),
     bmi numeric(10,1)
@@ -2218,7 +2222,8 @@ CREATE TABLE renalware.hospital_centres (
     trust_name character varying,
     trust_caption character varying,
     host_site boolean DEFAULT false NOT NULL,
-    abbrev character varying
+    abbrev character varying,
+    default_site boolean DEFAULT false
 );
 
 
@@ -2545,6 +2550,8 @@ CREATE VIEW renalware.akcc_mdm_patients AS
     date_part('year'::text, age((p.born_on)::timestamp with time zone)) AS age,
     rprof.esrf_on,
     mx.modality_name,
+    aplantype.name AS access_plan,
+    (aplan.created_at)::date AS access_plan_date,
         CASE
             WHEN (pw.id > 0) THEN true
             ELSE false
@@ -2578,7 +2585,7 @@ CREATE VIEW renalware.akcc_mdm_patients AS
     (((named_nurses.family_name)::text || ', '::text) || (named_nurses.given_name)::text) AS named_nurse,
     (((named_consultants.family_name)::text || ', '::text) || (named_consultants.given_name)::text) AS named_consultant,
     h.name AS hospital_centre
-   FROM ((((((((((renalware.patients p
+   FROM ((((((((((((renalware.patients p
      LEFT JOIN renalware.patient_worries pw ON ((pw.patient_id = p.id)))
      LEFT JOIN renalware.pathology_current_observation_sets pa ON ((pa.patient_id = p.id)))
      LEFT JOIN renalware.renal_profiles rprof ON ((rprof.patient_id = p.id)))
@@ -2588,6 +2595,8 @@ CREATE VIEW renalware.akcc_mdm_patients AS
      LEFT JOIN renalware.users named_nurses ON ((named_nurses.id = p.named_nurse_id)))
      LEFT JOIN renalware.users named_consultants ON ((named_consultants.id = p.named_consultant_id)))
      LEFT JOIN renalware.hospital_centres h ON ((h.id = p.hospital_centre_id)))
+     LEFT JOIN renalware.access_plans aplan ON (((aplan.patient_id = p.id) AND (aplan.terminated_at IS NULL))))
+     LEFT JOIN renalware.access_plan_types aplantype ON ((aplantype.id = aplan.plan_type_id)))
      JOIN renalware.patient_current_modalities mx ON (((mx.patient_id = p.id) AND ((mx.modality_code)::text = 'low_clearance'::text))));
 
 
@@ -2644,6 +2653,7 @@ CREATE TABLE renalware.clinic_clinics (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     user_id integer,
+    visit_class_name character varying,
     code character varying,
     deleted_at timestamp without time zone,
     updated_by_id bigint,
@@ -2865,8 +2875,24 @@ CREATE TABLE renalware.clinical_dry_weights (
     updated_by_id integer NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    assessor_id integer NOT NULL
+    assessor_id integer NOT NULL,
+    minimum_weight double precision,
+    maximum_weight double precision
 );
+
+
+--
+-- Name: COLUMN clinical_dry_weights.minimum_weight; Type: COMMENT; Schema: renalware; Owner: -
+--
+
+COMMENT ON COLUMN renalware.clinical_dry_weights.minimum_weight IS 'Set by the clinicial, if the patient''s weight drops below this value then the clinican may decide change drugs etc';
+
+
+--
+-- Name: COLUMN clinical_dry_weights.maximum_weight; Type: COMMENT; Schema: renalware; Owner: -
+--
+
+COMMENT ON COLUMN renalware.clinical_dry_weights.maximum_weight IS 'Set by the clinicial, if the patient''s weight rises above this value then the clinican may decide change drugs etc';
 
 
 --
@@ -2997,6 +3023,42 @@ CREATE SEQUENCE renalware.delayed_jobs_id_seq
 --
 
 ALTER SEQUENCE renalware.delayed_jobs_id_seq OWNED BY renalware.delayed_jobs.id;
+
+
+--
+-- Name: dietetic_mdm_patients; Type: VIEW; Schema: renalware; Owner: -
+--
+
+CREATE VIEW renalware.dietetic_mdm_patients AS
+ SELECT p.id,
+    p.secure_id,
+    ((upper((p.family_name)::text) || ', '::text) || (p.given_name)::text) AS patient_name,
+    p.nhs_number,
+    p.local_patient_id AS hospital_numbers,
+    p.sex,
+    p.born_on,
+    date_part('year'::text, age((p.born_on)::timestamp with time zone)) AS age,
+    mx.modality_name,
+    true AS weight_management_clinic,
+        CASE
+            WHEN (pw.id > 0) THEN true
+            ELSE false
+        END AS on_worryboard,
+    ( SELECT clinic_visits.bmi
+           FROM renalware.clinic_visits
+          WHERE ((clinic_visits.patient_id = p.id) AND (clinic_visits.bmi > (0)::numeric))
+          ORDER BY clinic_visits.date DESC
+         LIMIT 1) AS bmi,
+    renalware.convert_to_float(((pa."values" -> 'POT'::text) ->> 'result'::text), NULL::double precision) AS pot,
+    (((pa."values" -> 'POT'::text) ->> 'observed_at'::text))::date AS pot_date,
+    renalware.convert_to_float(((pa."values" -> 'PHOS'::text) ->> 'result'::text), NULL::double precision) AS phos,
+    (((pa."values" -> 'PHOS'::text) ->> 'observed_at'::text))::date AS phos_date,
+    '?'::text AS sga_score,
+    CURRENT_DATE AS sga_date
+   FROM (((renalware.patients p
+     LEFT JOIN renalware.patient_worries pw ON ((pw.patient_id = p.id)))
+     LEFT JOIN renalware.pathology_current_observation_sets pa ON ((pa.patient_id = p.id)))
+     JOIN renalware.patient_current_modalities mx ON ((mx.patient_id = p.id)));
 
 
 --
@@ -5245,7 +5307,8 @@ CREATE TABLE renalware.letter_descriptions (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     "position" integer DEFAULT 0 NOT NULL,
-    deleted_at timestamp without time zone
+    deleted_at timestamp without time zone,
+    section_identifiers character varying[] DEFAULT '{}'::character varying[]
 );
 
 
@@ -5381,7 +5444,8 @@ CREATE TABLE renalware.letter_letters (
     approved_by_id bigint,
     completed_at timestamp without time zone,
     completed_by_id bigint,
-    page_count integer
+    page_count integer,
+    topic_id bigint
 );
 
 
@@ -5553,6 +5617,39 @@ CREATE SEQUENCE renalware.letter_recipients_id_seq
 --
 
 ALTER SEQUENCE renalware.letter_recipients_id_seq OWNED BY renalware.letter_recipients.id;
+
+
+--
+-- Name: letter_section_snapshots; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE renalware.letter_section_snapshots (
+    id bigint NOT NULL,
+    letter_id bigint NOT NULL,
+    section_identifier character varying,
+    content character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: letter_section_snapshots_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE renalware.letter_section_snapshots_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: letter_section_snapshots_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE renalware.letter_section_snapshots_id_seq OWNED BY renalware.letter_section_snapshots.id;
 
 
 --
@@ -6735,7 +6832,7 @@ ALTER SEQUENCE renalware.pathology_observation_requests_id_seq OWNED BY renalwar
 
 CREATE VIEW renalware.pathology_observations_grouped_by_date AS
  SELECT obr.patient_id,
-    obs.observed_at,
+    (obs.observed_at)::date AS observed_at,
     jsonb_object_agg(pod.code, ARRAY[obs.result, (obs.comment)::character varying] ORDER BY obs.observed_at) AS results,
     pcg2.name AS "group"
    FROM ((((renalware.pathology_observations obs
@@ -6743,8 +6840,8 @@ CREATE VIEW renalware.pathology_observations_grouped_by_date AS
      JOIN renalware.pathology_observation_descriptions pod ON ((obs.description_id = pod.id)))
      JOIN renalware.pathology_code_group_memberships pcgm2 ON ((pcgm2.observation_description_id = pod.id)))
      JOIN renalware.pathology_code_groups pcg2 ON ((pcg2.id = pcgm2.code_group_id)))
-  GROUP BY pcg2.name, obr.patient_id, obs.observed_at
-  ORDER BY obr.patient_id, pcg2.name, obs.observed_at DESC;
+  GROUP BY pcg2.name, obr.patient_id, ((obs.observed_at)::date)
+  ORDER BY obr.patient_id, pcg2.name, ((obs.observed_at)::date) DESC;
 
 
 --
@@ -7299,6 +7396,79 @@ ALTER SEQUENCE renalware.patient_alerts_id_seq OWNED BY renalware.patient_alerts
 
 
 --
+-- Name: patient_attachment_types; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE renalware.patient_attachment_types (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    description character varying,
+    store_file_externally boolean DEFAULT false NOT NULL,
+    deleted_at timestamp without time zone,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: patient_attachment_types_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE renalware.patient_attachment_types_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: patient_attachment_types_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE renalware.patient_attachment_types_id_seq OWNED BY renalware.patient_attachment_types.id;
+
+
+--
+-- Name: patient_attachments; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE renalware.patient_attachments (
+    id bigint NOT NULL,
+    patient_id bigint NOT NULL,
+    attachment_type_id bigint NOT NULL,
+    name character varying,
+    description text,
+    external_location character varying,
+    updated_by_id bigint,
+    created_by_id bigint,
+    document_date date,
+    deleted_at timestamp without time zone,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: patient_attachments_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE renalware.patient_attachments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: patient_attachments_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE renalware.patient_attachments_id_seq OWNED BY renalware.patient_attachments.id;
+
+
+--
 -- Name: patient_bookmarks; Type: TABLE; Schema: renalware; Owner: -
 --
 
@@ -7398,6 +7568,50 @@ CREATE SEQUENCE renalware.patient_languages_id_seq
 --
 
 ALTER SEQUENCE renalware.patient_languages_id_seq OWNED BY renalware.patient_languages.id;
+
+
+--
+-- Name: patient_master_index; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE renalware.patient_master_index (
+    id bigint NOT NULL,
+    patient_id bigint,
+    nhs_number character varying,
+    hospital_number character varying,
+    title character varying,
+    family_name character varying,
+    middle_name character varying,
+    given_name character varying,
+    suffix character varying,
+    sex character varying,
+    born_on date,
+    died_at timestamp without time zone,
+    ethnicity character varying,
+    practice_code character varying,
+    gp_code character varying,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: patient_master_index_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE renalware.patient_master_index_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: patient_master_index_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE renalware.patient_master_index_id_seq OWNED BY renalware.patient_master_index.id;
 
 
 --
@@ -7541,6 +7755,69 @@ CREATE SEQUENCE renalware.patient_religions_id_seq
 --
 
 ALTER SEQUENCE renalware.patient_religions_id_seq OWNED BY renalware.patient_religions.id;
+
+
+--
+-- Name: problem_problems; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE renalware.problem_problems (
+    id integer NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    patient_id integer NOT NULL,
+    description character varying NOT NULL,
+    date date,
+    deleted_at timestamp without time zone,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    created_by_id integer NOT NULL,
+    updated_by_id integer,
+    snomed_id character varying,
+    date_display_style renalware.problem_date_display_style_enum
+);
+
+
+--
+-- Name: patient_summaries; Type: VIEW; Schema: renalware; Owner: -
+--
+
+CREATE VIEW renalware.patient_summaries AS
+ SELECT patients.id AS patient_id,
+    ( SELECT count(*) AS count
+           FROM renalware.events
+          WHERE ((events.patient_id = patients.id) AND (events.deleted_at IS NULL))) AS events_count,
+    ( SELECT count(*) AS count
+           FROM renalware.clinic_visits
+          WHERE (clinic_visits.patient_id = patients.id)) AS clinic_visits_count,
+    ( SELECT count(*) AS count
+           FROM renalware.letter_letters
+          WHERE (letter_letters.patient_id = patients.id)) AS letters_count,
+    ( SELECT count(*) AS count
+           FROM renalware.modality_modalities
+          WHERE (modality_modalities.patient_id = patients.id)) AS modalities_count,
+    ( SELECT count(*) AS count
+           FROM renalware.problem_problems
+          WHERE ((problem_problems.deleted_at IS NULL) AND (problem_problems.patient_id = patients.id))) AS problems_count,
+    ( SELECT count(*) AS count
+           FROM renalware.pathology_observation_requests
+          WHERE (pathology_observation_requests.patient_id = patients.id)) AS observation_requests_count,
+    ( SELECT count(*) AS count
+           FROM (renalware.medication_prescriptions p
+             FULL JOIN renalware.medication_prescription_terminations pt ON ((pt.prescription_id = p.id)))
+          WHERE ((p.patient_id = patients.id) AND ((pt.terminated_on IS NULL) OR (pt.terminated_on > CURRENT_TIMESTAMP)))) AS prescriptions_count,
+    ( SELECT count(*) AS count
+           FROM renalware.letter_contacts
+          WHERE (letter_contacts.patient_id = patients.id)) AS contacts_count,
+    ( SELECT count(*) AS count
+           FROM renalware.transplant_recipient_operations
+          WHERE (transplant_recipient_operations.patient_id = patients.id)) AS recipient_operations_count,
+    ( SELECT count(*) AS count
+           FROM renalware.admission_admissions
+          WHERE (admission_admissions.patient_id = patients.id)) AS admissions_count,
+    ( SELECT count(*) AS count
+           FROM renalware.patient_attachments
+          WHERE ((patient_attachments.patient_id = patients.id) AND (patient_attachments.deleted_at IS NULL))) AS attachments_count
+   FROM renalware.patients;
 
 
 --
@@ -8009,7 +8286,7 @@ CREATE VIEW renalware.pd_mdm_patients AS
     ( SELECT date(e.date_time) AS date
            FROM (renalware.events e
              JOIN renalware.event_types et ON ((et.id = e.event_type_id)))
-          WHERE (((et.slug)::text = 'pd_line_changes'::text) AND (e.patient_id = p.id))
+          WHERE (((et.slug)::text = 'pd_line_changes'::text) AND (e.patient_id = p.id) AND (e.deleted_at IS NULL))
           ORDER BY e.date_time DESC
          LIMIT 1) AS last_line_change_date,
     pesi.diagnosis_date AS last_esi_date,
@@ -8749,26 +9026,6 @@ ALTER SEQUENCE renalware.problem_notes_id_seq OWNED BY renalware.problem_notes.i
 
 
 --
--- Name: problem_problems; Type: TABLE; Schema: renalware; Owner: -
---
-
-CREATE TABLE renalware.problem_problems (
-    id integer NOT NULL,
-    "position" integer DEFAULT 0 NOT NULL,
-    patient_id integer NOT NULL,
-    description character varying NOT NULL,
-    date date,
-    deleted_at timestamp without time zone,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    created_by_id integer NOT NULL,
-    updated_by_id integer,
-    snomed_id character varying,
-    date_display_style renalware.problem_date_display_style_enum
-);
-
-
---
 -- Name: problem_problems_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
 --
 
@@ -9146,44 +9403,6 @@ CREATE VIEW renalware.reporting_daily_letters AS
 
 
 --
--- Name: reporting_daily_pathology; Type: VIEW; Schema: renalware; Owner: -
---
-
-CREATE VIEW renalware.reporting_daily_pathology AS
- SELECT ( SELECT count(*) AS count
-           FROM renalware.delayed_jobs) AS delayed_jobs_total,
-    ( SELECT count(*) AS count
-           FROM renalware.delayed_jobs
-          WHERE (delayed_jobs.attempts = 0)) AS delayed_jobs_unprocessed,
-    ( SELECT count(*) AS count
-           FROM renalware.delayed_jobs
-          WHERE ((delayed_jobs.last_error IS NOT NULL) AND (delayed_jobs.failed_at IS NULL))) AS delayed_jobs_retrying,
-    ( SELECT count(*) AS count
-           FROM renalware.delayed_jobs
-          WHERE ((delayed_jobs.last_error IS NOT NULL) AND (delayed_jobs.failed_at IS NOT NULL))) AS delayed_jobs_failed,
-    ( SELECT max(delayed_jobs.created_at) AS max
-           FROM renalware.delayed_jobs) AS delayed_jobs_latest_entry,
-    ( SELECT count(*) AS count
-           FROM renalware.delayed_jobs
-          WHERE (delayed_jobs.created_at >= (now())::date)) AS delayed_jobs_added_today,
-    ( SELECT json_object_agg(query.priority, query.count) AS json_object_agg
-           FROM ( SELECT delayed_jobs.priority,
-                    count(*) AS count
-                   FROM renalware.delayed_jobs
-                  GROUP BY delayed_jobs.priority) query) AS delayed_jobs_priority_counts,
-    ( SELECT json_object_agg(COALESCE(query.queue, 'unset'::character varying), query.count) AS json_object_agg
-           FROM ( SELECT delayed_jobs.queue,
-                    count(*) AS count
-                   FROM renalware.delayed_jobs
-                  GROUP BY delayed_jobs.queue) query) AS delayed_jobs_queue_counts,
-    ( SELECT json_object_agg(query.attempts, query.count) AS json_object_agg
-           FROM ( SELECT delayed_jobs.attempts,
-                    count(*) AS count
-                   FROM renalware.delayed_jobs
-                  GROUP BY delayed_jobs.attempts) query) AS delayed_jobs_attempts_counts;
-
-
---
 -- Name: reporting_daily_ukrdc; Type: VIEW; Schema: renalware; Owner: -
 --
 
@@ -9503,6 +9722,86 @@ CREATE VIEW renalware.reporting_unit_patients AS
 
 
 --
+-- Name: research_investigatorships; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE renalware.research_investigatorships (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    study_id bigint NOT NULL,
+    updated_by_id bigint NOT NULL,
+    created_by_id bigint NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    deleted_at timestamp without time zone,
+    type character varying,
+    document jsonb,
+    started_on date,
+    left_on date,
+    manager boolean DEFAULT false NOT NULL
+);
+
+
+--
+-- Name: research_investigatorships_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE renalware.research_investigatorships_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: research_investigatorships_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE renalware.research_investigatorships_id_seq OWNED BY renalware.research_investigatorships.id;
+
+
+--
+-- Name: research_participations; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE renalware.research_participations (
+    id bigint NOT NULL,
+    patient_id bigint NOT NULL,
+    study_id bigint NOT NULL,
+    joined_on date NOT NULL,
+    left_on date,
+    deleted_at timestamp without time zone,
+    updated_by_id bigint,
+    created_by_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    external_id integer,
+    type character varying,
+    document jsonb
+);
+
+
+--
+-- Name: research_participations_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE renalware.research_participations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: research_participations_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE renalware.research_participations_id_seq OWNED BY renalware.research_participations.id;
+
+
+--
 -- Name: research_studies; Type: TABLE; Schema: renalware; Owner: -
 --
 
@@ -9519,7 +9818,11 @@ CREATE TABLE renalware.research_studies (
     created_by_id bigint,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    application_url character varying
+    application_url character varying,
+    namespace character varying,
+    type character varying,
+    document jsonb,
+    private boolean DEFAULT false NOT NULL
 );
 
 
@@ -9543,29 +9846,26 @@ ALTER SEQUENCE renalware.research_studies_id_seq OWNED BY renalware.research_stu
 
 
 --
--- Name: research_study_participants; Type: TABLE; Schema: renalware; Owner: -
+-- Name: research_versions; Type: TABLE; Schema: renalware; Owner: -
 --
 
-CREATE TABLE renalware.research_study_participants (
+CREATE TABLE renalware.research_versions (
     id bigint NOT NULL,
-    participant_id bigint NOT NULL,
-    study_id bigint NOT NULL,
-    joined_on date NOT NULL,
-    left_on date,
-    deleted_at timestamp without time zone,
-    updated_by_id bigint,
-    created_by_id bigint,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    external_id integer
+    item_type character varying NOT NULL,
+    item_id integer NOT NULL,
+    event character varying NOT NULL,
+    whodunnit integer,
+    object jsonb,
+    object_changes jsonb,
+    created_at timestamp without time zone
 );
 
 
 --
--- Name: research_study_participants_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+-- Name: research_versions_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
 --
 
-CREATE SEQUENCE renalware.research_study_participants_id_seq
+CREATE SEQUENCE renalware.research_versions_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -9574,10 +9874,10 @@ CREATE SEQUENCE renalware.research_study_participants_id_seq
 
 
 --
--- Name: research_study_participants_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+-- Name: research_versions_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
 --
 
-ALTER SEQUENCE renalware.research_study_participants_id_seq OWNED BY renalware.research_study_participants.id;
+ALTER SEQUENCE renalware.research_versions_id_seq OWNED BY renalware.research_versions.id;
 
 
 --
@@ -10327,6 +10627,47 @@ CREATE SEQUENCE renalware.system_events_id_seq
 --
 
 ALTER SEQUENCE renalware.system_events_id_seq OWNED BY renalware.system_events.id;
+
+
+--
+-- Name: system_logs; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE renalware.system_logs (
+    id bigint NOT NULL,
+    severity renalware.system_log_severity DEFAULT 'info'::renalware.system_log_severity NOT NULL,
+    "group" renalware.system_log_group DEFAULT 'users'::renalware.system_log_group NOT NULL,
+    owner_id bigint,
+    message text,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN system_logs.owner_id; Type: COMMENT; Schema: renalware; Owner: -
+--
+
+COMMENT ON COLUMN renalware.system_logs.owner_id IS 'Optional - if targetted at a specific user';
+
+
+--
+-- Name: system_logs_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE renalware.system_logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: system_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE renalware.system_logs_id_seq OWNED BY renalware.system_logs.id;
 
 
 --
@@ -11747,6 +12088,40 @@ ALTER SEQUENCE renalware.virology_profiles_id_seq OWNED BY renalware.virology_pr
 
 
 --
+-- Name: virology_vaccination_types; Type: TABLE; Schema: renalware; Owner: -
+--
+
+CREATE TABLE renalware.virology_vaccination_types (
+    id bigint NOT NULL,
+    code character varying NOT NULL,
+    name character varying NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    deleted_at timestamp without time zone,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: virology_vaccination_types_id_seq; Type: SEQUENCE; Schema: renalware; Owner: -
+--
+
+CREATE SEQUENCE renalware.virology_vaccination_types_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: virology_vaccination_types_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware; Owner: -
+--
+
+ALTER SEQUENCE renalware.virology_vaccination_types_id_seq OWNED BY renalware.virology_vaccination_types.id;
+
+
+--
 -- Name: virology_versions; Type: TABLE; Schema: renalware; Owner: -
 --
 
@@ -11841,241 +12216,6 @@ CREATE SEQUENCE renalware_diaverum.hd_type_maps_id_seq
 --
 
 ALTER SEQUENCE renalware_diaverum.hd_type_maps_id_seq OWNED BY renalware_diaverum.hd_type_maps.id;
-
-
---
--- Name: patient_attachment_types; Type: TABLE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE TABLE renalware_diaverum.patient_attachment_types (
-    id bigint NOT NULL,
-    name character varying NOT NULL,
-    description character varying,
-    store_file_externally boolean DEFAULT false NOT NULL,
-    deleted_at timestamp without time zone,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: patient_attachment_types_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE SEQUENCE renalware_diaverum.patient_attachment_types_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: patient_attachment_types_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
---
-
-ALTER SEQUENCE renalware_diaverum.patient_attachment_types_id_seq OWNED BY renalware_diaverum.patient_attachment_types.id;
-
-
---
--- Name: patient_attachments; Type: TABLE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE TABLE renalware_diaverum.patient_attachments (
-    id bigint NOT NULL,
-    patient_id bigint NOT NULL,
-    attachment_type_id bigint NOT NULL,
-    name character varying,
-    description text,
-    external_location character varying,
-    updated_by_id bigint,
-    created_by_id bigint,
-    document_date date,
-    deleted_at timestamp without time zone,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: patient_attachments_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE SEQUENCE renalware_diaverum.patient_attachments_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: patient_attachments_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
---
-
-ALTER SEQUENCE renalware_diaverum.patient_attachments_id_seq OWNED BY renalware_diaverum.patient_attachments.id;
-
-
---
--- Name: patient_master_index; Type: TABLE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE TABLE renalware_diaverum.patient_master_index (
-    id bigint NOT NULL,
-    patient_id bigint,
-    nhs_number character varying,
-    hospital_number character varying,
-    title character varying,
-    family_name character varying,
-    middle_name character varying,
-    given_name character varying,
-    suffix character varying,
-    sex character varying,
-    born_on date,
-    died_at timestamp without time zone,
-    ethnicity character varying,
-    practice_code character varying,
-    gp_code character varying,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: patient_master_index_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE SEQUENCE renalware_diaverum.patient_master_index_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: patient_master_index_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
---
-
-ALTER SEQUENCE renalware_diaverum.patient_master_index_id_seq OWNED BY renalware_diaverum.patient_master_index.id;
-
-
---
--- Name: patient_summaries; Type: VIEW; Schema: renalware_diaverum; Owner: -
---
-
-CREATE VIEW renalware_diaverum.patient_summaries AS
- SELECT patients.id AS patient_id,
-    ( SELECT count(*) AS count
-           FROM renalware.events
-          WHERE (events.patient_id = patients.id)) AS events_count,
-    ( SELECT count(*) AS count
-           FROM renalware.clinic_visits
-          WHERE (clinic_visits.patient_id = patients.id)) AS clinic_visits_count,
-    ( SELECT count(*) AS count
-           FROM renalware.letter_letters
-          WHERE (letter_letters.patient_id = patients.id)) AS letters_count,
-    ( SELECT count(*) AS count
-           FROM renalware.modality_modalities
-          WHERE (modality_modalities.patient_id = patients.id)) AS modalities_count,
-    ( SELECT count(*) AS count
-           FROM renalware.problem_problems
-          WHERE ((problem_problems.deleted_at IS NULL) AND (problem_problems.patient_id = patients.id))) AS problems_count,
-    ( SELECT count(*) AS count
-           FROM renalware.pathology_observation_requests
-          WHERE (pathology_observation_requests.patient_id = patients.id)) AS observation_requests_count,
-    ( SELECT count(*) AS count
-           FROM (renalware.medication_prescriptions p
-             FULL JOIN renalware.medication_prescription_terminations pt ON ((pt.prescription_id = p.id)))
-          WHERE ((p.patient_id = patients.id) AND ((pt.terminated_on IS NULL) OR (pt.terminated_on > CURRENT_TIMESTAMP)))) AS prescriptions_count,
-    ( SELECT count(*) AS count
-           FROM renalware.letter_contacts
-          WHERE (letter_contacts.patient_id = patients.id)) AS contacts_count,
-    ( SELECT count(*) AS count
-           FROM renalware.transplant_recipient_operations
-          WHERE (transplant_recipient_operations.patient_id = patients.id)) AS recipient_operations_count,
-    ( SELECT count(*) AS count
-           FROM renalware.admission_admissions
-          WHERE (admission_admissions.patient_id = patients.id)) AS admissions_count,
-    ( SELECT count(*) AS count
-           FROM renalware_diaverum.patient_attachments
-          WHERE ((patient_attachments.patient_id = patients.id) AND (patient_attachments.deleted_at IS NULL))) AS attachments_count
-   FROM renalware.patients;
-
-
---
--- Name: system_logs; Type: TABLE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE TABLE renalware_diaverum.system_logs (
-    id bigint NOT NULL,
-    severity renalware_diaverum.system_log_severity DEFAULT 'info'::renalware_diaverum.system_log_severity NOT NULL,
-    "group" renalware_diaverum.system_log_group DEFAULT 'users'::renalware_diaverum.system_log_group NOT NULL,
-    owner_id bigint,
-    message text,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: COLUMN system_logs.owner_id; Type: COMMENT; Schema: renalware_diaverum; Owner: -
---
-
-COMMENT ON COLUMN renalware_diaverum.system_logs.owner_id IS 'Optional - if targetted at a specific user';
-
-
---
--- Name: system_logs_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE SEQUENCE renalware_diaverum.system_logs_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: system_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
---
-
-ALTER SEQUENCE renalware_diaverum.system_logs_id_seq OWNED BY renalware_diaverum.system_logs.id;
-
-
---
--- Name: virology_vaccination_types; Type: TABLE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE TABLE renalware_diaverum.virology_vaccination_types (
-    id bigint NOT NULL,
-    code character varying NOT NULL,
-    name character varying NOT NULL,
-    "position" integer DEFAULT 0 NOT NULL,
-    deleted_at timestamp without time zone,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: virology_vaccination_types_id_seq; Type: SEQUENCE; Schema: renalware_diaverum; Owner: -
---
-
-CREATE SEQUENCE renalware_diaverum.virology_vaccination_types_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: virology_vaccination_types_id_seq; Type: SEQUENCE OWNED BY; Schema: renalware_diaverum; Owner: -
---
-
-ALTER SEQUENCE renalware_diaverum.virology_vaccination_types_id_seq OWNED BY renalware_diaverum.virology_vaccination_types.id;
 
 
 --
@@ -12681,6 +12821,13 @@ ALTER TABLE ONLY renalware.letter_recipients ALTER COLUMN id SET DEFAULT nextval
 
 
 --
+-- Name: letter_section_snapshots id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.letter_section_snapshots ALTER COLUMN id SET DEFAULT nextval('renalware.letter_section_snapshots_id_seq'::regclass);
+
+
+--
 -- Name: letter_signatures id; Type: DEFAULT; Schema: renalware; Owner: -
 --
 
@@ -12968,6 +13115,20 @@ ALTER TABLE ONLY renalware.patient_alerts ALTER COLUMN id SET DEFAULT nextval('r
 
 
 --
+-- Name: patient_attachment_types id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.patient_attachment_types ALTER COLUMN id SET DEFAULT nextval('renalware.patient_attachment_types_id_seq'::regclass);
+
+
+--
+-- Name: patient_attachments id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.patient_attachments ALTER COLUMN id SET DEFAULT nextval('renalware.patient_attachments_id_seq'::regclass);
+
+
+--
 -- Name: patient_bookmarks id; Type: DEFAULT; Schema: renalware; Owner: -
 --
 
@@ -12986,6 +13147,13 @@ ALTER TABLE ONLY renalware.patient_ethnicities ALTER COLUMN id SET DEFAULT nextv
 --
 
 ALTER TABLE ONLY renalware.patient_languages ALTER COLUMN id SET DEFAULT nextval('renalware.patient_languages_id_seq'::regclass);
+
+
+--
+-- Name: patient_master_index id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.patient_master_index ALTER COLUMN id SET DEFAULT nextval('renalware.patient_master_index_id_seq'::regclass);
 
 
 --
@@ -13262,6 +13430,20 @@ ALTER TABLE ONLY renalware.reporting_audits ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
+-- Name: research_investigatorships id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.research_investigatorships ALTER COLUMN id SET DEFAULT nextval('renalware.research_investigatorships_id_seq'::regclass);
+
+
+--
+-- Name: research_participations id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.research_participations ALTER COLUMN id SET DEFAULT nextval('renalware.research_participations_id_seq'::regclass);
+
+
+--
 -- Name: research_studies id; Type: DEFAULT; Schema: renalware; Owner: -
 --
 
@@ -13269,10 +13451,10 @@ ALTER TABLE ONLY renalware.research_studies ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
--- Name: research_study_participants id; Type: DEFAULT; Schema: renalware; Owner: -
+-- Name: research_versions id; Type: DEFAULT; Schema: renalware; Owner: -
 --
 
-ALTER TABLE ONLY renalware.research_study_participants ALTER COLUMN id SET DEFAULT nextval('renalware.research_study_participants_id_seq'::regclass);
+ALTER TABLE ONLY renalware.research_versions ALTER COLUMN id SET DEFAULT nextval('renalware.research_versions_id_seq'::regclass);
 
 
 --
@@ -13364,6 +13546,13 @@ ALTER TABLE ONLY renalware.system_downloads ALTER COLUMN id SET DEFAULT nextval(
 --
 
 ALTER TABLE ONLY renalware.system_events ALTER COLUMN id SET DEFAULT nextval('renalware.system_events_id_seq'::regclass);
+
+
+--
+-- Name: system_logs id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.system_logs ALTER COLUMN id SET DEFAULT nextval('renalware.system_logs_id_seq'::regclass);
 
 
 --
@@ -13612,6 +13801,13 @@ ALTER TABLE ONLY renalware.virology_profiles ALTER COLUMN id SET DEFAULT nextval
 
 
 --
+-- Name: virology_vaccination_types id; Type: DEFAULT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.virology_vaccination_types ALTER COLUMN id SET DEFAULT nextval('renalware.virology_vaccination_types_id_seq'::regclass);
+
+
+--
 -- Name: virology_versions id; Type: DEFAULT; Schema: renalware; Owner: -
 --
 
@@ -13630,41 +13826,6 @@ ALTER TABLE ONLY renalware_diaverum.access_maps ALTER COLUMN id SET DEFAULT next
 --
 
 ALTER TABLE ONLY renalware_diaverum.hd_type_maps ALTER COLUMN id SET DEFAULT nextval('renalware_diaverum.hd_type_maps_id_seq'::regclass);
-
-
---
--- Name: patient_attachment_types id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.patient_attachment_types ALTER COLUMN id SET DEFAULT nextval('renalware_diaverum.patient_attachment_types_id_seq'::regclass);
-
-
---
--- Name: patient_attachments id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.patient_attachments ALTER COLUMN id SET DEFAULT nextval('renalware_diaverum.patient_attachments_id_seq'::regclass);
-
-
---
--- Name: patient_master_index id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.patient_master_index ALTER COLUMN id SET DEFAULT nextval('renalware_diaverum.patient_master_index_id_seq'::regclass);
-
-
---
--- Name: system_logs id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.system_logs ALTER COLUMN id SET DEFAULT nextval('renalware_diaverum.system_logs_id_seq'::regclass);
-
-
---
--- Name: virology_vaccination_types id; Type: DEFAULT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.virology_vaccination_types ALTER COLUMN id SET DEFAULT nextval('renalware_diaverum.virology_vaccination_types_id_seq'::regclass);
 
 
 --
@@ -14380,6 +14541,14 @@ ALTER TABLE ONLY renalware.letter_recipients
 
 
 --
+-- Name: letter_section_snapshots letter_section_snapshots_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.letter_section_snapshots
+    ADD CONSTRAINT letter_section_snapshots_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: letter_signatures letter_signatures_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -14708,6 +14877,22 @@ ALTER TABLE ONLY renalware.patient_alerts
 
 
 --
+-- Name: patient_attachment_types patient_attachment_types_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.patient_attachment_types
+    ADD CONSTRAINT patient_attachment_types_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: patient_attachments patient_attachments_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.patient_attachments
+    ADD CONSTRAINT patient_attachments_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: patient_bookmarks patient_bookmarks_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -14729,6 +14914,14 @@ ALTER TABLE ONLY renalware.patient_ethnicities
 
 ALTER TABLE ONLY renalware.patient_languages
     ADD CONSTRAINT patient_languages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: patient_master_index patient_master_index_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.patient_master_index
+    ADD CONSTRAINT patient_master_index_pkey PRIMARY KEY (id);
 
 
 --
@@ -15044,6 +15237,22 @@ ALTER TABLE ONLY renalware.reporting_audits
 
 
 --
+-- Name: research_investigatorships research_investigatorships_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.research_investigatorships
+    ADD CONSTRAINT research_investigatorships_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: research_participations research_participations_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.research_participations
+    ADD CONSTRAINT research_participations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: research_studies research_studies_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -15052,11 +15261,11 @@ ALTER TABLE ONLY renalware.research_studies
 
 
 --
--- Name: research_study_participants research_study_participants_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+-- Name: research_versions research_versions_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
 --
 
-ALTER TABLE ONLY renalware.research_study_participants
-    ADD CONSTRAINT research_study_participants_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY renalware.research_versions
+    ADD CONSTRAINT research_versions_pkey PRIMARY KEY (id);
 
 
 --
@@ -15161,6 +15370,14 @@ ALTER TABLE ONLY renalware.system_downloads
 
 ALTER TABLE ONLY renalware.system_events
     ADD CONSTRAINT system_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: system_logs system_logs_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.system_logs
+    ADD CONSTRAINT system_logs_pkey PRIMARY KEY (id);
 
 
 --
@@ -15444,6 +15661,14 @@ ALTER TABLE ONLY renalware.virology_profiles
 
 
 --
+-- Name: virology_vaccination_types virology_vaccination_types_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.virology_vaccination_types
+    ADD CONSTRAINT virology_vaccination_types_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: virology_versions virology_versions_pkey; Type: CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -15465,46 +15690,6 @@ ALTER TABLE ONLY renalware_diaverum.access_maps
 
 ALTER TABLE ONLY renalware_diaverum.hd_type_maps
     ADD CONSTRAINT hd_type_maps_pkey PRIMARY KEY (id);
-
-
---
--- Name: patient_attachment_types patient_attachment_types_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.patient_attachment_types
-    ADD CONSTRAINT patient_attachment_types_pkey PRIMARY KEY (id);
-
-
---
--- Name: patient_attachments patient_attachments_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.patient_attachments
-    ADD CONSTRAINT patient_attachments_pkey PRIMARY KEY (id);
-
-
---
--- Name: patient_master_index patient_master_index_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.patient_master_index
-    ADD CONSTRAINT patient_master_index_pkey PRIMARY KEY (id);
-
-
---
--- Name: system_logs system_logs_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.system_logs
-    ADD CONSTRAINT system_logs_pkey PRIMARY KEY (id);
-
-
---
--- Name: virology_vaccination_types virology_vaccination_types_pkey; Type: CONSTRAINT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.virology_vaccination_types
-    ADD CONSTRAINT virology_vaccination_types_pkey PRIMARY KEY (id);
 
 
 --
@@ -15659,6 +15844,13 @@ CREATE UNIQUE INDEX idx_practice_membership ON renalware.patient_practice_member
 --
 
 CREATE UNIQUE INDEX idx_unique_diaryslot_patients ON renalware.hd_diary_slots USING btree (diary_id, diurnal_period_code_id, day_of_week, patient_id);
+
+
+--
+-- Name: idx_unread_messaging_receipts; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX idx_unread_messaging_receipts ON renalware.messaging_receipts USING btree (recipient_id) WHERE (read_at IS NULL);
 
 
 --
@@ -16159,6 +16351,13 @@ CREATE INDEX index_clinic_clinics_on_deleted_at ON renalware.clinic_clinics USIN
 
 
 --
+-- Name: index_clinic_clinics_on_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_clinic_clinics_on_name ON renalware.clinic_clinics USING btree (name);
+
+
+--
 -- Name: index_clinic_clinics_on_updated_by_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -16222,10 +16421,24 @@ CREATE INDEX index_clinic_visits_on_created_by_id ON renalware.clinic_visits USI
 
 
 --
+-- Name: index_clinic_visits_on_document; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_clinic_visits_on_document ON renalware.clinic_visits USING gin (document);
+
+
+--
 -- Name: index_clinic_visits_on_patient_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
 CREATE INDEX index_clinic_visits_on_patient_id ON renalware.clinic_visits USING btree (patient_id);
+
+
+--
+-- Name: index_clinic_visits_on_type; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_clinic_visits_on_type ON renalware.clinic_visits USING btree (type);
 
 
 --
@@ -16527,6 +16740,20 @@ CREATE INDEX index_events_on_event_type_id ON renalware.events USING btree (even
 --
 
 CREATE INDEX index_events_on_patient_id ON renalware.events USING btree (patient_id);
+
+
+--
+-- Name: index_events_on_patient_id_not_deleted; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_events_on_patient_id_not_deleted ON renalware.events USING btree (patient_id, deleted_at) WHERE (deleted_at IS NULL);
+
+
+--
+-- Name: INDEX index_events_on_patient_id_not_deleted; Type: COMMENT; Schema: renalware; Owner: -
+--
+
+COMMENT ON INDEX renalware.index_events_on_patient_id_not_deleted IS 'conditional index to speed up count()ing a patient''s undeleted events';
 
 
 --
@@ -17552,6 +17779,13 @@ CREATE INDEX index_letter_letters_on_submitted_for_approval_by_id ON renalware.l
 
 
 --
+-- Name: index_letter_letters_on_topic_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_letter_letters_on_topic_id ON renalware.letter_letters USING btree (topic_id);
+
+
+--
 -- Name: index_letter_letters_on_type; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -17654,6 +17888,13 @@ CREATE INDEX index_letter_recipients_on_printed_at ON renalware.letter_recipient
 --
 
 CREATE INDEX index_letter_recipients_on_role ON renalware.letter_recipients USING btree (role);
+
+
+--
+-- Name: index_letter_section_snapshots_on_letter_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_letter_section_snapshots_on_letter_id ON renalware.letter_section_snapshots USING btree (letter_id);
 
 
 --
@@ -18406,6 +18647,69 @@ CREATE INDEX index_patient_alerts_on_updated_by_id ON renalware.patient_alerts U
 
 
 --
+-- Name: index_patient_attachment_types_on_deleted_at; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_patient_attachment_types_on_deleted_at ON renalware.patient_attachment_types USING btree (deleted_at);
+
+
+--
+-- Name: index_patient_attachment_types_on_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_patient_attachment_types_on_name ON renalware.patient_attachment_types USING btree (name);
+
+
+--
+-- Name: index_patient_attachments_on_attachment_type_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_patient_attachments_on_attachment_type_id ON renalware.patient_attachments USING btree (attachment_type_id);
+
+
+--
+-- Name: index_patient_attachments_on_created_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_patient_attachments_on_created_by_id ON renalware.patient_attachments USING btree (created_by_id);
+
+
+--
+-- Name: index_patient_attachments_on_deleted_at; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_patient_attachments_on_deleted_at ON renalware.patient_attachments USING btree (deleted_at);
+
+
+--
+-- Name: index_patient_attachments_on_document_date; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_patient_attachments_on_document_date ON renalware.patient_attachments USING btree (document_date);
+
+
+--
+-- Name: index_patient_attachments_on_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_patient_attachments_on_name ON renalware.patient_attachments USING btree (name);
+
+
+--
+-- Name: index_patient_attachments_on_patient_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_patient_attachments_on_patient_id ON renalware.patient_attachments USING btree (patient_id);
+
+
+--
+-- Name: index_patient_attachments_on_updated_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_patient_attachments_on_updated_by_id ON renalware.patient_attachments USING btree (updated_by_id);
+
+
+--
 -- Name: index_patient_bookmarks_on_deleted_at; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -18445,6 +18749,34 @@ CREATE INDEX index_patient_ethnicities_on_cfh_name ON renalware.patient_ethnicit
 --
 
 CREATE UNIQUE INDEX index_patient_languages_on_code ON renalware.patient_languages USING btree (code);
+
+
+--
+-- Name: index_patient_master_index_on_family_name_and_given_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_patient_master_index_on_family_name_and_given_name ON renalware.patient_master_index USING btree (family_name, given_name);
+
+
+--
+-- Name: index_patient_master_index_on_hospital_number; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_patient_master_index_on_hospital_number ON renalware.patient_master_index USING btree (hospital_number);
+
+
+--
+-- Name: index_patient_master_index_on_nhs_number; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_patient_master_index_on_nhs_number ON renalware.patient_master_index USING btree (nhs_number);
+
+
+--
+-- Name: index_patient_master_index_on_patient_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_patient_master_index_on_patient_id ON renalware.patient_master_index USING btree (patient_id);
 
 
 --
@@ -19337,6 +19669,97 @@ CREATE UNIQUE INDEX index_reporting_hd_blood_pressures_audit_on_hospital_unit_na
 
 
 --
+-- Name: index_research_investigatorships_on_created_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_research_investigatorships_on_created_by_id ON renalware.research_investigatorships USING btree (created_by_id);
+
+
+--
+-- Name: index_research_investigatorships_on_deleted_at; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_research_investigatorships_on_deleted_at ON renalware.research_investigatorships USING btree (deleted_at);
+
+
+--
+-- Name: index_research_investigatorships_on_document; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_research_investigatorships_on_document ON renalware.research_investigatorships USING gin (document);
+
+
+--
+-- Name: index_research_investigatorships_on_study_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_research_investigatorships_on_study_id ON renalware.research_investigatorships USING btree (study_id);
+
+
+--
+-- Name: index_research_investigatorships_on_updated_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_research_investigatorships_on_updated_by_id ON renalware.research_investigatorships USING btree (updated_by_id);
+
+
+--
+-- Name: index_research_investigatorships_on_user_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_research_investigatorships_on_user_id ON renalware.research_investigatorships USING btree (user_id);
+
+
+--
+-- Name: index_research_participations_on_created_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_research_participations_on_created_by_id ON renalware.research_participations USING btree (created_by_id);
+
+
+--
+-- Name: index_research_participations_on_deleted_at; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_research_participations_on_deleted_at ON renalware.research_participations USING btree (deleted_at);
+
+
+--
+-- Name: index_research_participations_on_document; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_research_participations_on_document ON renalware.research_participations USING gin (document);
+
+
+--
+-- Name: index_research_participations_on_external_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_research_participations_on_external_id ON renalware.research_participations USING btree (external_id);
+
+
+--
+-- Name: index_research_participations_on_patient_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_research_participations_on_patient_id ON renalware.research_participations USING btree (patient_id);
+
+
+--
+-- Name: index_research_participations_on_study_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_research_participations_on_study_id ON renalware.research_participations USING btree (study_id);
+
+
+--
+-- Name: index_research_participations_on_updated_by_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_research_participations_on_updated_by_id ON renalware.research_participations USING btree (updated_by_id);
+
+
+--
 -- Name: index_research_studies_on_code; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -19365,10 +19788,24 @@ CREATE INDEX index_research_studies_on_description ON renalware.research_studies
 
 
 --
+-- Name: index_research_studies_on_document; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_research_studies_on_document ON renalware.research_studies USING gin (document);
+
+
+--
 -- Name: index_research_studies_on_leader; Type: INDEX; Schema: renalware; Owner: -
 --
 
 CREATE INDEX index_research_studies_on_leader ON renalware.research_studies USING btree (leader);
+
+
+--
+-- Name: index_research_studies_on_private; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_research_studies_on_private ON renalware.research_studies USING btree (private);
 
 
 --
@@ -19379,45 +19816,17 @@ CREATE INDEX index_research_studies_on_updated_by_id ON renalware.research_studi
 
 
 --
--- Name: index_research_study_participants_on_created_by_id; Type: INDEX; Schema: renalware; Owner: -
+-- Name: index_research_versions_on_item_type_and_item_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
-CREATE INDEX index_research_study_participants_on_created_by_id ON renalware.research_study_participants USING btree (created_by_id);
-
-
---
--- Name: index_research_study_participants_on_deleted_at; Type: INDEX; Schema: renalware; Owner: -
---
-
-CREATE INDEX index_research_study_participants_on_deleted_at ON renalware.research_study_participants USING btree (deleted_at);
+CREATE INDEX index_research_versions_on_item_type_and_item_id ON renalware.research_versions USING btree (item_type, item_id);
 
 
 --
--- Name: index_research_study_participants_on_external_id; Type: INDEX; Schema: renalware; Owner: -
+-- Name: index_research_versions_on_whodunnit; Type: INDEX; Schema: renalware; Owner: -
 --
 
-CREATE UNIQUE INDEX index_research_study_participants_on_external_id ON renalware.research_study_participants USING btree (external_id);
-
-
---
--- Name: index_research_study_participants_on_participant_id; Type: INDEX; Schema: renalware; Owner: -
---
-
-CREATE INDEX index_research_study_participants_on_participant_id ON renalware.research_study_participants USING btree (participant_id);
-
-
---
--- Name: index_research_study_participants_on_study_id; Type: INDEX; Schema: renalware; Owner: -
---
-
-CREATE INDEX index_research_study_participants_on_study_id ON renalware.research_study_participants USING btree (study_id);
-
-
---
--- Name: index_research_study_participants_on_updated_by_id; Type: INDEX; Schema: renalware; Owner: -
---
-
-CREATE INDEX index_research_study_participants_on_updated_by_id ON renalware.research_study_participants USING btree (updated_by_id);
+CREATE INDEX index_research_versions_on_whodunnit ON renalware.research_versions USING btree (whodunnit);
 
 
 --
@@ -19670,6 +20079,20 @@ CREATE INDEX index_system_events_on_user_id ON renalware.system_events USING btr
 --
 
 CREATE INDEX index_system_events_on_visit_id ON renalware.system_events USING btree (visit_id);
+
+
+--
+-- Name: index_system_logs_on_group; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_system_logs_on_group ON renalware.system_logs USING btree ("group");
+
+
+--
+-- Name: index_system_logs_on_owner_id; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE INDEX index_system_logs_on_owner_id ON renalware.system_logs USING btree (owner_id);
 
 
 --
@@ -20317,6 +20740,20 @@ CREATE INDEX index_virology_profiles_on_updated_by_id ON renalware.virology_prof
 
 
 --
+-- Name: index_virology_vaccination_types_on_code; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_virology_vaccination_types_on_code ON renalware.virology_vaccination_types USING btree (code);
+
+
+--
+-- Name: index_virology_vaccination_types_on_name; Type: INDEX; Schema: renalware; Owner: -
+--
+
+CREATE UNIQUE INDEX index_virology_vaccination_types_on_name ON renalware.virology_vaccination_types USING btree (name);
+
+
+--
 -- Name: index_virology_versions_on_item_type_and_item_id; Type: INDEX; Schema: renalware; Owner: -
 --
 
@@ -20495,98 +20932,7 @@ CREATE INDEX tx_versions_type_id ON renalware.transplant_versions USING btree (i
 -- Name: unique_study_participants; Type: INDEX; Schema: renalware; Owner: -
 --
 
-CREATE UNIQUE INDEX unique_study_participants ON renalware.research_study_participants USING btree (participant_id, study_id) WHERE (deleted_at IS NULL);
-
-
---
--- Name: index_patient_attachment_types_on_deleted_at; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX index_patient_attachment_types_on_deleted_at ON renalware_diaverum.patient_attachment_types USING btree (deleted_at);
-
-
---
--- Name: index_patient_attachment_types_on_name; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE UNIQUE INDEX index_patient_attachment_types_on_name ON renalware_diaverum.patient_attachment_types USING btree (name);
-
-
---
--- Name: index_patient_attachments_on_attachment_type_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX index_patient_attachments_on_attachment_type_id ON renalware_diaverum.patient_attachments USING btree (attachment_type_id);
-
-
---
--- Name: index_patient_attachments_on_created_by_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX index_patient_attachments_on_created_by_id ON renalware_diaverum.patient_attachments USING btree (created_by_id);
-
-
---
--- Name: index_patient_attachments_on_deleted_at; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX index_patient_attachments_on_deleted_at ON renalware_diaverum.patient_attachments USING btree (deleted_at);
-
-
---
--- Name: index_patient_attachments_on_document_date; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX index_patient_attachments_on_document_date ON renalware_diaverum.patient_attachments USING btree (document_date);
-
-
---
--- Name: index_patient_attachments_on_name; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX index_patient_attachments_on_name ON renalware_diaverum.patient_attachments USING btree (name);
-
-
---
--- Name: index_patient_attachments_on_patient_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX index_patient_attachments_on_patient_id ON renalware_diaverum.patient_attachments USING btree (patient_id);
-
-
---
--- Name: index_patient_attachments_on_updated_by_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX index_patient_attachments_on_updated_by_id ON renalware_diaverum.patient_attachments USING btree (updated_by_id);
-
-
---
--- Name: index_patient_master_index_on_family_name_and_given_name; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX index_patient_master_index_on_family_name_and_given_name ON renalware_diaverum.patient_master_index USING btree (family_name, given_name);
-
-
---
--- Name: index_patient_master_index_on_hospital_number; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX index_patient_master_index_on_hospital_number ON renalware_diaverum.patient_master_index USING btree (hospital_number);
-
-
---
--- Name: index_patient_master_index_on_nhs_number; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX index_patient_master_index_on_nhs_number ON renalware_diaverum.patient_master_index USING btree (nhs_number);
-
-
---
--- Name: index_patient_master_index_on_patient_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX index_patient_master_index_on_patient_id ON renalware_diaverum.patient_master_index USING btree (patient_id);
+CREATE UNIQUE INDEX unique_study_participants ON renalware.research_participations USING btree (patient_id, study_id) WHERE (deleted_at IS NULL);
 
 
 --
@@ -20594,34 +20940,6 @@ CREATE INDEX index_patient_master_index_on_patient_id ON renalware_diaverum.pati
 --
 
 CREATE UNIQUE INDEX "index_renalware_diaverum.hd_type_maps_on_diaverum_type_id" ON renalware_diaverum.hd_type_maps USING btree (diaverum_type_id);
-
-
---
--- Name: index_system_logs_on_group; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX index_system_logs_on_group ON renalware_diaverum.system_logs USING btree ("group");
-
-
---
--- Name: index_system_logs_on_owner_id; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE INDEX index_system_logs_on_owner_id ON renalware_diaverum.system_logs USING btree (owner_id);
-
-
---
--- Name: index_virology_vaccination_types_on_code; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE UNIQUE INDEX index_virology_vaccination_types_on_code ON renalware_diaverum.virology_vaccination_types USING btree (code);
-
-
---
--- Name: index_virology_vaccination_types_on_name; Type: INDEX; Schema: renalware_diaverum; Owner: -
---
-
-CREATE UNIQUE INDEX index_virology_vaccination_types_on_name ON renalware_diaverum.virology_vaccination_types USING btree (name);
 
 
 --
@@ -20668,10 +20986,10 @@ coerce the result into a new float column which can be more easily consumed for 
 
 
 --
--- Name: research_study_participants update_research_study_participants_trigger; Type: TRIGGER; Schema: renalware; Owner: -
+-- Name: research_participations update_research_study_participants_trigger; Type: TRIGGER; Schema: renalware; Owner: -
 --
 
-CREATE TRIGGER update_research_study_participants_trigger BEFORE INSERT ON renalware.research_study_participants FOR EACH ROW EXECUTE FUNCTION renalware.update_research_study_participants_from_trigger();
+CREATE TRIGGER update_research_study_participants_trigger BEFORE INSERT ON renalware.research_participations FOR EACH ROW EXECUTE FUNCTION renalware.update_research_study_participants_from_trigger();
 
 
 --
@@ -20792,6 +21110,14 @@ ALTER TABLE ONLY renalware.patients
 
 ALTER TABLE ONLY renalware.patients
     ADD CONSTRAINT fk_rails_042462eeb9 FOREIGN KEY (language_id) REFERENCES renalware.patient_languages(id);
+
+
+--
+-- Name: patient_attachments fk_rails_04327b7e88; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.patient_attachments
+    ADD CONSTRAINT fk_rails_04327b7e88 FOREIGN KEY (patient_id) REFERENCES renalware.patients(id);
 
 
 --
@@ -21016,6 +21342,14 @@ ALTER TABLE ONLY renalware.hd_diary_slots
 
 ALTER TABLE ONLY renalware.low_clearance_profiles
     ADD CONSTRAINT fk_rails_20f40e75a5 FOREIGN KEY (updated_by_id) REFERENCES renalware.users(id);
+
+
+--
+-- Name: research_investigatorships fk_rails_210ebee29e; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.research_investigatorships
+    ADD CONSTRAINT fk_rails_210ebee29e FOREIGN KEY (created_by_id) REFERENCES renalware.users(id);
 
 
 --
@@ -21299,6 +21633,14 @@ ALTER TABLE ONLY renalware.transplant_registration_statuses
 
 
 --
+-- Name: patient_master_index fk_rails_37b31022ff; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.patient_master_index
+    ADD CONSTRAINT fk_rails_37b31022ff FOREIGN KEY (patient_id) REFERENCES renalware.patients(id);
+
+
+--
 -- Name: patients fk_rails_3848395513; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -21539,6 +21881,14 @@ ALTER TABLE ONLY renalware.renal_aki_alerts
 
 
 --
+-- Name: patient_attachments fk_rails_4fe08d5c90; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.patient_attachments
+    ADD CONSTRAINT fk_rails_4fe08d5c90 FOREIGN KEY (updated_by_id) REFERENCES renalware.users(id);
+
+
+--
 -- Name: access_assessments fk_rails_506a7ce21d; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -21664,6 +22014,14 @@ ALTER TABLE ONLY renalware.hd_diary_slots
 
 ALTER TABLE ONLY renalware.patients
     ADD CONSTRAINT fk_rails_5b44e541da FOREIGN KEY (ethnicity_id) REFERENCES renalware.patient_ethnicities(id);
+
+
+--
+-- Name: system_logs fk_rails_5b48840751; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.system_logs
+    ADD CONSTRAINT fk_rails_5b48840751 FOREIGN KEY (owner_id) REFERENCES renalware.users(id);
 
 
 --
@@ -21899,6 +22257,14 @@ ALTER TABLE ONLY renalware.events
 
 
 --
+-- Name: patient_attachments fk_rails_76bb588f1f; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.patient_attachments
+    ADD CONSTRAINT fk_rails_76bb588f1f FOREIGN KEY (attachment_type_id) REFERENCES renalware.patient_attachment_types(id);
+
+
+--
 -- Name: patients fk_rails_76ea7f2448; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -22003,10 +22369,10 @@ ALTER TABLE ONLY renalware.letter_archives
 
 
 --
--- Name: research_study_participants fk_rails_8039d07f46; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+-- Name: research_participations fk_rails_8039d07f46; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
-ALTER TABLE ONLY renalware.research_study_participants
+ALTER TABLE ONLY renalware.research_participations
     ADD CONSTRAINT fk_rails_8039d07f46 FOREIGN KEY (study_id) REFERENCES renalware.research_studies(id);
 
 
@@ -22027,10 +22393,10 @@ ALTER TABLE ONLY renalware.system_downloads
 
 
 --
--- Name: research_study_participants fk_rails_87bef0e757; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+-- Name: research_participations fk_rails_87bef0e757; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
-ALTER TABLE ONLY renalware.research_study_participants
+ALTER TABLE ONLY renalware.research_participations
     ADD CONSTRAINT fk_rails_87bef0e757 FOREIGN KEY (created_by_id) REFERENCES renalware.users(id);
 
 
@@ -22283,11 +22649,19 @@ ALTER TABLE ONLY renalware.letter_mailshot_mailshots
 
 
 --
--- Name: research_study_participants fk_rails_980af0ec33; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+-- Name: research_investigatorships fk_rails_97cd654080; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
-ALTER TABLE ONLY renalware.research_study_participants
-    ADD CONSTRAINT fk_rails_980af0ec33 FOREIGN KEY (participant_id) REFERENCES renalware.patients(id);
+ALTER TABLE ONLY renalware.research_investigatorships
+    ADD CONSTRAINT fk_rails_97cd654080 FOREIGN KEY (user_id) REFERENCES renalware.users(id);
+
+
+--
+-- Name: research_participations fk_rails_980af0ec33; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.research_participations
+    ADD CONSTRAINT fk_rails_980af0ec33 FOREIGN KEY (patient_id) REFERENCES renalware.patients(id);
 
 
 --
@@ -22315,10 +22689,10 @@ ALTER TABLE ONLY renalware.admission_admissions
 
 
 --
--- Name: research_study_participants fk_rails_9c3d41afbe; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+-- Name: research_participations fk_rails_9c3d41afbe; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
-ALTER TABLE ONLY renalware.research_study_participants
+ALTER TABLE ONLY renalware.research_participations
     ADD CONSTRAINT fk_rails_9c3d41afbe FOREIGN KEY (updated_by_id) REFERENCES renalware.users(id);
 
 
@@ -22475,6 +22849,14 @@ ALTER TABLE ONLY renalware.pathology_requests_drugs_drug_categories
 
 
 --
+-- Name: research_investigatorships fk_rails_a88d67c879; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.research_investigatorships
+    ADD CONSTRAINT fk_rails_a88d67c879 FOREIGN KEY (updated_by_id) REFERENCES renalware.users(id);
+
+
+--
 -- Name: pathology_requests_requests fk_rails_a8d58d31e6; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -22576,6 +22958,14 @@ ALTER TABLE ONLY renalware.pathology_requests_patient_rules
 
 ALTER TABLE ONLY renalware.hd_patient_statistics
     ADD CONSTRAINT fk_rails_b163068880 FOREIGN KEY (patient_id) REFERENCES renalware.patients(id);
+
+
+--
+-- Name: letter_section_snapshots fk_rails_b3fba09669; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.letter_section_snapshots
+    ADD CONSTRAINT fk_rails_b3fba09669 FOREIGN KEY (letter_id) REFERENCES renalware.letter_letters(id);
 
 
 --
@@ -22776,6 +23166,14 @@ ALTER TABLE ONLY renalware.active_storage_attachments
 
 ALTER TABLE ONLY renalware.ukrdc_transmission_logs
     ADD CONSTRAINT fk_rails_c59f71164c FOREIGN KEY (patient_id) REFERENCES renalware.patients(id);
+
+
+--
+-- Name: research_investigatorships fk_rails_c6186ba63f; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.research_investigatorships
+    ADD CONSTRAINT fk_rails_c6186ba63f FOREIGN KEY (study_id) REFERENCES renalware.research_studies(id);
 
 
 --
@@ -23323,6 +23721,14 @@ ALTER TABLE ONLY renalware.hd_prescription_administrations
 
 
 --
+-- Name: patient_attachments fk_rails_f5a021419e; Type: FK CONSTRAINT; Schema: renalware; Owner: -
+--
+
+ALTER TABLE ONLY renalware.patient_attachments
+    ADD CONSTRAINT fk_rails_f5a021419e FOREIGN KEY (created_by_id) REFERENCES renalware.users(id);
+
+
+--
 -- Name: admission_consults fk_rails_f5abb5bad4; Type: FK CONSTRAINT; Schema: renalware; Owner: -
 --
 
@@ -23715,58 +24121,10 @@ ALTER TABLE ONLY renalware.transplant_registration_statuses
 
 
 --
--- Name: patient_attachments fk_rails_04327b7e88; Type: FK CONSTRAINT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.patient_attachments
-    ADD CONSTRAINT fk_rails_04327b7e88 FOREIGN KEY (patient_id) REFERENCES renalware.patients(id);
-
-
---
--- Name: patient_master_index fk_rails_37b31022ff; Type: FK CONSTRAINT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.patient_master_index
-    ADD CONSTRAINT fk_rails_37b31022ff FOREIGN KEY (patient_id) REFERENCES renalware.patients(id);
-
-
---
--- Name: patient_attachments fk_rails_4fe08d5c90; Type: FK CONSTRAINT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.patient_attachments
-    ADD CONSTRAINT fk_rails_4fe08d5c90 FOREIGN KEY (updated_by_id) REFERENCES renalware.users(id);
-
-
---
--- Name: system_logs fk_rails_5b48840751; Type: FK CONSTRAINT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.system_logs
-    ADD CONSTRAINT fk_rails_5b48840751 FOREIGN KEY (owner_id) REFERENCES renalware.users(id);
-
-
---
--- Name: patient_attachments fk_rails_76bb588f1f; Type: FK CONSTRAINT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.patient_attachments
-    ADD CONSTRAINT fk_rails_76bb588f1f FOREIGN KEY (attachment_type_id) REFERENCES renalware_diaverum.patient_attachment_types(id);
-
-
---
--- Name: patient_attachments fk_rails_f5a021419e; Type: FK CONSTRAINT; Schema: renalware_diaverum; Owner: -
---
-
-ALTER TABLE ONLY renalware_diaverum.patient_attachments
-    ADD CONSTRAINT fk_rails_f5a021419e FOREIGN KEY (created_by_id) REFERENCES renalware.users(id);
-
-
---
 -- PostgreSQL database dump complete
 --
 
-SET search_path TO renalware_diaverum,renalware,public;
+SET search_path TO renalware,renalware_diaverum,public;
 
 INSERT INTO "schema_migrations" (version) VALUES
 ('20141004150240'),
@@ -24188,16 +24546,31 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20181126123745'),
 ('20181217124025'),
 ('20190104095254'),
+('20190104170135'),
+('20190107163734'),
 ('20190109121934'),
 ('20190109122032'),
 ('20190110100057'),
+('20190117144832'),
+('20190120105229'),
+('20190121092403'),
+('20190121125239'),
+('20190121135548'),
+('20190125111045'),
+('20190125130940'),
+('20190125132911'),
+('20190128094652'),
 ('20190131152758'),
 ('20190201151346'),
 ('20190209135334'),
+('20190210125211'),
 ('20190210143717'),
+('20190213104817'),
 ('20190218142207'),
 ('20190225103005'),
 ('20190226162607'),
+('20190306121545'),
+('20190307123232'),
 ('20190315125638'),
 ('20190322120025'),
 ('20190325134823'),
@@ -24422,6 +24795,20 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20220519120540'),
 ('20220601162848'),
 ('20220606105217'),
-('20220824154208');
+('20220620141323'),
+('20220813081749'),
+('20220824154208'),
+('20220907174253'),
+('20220915144534'),
+('20220915145956'),
+('20220915150710'),
+('20220915151614'),
+('20220926171513'),
+('20220926211723'),
+('20220928115421'),
+('20221006200436'),
+('20221012114542'),
+('20221013094654'),
+('20221027100532');
 
 

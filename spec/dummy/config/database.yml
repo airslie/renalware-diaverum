@@ -1,7 +1,7 @@
 default: &default
   adapter: postgresql
   encoding: unicode
-  schema_search_path: "renalware_diaverum,renalware,public"
+  schema_search_path: "renalware,renalware_diaverum,public"
   pool: <%= ENV["DB_POOL"] || ENV['RAILS_MAX_THREADS'] || 5 %>
 
 default_credentials: &default_credentials
