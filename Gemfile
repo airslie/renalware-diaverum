@@ -43,7 +43,6 @@ group :development, :test do
   gem "climate_control"
   gem "equivalent-xml"
   gem "factory_bot_rails", require: false
-  gem "faker"
   gem "fuubar"
   gem "rspec-rails"
   gem "rspec_junit_formatter", "~> 0.3"
