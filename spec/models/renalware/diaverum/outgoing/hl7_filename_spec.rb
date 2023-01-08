@@ -4,7 +4,7 @@ require "rails_helper"
 
 module Renalware
   module Diaverum
-    RSpec.describe Outgoing::Hl7Filename do
+    RSpec.describe Outgoing::HL7Filename do
       let(:patient) do
         Patient.new(born_on: "01-12-2000", nhs_number: "0123456789", local_patient_id: "kch1")
       end

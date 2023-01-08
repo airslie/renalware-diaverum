@@ -5,7 +5,7 @@ require "attr_extras"
 module Renalware
   module Diaverum
     module Outgoing
-      class ForwardHl7ToDiaverumViaSftp
+      class ForwardHL7ToDiaverumViaSftp
         include Diaverum::Logging
         pattr_initialize :transmission
 
@@ -23,7 +23,7 @@ module Renalware
         private
 
         def filename
-          Hl7Filename.new(patient: patient).to_s
+          HL7Filename.new(patient: patient).to_s
         end
 
         def patient
