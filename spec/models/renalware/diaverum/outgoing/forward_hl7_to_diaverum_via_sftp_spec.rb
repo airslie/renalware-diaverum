@@ -4,7 +4,7 @@ require "rails_helper"
 
 module Renalware
   module Diaverum
-    RSpec.describe Outgoing::ForwardHL7ToDiaverumViaSftp do
+    RSpec.describe Outgoing::ForwardHL7ToDiaverumViaSFTP do
       subject(:service) { described_class.new(transmission) }
 
       let(:time) { "2018-01-01 01:01:01" }

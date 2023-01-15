@@ -5,7 +5,7 @@ require "attr_extras"
 module Renalware
   module Diaverum
     module Outgoing
-      class ForwardHL7ToDiaverumViaSftp
+      class ForwardHL7ToDiaverumViaSFTP
         include Diaverum::Logging
         pattr_initialize :transmission
 

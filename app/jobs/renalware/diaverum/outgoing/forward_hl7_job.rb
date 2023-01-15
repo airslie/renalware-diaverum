@@ -12,7 +12,7 @@ module Renalware
 
         def perform(transmission:)
           # Could use another forwarding method eg Mirth in the future but for now its just SFTP
-          ForwardHL7ToDiaverumViaSftp.call(transmission)
+          ForwardHL7ToDiaverumViaSFTP.call(transmission)
         end
 
         def max_attempts
